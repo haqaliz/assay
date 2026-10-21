@@ -21,7 +21,7 @@ Assay is a **single repo**. Worktrees live **inside it** at `.claude/worktrees/<
 `.claude/worktrees/` is already in `.gitignore`.
 
 ```
-/Users/aliz/dev/at/assay/                                    ← primary (main)
+/Users/aliz/dev/at/assay/                                    ← primary (master)
 /Users/aliz/dev/at/assay/.claude/worktrees/bug-12/           ← bug #12 worktree
 /Users/aliz/dev/at/assay/.claude/worktrees/feat-skill-ingest/
 ```
@@ -41,19 +41,19 @@ one, otherwise a short descriptive slug.
 
 Worktree dir name drops the slashes: `<type>-<id>` (e.g. `bug-12`, `feat-skill-ingest`).
 
-## The base branch is `main`
+## The base branch is `master`
 
-Assay's base branch is **`main`**. The remote is `git@github.com:haqaliz/assay.git`
-once it exists — **it does not exist yet** (greenfield, local-only repo). Branch from
-local `main` until a remote is created, then prefer `origin/main`:
+Assay's base branch is **`master`**. The remote is `git@github.com:haqaliz/assay.git`.
+Prefer `origin/master` (shared truth; the local ref may be stale), falling back to
+local `master` only if the remote ref isn't fetched:
 
 ```bash
-# today: no remote yet
-git worktree add -b feat/skill-ingest/aliz .claude/worktrees/feat-skill-ingest main
+git fetch origin master
+git worktree add -b feat/skill-ingest/aliz .claude/worktrees/feat-skill-ingest origin/master
 
-# once a remote exists
-git fetch origin main
-git worktree add -b feat/skill-ingest/aliz .claude/worktrees/feat-skill-ingest origin/main
+# fallback if the remote ref isn't fetched
+git fetch origin master
+git worktree add -b feat/skill-ingest/aliz .claude/worktrees/feat-skill-ingest origin/master
 ```
 
 ## Creating a worktree
@@ -111,8 +111,8 @@ git -C /Users/aliz/dev/at/assay branch -d feat/skill-ingest/aliz
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `invalid reference: origin/main` | Remote not fetched, or doesn't exist yet | Branch from local `main` until a remote exists |
-| Branching from `master` | Assay's base branch is `main` | Use `main` |
+| `invalid reference: origin/master` | Remote not fetched, or doesn't exist yet | Branch from local `master` until a remote exists |
+| Branching from `master` | Assay's base branch is `master` | Use `master` |
 | Worktree contents appear untracked in primary | `.claude/worktrees/` not ignored | Already in `.gitignore`; verify with trailing slash |
 | `uv sync` fails: no `pyproject.toml` | Core not scaffolded (greenfield) | Expected — scaffold it test-first, or skip for docs-only work |
-| `git worktree add` fails: "already checked out" | Branch checked out elsewhere | `git checkout main` in the conflicting worktree, retry |
+| `git worktree add` fails: "already checked out" | Branch checked out elsewhere | `git checkout master` in the conflicting worktree, retry |

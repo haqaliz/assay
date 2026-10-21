@@ -17,7 +17,7 @@ Same cleanup as `assay-end-fast`, **plus** a completion report at the end via
 
 **REQUIRED SUB-SKILL:** Use `assay-end-fast` for the cleanup pipeline.
 
-Run its **Phase 0 → Phase 2 exactly as written**. Assay's base branch is **`main`**.
+Run its **Phase 0 → Phase 2 exactly as written**. Assay's base branch is **`master`**.
 **Phase 3 (release) is deferred.** Only proceed to the report once cleanup
 verification passes.
 
@@ -41,5 +41,5 @@ Same approach as `assay-end-fast` Phase 4. Skip if there's no reachable issue.
 |---|---|
 | Running the report before cleanup | Phases 0–2 first |
 | Passing the wrong type to `assay-report` | Apply the mapping table |
-| Cleaning up against `master` | Assay's base branch is `main` |
+| Cleaning up against `master` | Assay's base branch is `master` |
 | Trying to cut a release during end | Deferred |

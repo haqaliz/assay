@@ -7,8 +7,8 @@ fall back to an inline brief from the user.
 ## Prerequisites
 
 - GitHub CLI authenticated: `gh auth status`.
-- Repo: `haqaliz/assay` — **the remote does not exist yet** (greenfield). A
-  `FALLBACK` result below is the expected case today, not a bug.
+- Repo: `haqaliz/assay` — the repo exists on GitHub, but likely has no issues
+  filed yet. A `FALLBACK` result below is the expected case today, not a bug.
 
 ## 0. Reachability probe
 

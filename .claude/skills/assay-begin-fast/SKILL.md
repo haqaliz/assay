@@ -26,7 +26,7 @@ deliverables (use `assay-begin` / `ab` when you need those).
 
 ## Task source: GitHub issue, tolerate absence
 
-Assay's remote does not exist yet (greenfield). Expect the fallback path:
+The repo exists on GitHub but likely has no issues filed yet. Expect the fallback path:
 
 - If `id` is numeric and `gh issue view <id>` succeeds → use it as the source.
 - Otherwise → ask the user for a one-paragraph **inline brief**.
@@ -38,8 +38,8 @@ Assay's remote does not exist yet (greenfield). Expect the fallback path:
 **REQUIRED SUB-SKILL:** Use `assay-worktrees`.
 
 - Branch: `<type>/<id>/aliz`. Worktree dir: `.claude/worktrees/<type>-<id>`.
-- Create from `main` — Assay's base branch is **`main`**. No remote exists yet, so
-  branch from local `main`.
+- Create from `master` — Assay's base branch is **`master`**. Prefer `origin/master`;
+  fall back to local `master` if the remote ref isn't fetched.
 - **Greenfield:** `uv sync` fails until `pyproject.toml` exists. If your work *is*
   the scaffolding, the failing test comes first.
 
@@ -112,7 +112,7 @@ docs/planning/
 | Mistake | Fix |
 |---|---|
 | Working in the primary checkout | Create the Phase 0 worktree first |
-| Branching from anything but `main` | Assay's base branch is `main`; no remote exists yet |
+| Branching from anything but `master` | Assay's base branch is `master`; prefer `origin/master` |
 | Slug = `bug-12` | Use a descriptive slug; the id stays in branch/PR |
 | Treating a missing `pyproject.toml` as fatal | Greenfield — scaffold it, test-first |
 | Skipping the review gate | PRD must be approved before tech-plan |

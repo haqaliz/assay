@@ -8,7 +8,7 @@ arguments: "type id"
 
 ## Overview
 
-Closes out a unit of work's local state after the PR has merged: **main → pull →
+Closes out a unit of work's local state after the PR has merged: **master → pull →
 remove worktree → delete branch**, with a **release phase that is deferred until
 Assay has release machinery**. No report (use `assay-end` / `ae` for that).
 
@@ -19,7 +19,7 @@ Assay has release machinery**. No report (use `assay-end` / `ae` for that).
 - Owner is `aliz`
 - Branch: `<type>/<id>/aliz`; worktree dir: `.claude/worktrees/<type>-<id>`
 
-Assay's base branch is **`main`**.
+Assay's base branch is **`master`**.
 
 ## Pipeline
 
@@ -33,8 +33,8 @@ Assay's base branch is **`main`**.
 
 ```bash
 PRIMARY=$(git worktree list | head -1 | awk '{print $1}')
-git -C "$PRIMARY" checkout main
-git -C "$PRIMARY" pull --ff-only origin main
+git -C "$PRIMARY" checkout master
+git -C "$PRIMARY" pull --ff-only origin master
 ```
 
 ### Phase 2 — Remove worktree, delete branch
@@ -61,7 +61,7 @@ hand-craft a release, tag, or publish anything.
 
 When release machinery lands (its own unit of work), this phase becomes
 ALWAYS-run: `feat`/`feature` → minor, `bug`/`chore`/`task` → patch; bump +
-changelog on `main`; CI green before tagging; tag and push to trigger the
+changelog on `master`; CI green before tagging; tag and push to trigger the
 workflow; verify each channel is live before calling it done. Release identity:
 the **haqaliz** account. PyPI distribution name: `assay` is taken; `assayhq` was
 free when checked — settle it in the release-machinery unit.
@@ -76,7 +76,7 @@ then `gh issue comment "$ID" --body "<confirmed text>"`.
 | Mistake | Fix |
 |---|---|
 | Running from inside the worktree being removed | Resolve `PRIMARY` first |
-| Checking out / pulling `master` | Assay's base branch is `main` |
+| Checking out / pulling `master` | Assay's base branch is `master` |
 | Using `git pull` (allowing merge) | Use `--ff-only` |
 | Forcing branch delete with `-D` | Only after explicit user OK |
 | Cutting a release | Deferred — no machinery yet |
