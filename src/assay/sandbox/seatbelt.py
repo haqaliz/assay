@@ -120,7 +120,7 @@ class SeatbeltSandbox:
             stdout=stdout,
             stderr=stderr,
             truncated=out_truncated or err_truncated,
-            denials=classify_failure(stderr, limit_exceeded),
+            denials=classify_failure(f"{stdout}\n{stderr}", limit_exceeded),
             limit_exceeded=limit_exceeded,
             config_hash=config.config_hash,
             run_root=str(config.run_root),

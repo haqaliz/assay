@@ -1,7 +1,7 @@
 # Assay: Architecture
 
-Design intent, not a description of built behavior. Nothing is implemented yet; verify against
-the code and `git log` once it exists.
+Design intent, not a description of built behavior. **A2 (`src/assay/sandbox/`) is implemented**;
+everything else below is still intent — verify against the code and `git log`.
 
 ## Pipeline
 
@@ -71,7 +71,9 @@ Exit 0 on `CLEAN`, 1 on `FLAGGED/MALICIOUS/UNVERIFIED`, 2 on usage error. Never 
 
 ## Open questions
 
-- Sandbox technology on macOS and Linux (Seatbelt, containers, or both). Belay and Whetstone used
-  a Seatbelt sandbox; reuse the pattern, not the code.
+- ~~Sandbox technology on macOS and Linux (Seatbelt, containers, or both)~~ **Decided:** Seatbelt
+  only, behind a `Sandbox` seam (A2). Docker was rejected as a daemon dependency with no A2
+  benefit; the probe evidence and the Linux consequence are in
+  `docs/planning/sandbox-jail/prd.md`. A Linux backend is a follow-on slice.
 - How to generate synthetic tasks that exercise a skill without an LLM judging the outcome.
 - Distribution name on PyPI: `assay` is taken; `assayhq` was free when checked.

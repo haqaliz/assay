@@ -71,9 +71,13 @@ class JailConfig:
             raise ValueError(f"run_root must be a directory, got {root}")
         if root.is_symlink():
             raise ValueError(f"run_root must not be a symlink, got {root}")
-        object.__setattr__(self, "run_root", root)
+        # Canonicalise: macOS reports /var/... while the kernel enforces /private/var/..., and a
+        # profile written with the short form would not match the vnode the child touches.
+        object.__setattr__(self, "run_root", root.resolve())
 
-        extra = tuple(_check_path(p, "allow_read_extra") for p in self.allow_read_extra)
+        extra = tuple(
+            _check_path(p, "allow_read_extra").resolve() for p in self.allow_read_extra
+        )
         object.__setattr__(self, "allow_read_extra", extra)
 
         rules = tuple(self.allow_network)

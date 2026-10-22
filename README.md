@@ -12,9 +12,10 @@ real agent, captures what it actually did, and checks that against what it claim
 
 ## Status
 
-**Nothing is built yet.** This repository holds the design docs only: the vision, the roadmap,
-the architecture, and the capability build order. There is no CLI, no sandbox, no scanner.
-Read `CLAUDE.md` before writing any code here.
+**A2 (sandbox) exists; nothing else does.** `src/assay/sandbox/` runs a command under a macOS
+Seatbelt jail: writes confined to a run root, network deny-by-default with a port-scoped
+allowlist, a scrubbed environment, and CPU/wall limits — returning a `RunRecord`. There is no
+CLI, no ingest, no agent driver and no verdict yet. Read `CLAUDE.md` before writing any code here.
 
 ## What Assay is
 

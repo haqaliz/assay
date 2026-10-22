@@ -127,6 +127,11 @@ that A5 renders as `UNVERIFIED`. Three consequences that must hold:
   breaks it degrades to "Assay refuses to run", not "Assay runs loose".
 - **No syscall tracing.** `dtruss` needs root and SIP disabled; the trustworthy capture layer is
   A4's mediated tool surface, not A2. A2's `DenialRecord` is a classifier over observable failures.
+- **Anything the child must read from under `/Users` has to be staged.** The profile denies the
+  home tree wholesale, so an input (a probe, a skill, a uv-managed interpreter) is either copied
+  into the run root or named in `allow_read_extra`. Discovered by test, not by reading: a probe
+  living under the checkout failed with `EPERM` until it was staged. A3 must stage its runtime
+  the same way.
 - **Network granularity is port-scoped, not host-scoped.** Probed: `(remote ip "1.1.1.1:80")`
   fails with `host must be * or localhost`; `(remote tcp "localhost:PORT")` and `(remote tcp
   "*:PORT")` both work. Consequence for A3: allowing model egress means `*:443` — any HTTPS host

@@ -6,7 +6,9 @@ what the child reports plus what it printed. A4 replaces this with mediated tool
 Two sources are trusted, in order:
 
 1. ``assay-denial: <kind> <detail>`` lines, written by a mediated/instrumented child.
-2. Fallback heuristics over stderr lines that say "Operation not permitted"/"Permission denied".
+2. Fallback heuristics over lines that say "Operation not permitted"/"Permission denied".
+
+The caller passes stdout and stderr concatenated: a child may report a denial on either stream.
 """
 
 from __future__ import annotations
@@ -21,12 +23,12 @@ _WRITE_WORDS = ("write", "create", "delete", "truncate")
 _READ_WORDS = ("read", "open", "getcwd")
 
 
-def classify_failure(stderr: str, limit_exceeded: str | None = None) -> tuple[DenialRecord, ...]:
+def classify_failure(output: str, limit_exceeded: str | None = None) -> tuple[DenialRecord, ...]:
     records: list[DenialRecord] = []
     if limit_exceeded:
         records.append(DenialRecord(DenialClass.LIMIT, limit_exceeded))
 
-    for raw in (stderr or "").splitlines():
+    for raw in (output or "").splitlines():
         line = raw.strip()
         if not line:
             continue
