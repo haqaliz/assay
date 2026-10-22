@@ -1,0 +1,14 @@
+[project]
+name = "assayhq"
+version = "0.0.1"
+description = "Execution-grounded security verifier for AI agent skills"
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["darwin: requires macOS Seatbelt confinement"]
