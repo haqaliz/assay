@@ -34,6 +34,7 @@ class RunRecord:
     config_hash: str
     run_root: str
     started_at: str
+    teardown_error: str | None = None
 
     @property
     def ok(self) -> bool:

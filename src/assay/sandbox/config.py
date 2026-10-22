@@ -44,12 +44,11 @@ class Limits:
     wall_seconds: float = 30.0
     cpu_seconds: int = 30
     file_bytes: int = 64 * 1024 * 1024
-    processes: int = 64
 
     def __post_init__(self) -> None:
         if self.wall_seconds <= 0:
             raise ValueError(f"wall_seconds must be positive, got {self.wall_seconds!r}")
-        for name in ("cpu_seconds", "file_bytes", "processes"):
+        for name in ("cpu_seconds", "file_bytes"):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
                 raise ValueError(f"{name} must be a positive int, got {value!r}")
@@ -100,7 +99,6 @@ class JailConfig:
                 "wall_seconds": self.limits.wall_seconds,
                 "cpu_seconds": self.limits.cpu_seconds,
                 "file_bytes": self.limits.file_bytes,
-                "processes": self.limits.processes,
             },
             "output_cap_bytes": OUTPUT_CAP_BYTES,
         }

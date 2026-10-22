@@ -58,8 +58,6 @@ def test_limits_must_be_positive():
         Limits(cpu_seconds=-1)
     with pytest.raises(ValueError, match="file_bytes"):
         Limits(file_bytes=0)
-    with pytest.raises(ValueError, match="processes"):
-        Limits(processes=0)
 
 
 def test_env_must_be_strings(tmp_path):

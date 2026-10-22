@@ -53,7 +53,7 @@ will be told "this ran in a jail" and need that sentence to be true.
 | M3 | **Seatbelt backend (macOS).** Generates a profile from `JailConfig`: `(deny default)`, allow `process*`, `sysctl-read`, `mach-lookup`, `signal`; broad `file-read*` with explicit **deny** on `/Users`, `/Volumes`, `/private/etc`, `/private/var/db`; re-allow the run root; `file-write*` confined to the run root plus `/dev/null`; **no `network*`** unless the allowlist is non-empty. |
 | M4 | **cwd is the run root.** The child is launched with `cwd=run_root` (a cwd outside the jail breaks `getcwd` — see dig note). |
 | M5 | **Env scrub.** The child inherits nothing: only `PATH` plus the config's explicit env map. `ASSAY_TEST_SECRET` in the parent must be absent in the child. |
-| M6 | **Limits.** `RLIMIT_CPU`, `RLIMIT_FSIZE`, `RLIMIT_NPROC` and a wall-clock kill of the whole **process group**. Exceeding any limit terminates the run and records `limit_exceeded` with which limit. |
+| M6 | **Limits.** `RLIMIT_CPU`, `RLIMIT_FSIZE`, and a wall-clock kill of the whole **process group**. Exceeding any limit terminates the run and records `limit_exceeded` with which limit. `RLIMIT_NPROC` is deliberately **not** used: it counts the UID's processes host-wide (probed — 380 already running, so a low cap leaves the child unable to fork at all). Fork bombs are bounded by the wall clock plus the group kill. |
 | M7 | **Network deny-by-default**, with a per-run allowlist of `(host, port)` where host is `localhost` or `*`. Seatbelt rejects IPs and CIDRs (`host must be * or localhost`), so IP/hostname pinning is **not expressible**; port scoping is. Denial surfaces as `EPERM` and is classified into a `DenialRecord`; an empty allowlist means no egress at all. |
 | M8 | **Fail-closed backend selection.** If no confining backend is available (non-Darwin, or `sandbox-exec` missing), raise `SandboxUnavailable`. There is no code path that runs an untrusted argv unconfined. |
 | M9 | **Teardown.** The run root is removed on success; `keep=True` preserves it and the record carries the path. Teardown failure is recorded, not swallowed. |
@@ -89,7 +89,6 @@ JailConfig(
         wall_seconds: float = 30.0,
         cpu_seconds: int = 30,
         file_bytes: int = 64 * 1024 * 1024,
-        processes: int = 64,
     ),
     keep: bool = False,
 )
@@ -151,6 +150,7 @@ that A5 renders as `UNVERIFIED`. Three consequences that must hold:
 | — | `RLIMIT_AS` not enforced by macOS allocators | Med/Med | Do not promise a hard memory cap; rely on CPU/wall/FILE/NPROC and say so |
 | — | Denial "capture" over-claimed | Med/Med | M10 docstring + PRD §4 say classifier, not trace; A4 owns full capture |
 | — | Process-group kill misses a daemonised child | Low/Med | `setsid` + kill the group; fixture asserting no orphan survives |
+| — | Fork bomb bounded by wall clock only (no `RLIMIT_NPROC`) | Low/Med | Group kill on timeout; accepted cost of not breaking busy hosts |
 
 **Open questions (resolved with recommendations; confirm at the gate):**
 
