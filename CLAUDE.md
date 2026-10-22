@@ -19,8 +19,10 @@ The name: to *assay* a metal is to test its purity by actually putting it throug
 by looking at it. Assay asks of a skill: *does it do only what it says it does, when you actually
 run it?*
 
-Status: **day zero.** Nothing is built. This file, `VISION.md`, and the `docs/` folder are the
-only things that exist. Do not describe capability that isn't there yet.
+Status: **A2 exists, nothing else.** The sandbox (`src/assay/sandbox/`) runs a command under
+macOS Seatbelt with confined writes, port-scoped network, a scrubbed env and CPU/wall limits.
+There is no CLI, no ingest, no driver and no verdict yet. Do not describe capability that isn't
+there.
 
 Lineage: Assay is one of three siblings scaffolded together on 2026-10-22 (with Tenon and Pry),
 drawn from a market-demand research pass (`~/dev/at/ideas/market-demand-2026-10.md`) and sharing
@@ -130,7 +132,7 @@ CLAUDE.md                          # This file
 LICENSE                            # Apache-2.0
 docs/
   ROADMAP.md                       # Phased plan + risk register
-  technical/CAPABILITY_ROADMAP.md  # A1..A7 engine capabilities in build order
+  technical/CAPABILITY_ROADMAP.md  # A1..A10 engine capabilities in build order
   technical/ARCHITECTURE.md        # Design: ingest → sandbox run → capture → diff → verdict → bundle
   planning/{slug}/                 # In-flight PRDs, specs, and plans (per unit of work)
 ```
