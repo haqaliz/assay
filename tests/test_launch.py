@@ -109,6 +109,25 @@ def test_bad_profile_raises_sandbox_failed(sandbox, tmp_path, monkeypatch):
     assert not config.run_root.exists()
 
 
+def test_teardown_failure_is_recorded(sandbox, tmp_path, monkeypatch):
+    import shutil
+
+    real_rmtree = shutil.rmtree
+    calls = {"n": 0}
+
+    def failing_once(path, *args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise OSError("boom")
+        return real_rmtree(path, *args, **kwargs)
+
+    monkeypatch.setattr("assay.sandbox.seatbelt.shutil.rmtree", failing_once)
+    record = sandbox.run(["/bin/echo", "hi"], make_config(tmp_path))
+    assert record.teardown_error is not None
+    assert "run root" in record.teardown_error
+    assert record.ok  # the run itself succeeded; the leak is reported, not hidden
+
+
 def test_empty_argv_is_rejected(sandbox, tmp_path):
     with pytest.raises(ValueError, match="argv"):
         sandbox.run([], make_config(tmp_path))

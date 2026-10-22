@@ -3,7 +3,7 @@
 **Execution-grounded security verifier for AI agent skills.** Runs a skill in a sandbox against a
 real agent, captures what it actually did, and checks that against what it claims to do.
 
-[![Status](https://img.shields.io/badge/status-day%20zero%20·%20design%20only-lightgrey)](docs/ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-A2%20sandbox%20·%20no%20verdicts%20yet-orange)](docs/ROADMAP.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 [Vision](VISION.md) · [Roadmap](docs/ROADMAP.md) · [Architecture](docs/technical/ARCHITECTURE.md) · [Capabilities](docs/technical/CAPABILITY_ROADMAP.md)
@@ -49,7 +49,7 @@ A static scan or model may flag a candidate; the sandboxed, observed run assigns
 - [`VISION.md`](VISION.md) — the thesis, the moat, non-goals.
 - [`CLAUDE.md`](CLAUDE.md) — guardrails and the verdict contract.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — phased plan and risk register.
-- [`docs/technical/CAPABILITY_ROADMAP.md`](docs/technical/CAPABILITY_ROADMAP.md) — A1..A7 capabilities in build order.
+- [`docs/technical/CAPABILITY_ROADMAP.md`](docs/technical/CAPABILITY_ROADMAP.md) — A1..A10 capabilities in build order.
 - [`docs/technical/ARCHITECTURE.md`](docs/technical/ARCHITECTURE.md) — the design.
 
 ## Lineage

@@ -74,6 +74,11 @@ will be told "this ran in a jail" and need that sentence to be true.
 | N1 | A `RunRecord` written to disk as JSON next to the run root. |
 | N2 | ~~CIDR network rules~~ — dropped: not expressible in Seatbelt (probed). |
 
+**Deferred, not shipped:** S1 (the `assay sandbox probe` CLI) waits for M1.4, which introduces the
+`assay` entry point — a second public surface before there is a first one is surface I would have
+to support. N1 (record JSON) waits for A6, which owns trace persistence; writing a file next to a
+run root that is deleted by default would be a file nobody reads.
+
 ### Sandbox Config Contract
 
 ```python

@@ -58,6 +58,8 @@ class SeatbeltSandbox:
         command = [str(self.sandbox_exec), "-p", build_profile(config), *(str(a) for a in argv)]
         out_dir = config.run_root / ".assay"
         out_dir.mkdir(parents=True, exist_ok=True)
+        # shortcut: the child can truncate `.assay/*` since it is inside the run root; A4 owns
+        # trustworthy capture via the mediated tool surface. A2 only refuses to lose the record.
         stdout_path, stderr_path = out_dir / "stdout", out_dir / "stderr"
         limits = config.limits
 

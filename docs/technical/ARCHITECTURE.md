@@ -36,7 +36,7 @@ skill (SKILL.md | ClawHub | Cursor rule | MCP manifest)
 ```
 src/assay/
   ingest/     A1: parsers per format, Skill record
-  sandbox/    A2: jail setup, limits, teardown
+  sandbox/    A2: jail setup, limits, teardown   ← built (macOS Seatbelt)
   agent/      A3: BYOK driver, task generation, cost caps
   capture/    A4: event recorder, trace store, diff
   verdict/    A5: findings, strictness, floor

@@ -11,4 +11,3 @@ dev = ["pytest>=8"]
 pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "-q"
-markers = ["darwin: requires macOS Seatbelt confinement"]

@@ -132,7 +132,7 @@ CLAUDE.md                          # This file
 LICENSE                            # Apache-2.0
 docs/
   ROADMAP.md                       # Phased plan + risk register
-  technical/CAPABILITY_ROADMAP.md  # A1..A7 engine capabilities in build order
+  technical/CAPABILITY_ROADMAP.md  # A1..A10 engine capabilities in build order
   technical/ARCHITECTURE.md        # Design: ingest → sandbox run → capture → diff → verdict → bundle
   planning/{slug}/                 # In-flight PRDs, specs, and plans (per unit of work)
 ```
