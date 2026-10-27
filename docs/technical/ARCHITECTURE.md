@@ -31,11 +31,11 @@ skill (SKILL.md | ClawHub | Cursor rule | MCP manifest)
   A6 signed bundle
 ```
 
-## Layout (planned)
+## Layout
 
 ```
 src/assay/
-  ingest/     A1: parsers per format, Skill record
+  ingest/     A1: parsers per format, Skill record   ← built (Claude Code SKILL.md)
   sandbox/    A2: jail setup, limits, teardown   ← built (macOS Seatbelt)
   agent/      A3: BYOK driver, task generation, cost caps
   capture/    A4: event recorder, trace store, diff
