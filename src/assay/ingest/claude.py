@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from .records import ParseCause, SkillParseError
+from .records import ParseCause, Scope, SkillParseError
 
 MAX_SKILL_BYTES = 1_000_000
 
@@ -56,6 +56,64 @@ def _split_frontmatter(text: str, path: Path) -> tuple[str, str]:
     raise SkillParseError(
         ParseCause.NO_FRONTMATTER, 'frontmatter has no closing "---" line', path
     )
+
+
+def _scope(mapping: dict, path: Path) -> Scope:
+    tools = _tools(mapping, path)
+    if "metadata" not in mapping:
+        return Scope(tools=tools)
+    metadata = mapping["metadata"]
+    if not isinstance(metadata, dict):
+        raise SkillParseError(
+            ParseCause.INVALID_SCOPE, "metadata must be a mapping", path
+        )
+    if "assay" not in metadata:
+        return Scope(tools=tools)
+    assay = metadata["assay"]
+    if not isinstance(assay, dict):
+        raise SkillParseError(
+            ParseCause.INVALID_SCOPE, "metadata.assay must be a mapping", path
+        )
+    return Scope(
+        tools=tools,
+        files=_scope_list(assay, "files", path),
+        network=_scope_list(assay, "network", path),
+    )
+
+
+def _tools(mapping: dict, path: Path) -> frozenset[str] | None:
+    if "allowed-tools" not in mapping:
+        return None
+    value = mapping["allowed-tools"]
+    if not isinstance(value, str) or not value.strip():
+        raise SkillParseError(
+            ParseCause.INVALID_SCOPE,
+            'allowed-tools must be a non-empty comma-separated string',
+            path,
+        )
+    names = [name.strip() for name in value.split(",")]
+    if not all(names):
+        raise SkillParseError(
+            ParseCause.INVALID_SCOPE,
+            "allowed-tools has an empty entry; remove the extra comma",
+            path,
+        )
+    return frozenset(names)
+
+
+def _scope_list(assay: dict, key: str, path: Path) -> tuple[str, ...] | None:
+    if key not in assay:
+        return None
+    value = assay[key]
+    if not isinstance(value, list) or not all(
+        isinstance(item, str) and item.strip() for item in value
+    ):
+        raise SkillParseError(
+            ParseCause.INVALID_SCOPE,
+            f"metadata.assay.{key} must be a list of non-empty strings",
+            path,
+        )
+    return tuple(value)
 
 
 def _load_yaml(frontmatter: str, path: Path) -> dict:
