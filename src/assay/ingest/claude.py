@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 import yaml
 
-from .records import ParseCause, Scope, SkillParseError
+from .records import ParseCause, Scope, Skill, SkillParseError
 
 MAX_SKILL_BYTES = 1_000_000
 
@@ -138,3 +139,42 @@ def _load_yaml(frontmatter: str, path: Path) -> dict:
             path,
         )
     return data
+
+
+def _required_text(mapping: dict, key: str, cause: ParseCause, path: Path) -> str:
+    value = mapping.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise SkillParseError(cause, f"{key} must be a non-empty string", path)
+    return value
+
+
+def _read_bytes(path: Path) -> bytes:
+    if not path.is_file():
+        raise SkillParseError(ParseCause.NOT_A_FILE, "skill path must be a regular file", path)
+    size = path.stat().st_size
+    if size > MAX_SKILL_BYTES:
+        raise SkillParseError(
+            ParseCause.TOO_LARGE, f"file is {size} bytes; the limit is {MAX_SKILL_BYTES}", path
+        )
+    return path.read_bytes()
+
+
+class ClaudeSkillParser:
+    def parse(self, path: Path) -> Skill:
+        path = Path(path)
+        raw = _read_bytes(path)
+        mapping, body = _parse_frontmatter(raw, path)
+        return Skill(
+            name=_required_text(mapping, "name", ParseCause.MISSING_NAME, path),
+            description=_required_text(
+                mapping, "description", ParseCause.MISSING_DESCRIPTION, path
+            ),
+            scope=_scope(mapping, path),
+            body=body,
+            source_path=path,
+            content_hash=hashlib.sha256(raw).hexdigest(),
+        )
+
+
+def parse_skill(path: Path) -> Skill:
+    return ClaudeSkillParser().parse(path)
