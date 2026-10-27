@@ -3,6 +3,7 @@ name = "assayhq"
 version = "0.0.1"
 description = "Execution-grounded security verifier for AI agent skills"
 requires-python = ">=3.12"
+dependencies = ["pyyaml>=6"]
 
 [dependency-groups]
 dev = ["pytest>=8"]
