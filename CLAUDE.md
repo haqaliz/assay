@@ -19,10 +19,12 @@ The name: to *assay* a metal is to test its purity by actually putting it throug
 by looking at it. Assay asks of a skill: *does it do only what it says it does, when you actually
 run it?*
 
-Status: **A2 exists, nothing else.** The sandbox (`src/assay/sandbox/`) runs a command under
-macOS Seatbelt with confined writes, port-scoped network, a scrubbed env and CPU/wall limits.
-There is no CLI, no ingest, no driver and no verdict yet. Do not describe capability that isn't
-there.
+Status: **A1 and A2 exist, nothing else.** Ingest (`src/assay/ingest/`) turns a Claude Code
+`SKILL.md` into a frozen `Skill` record with a tri-state declared `Scope` (undeclared vs declared
+none), refusing malformed input with a named cause. The sandbox (`src/assay/sandbox/`) runs a
+command under macOS Seatbelt with confined writes, port-scoped network, a scrubbed env and
+CPU/wall limits. There is no CLI, no driver and no verdict yet. Do not describe capability that
+isn't there.
 
 Lineage: Assay is one of three siblings scaffolded together on 2026-10-22 (with Tenon and Pry),
 drawn from a market-demand research pass (`~/dev/at/ideas/market-demand-2026-10.md`) and sharing
