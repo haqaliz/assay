@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from pathlib import Path
 
 import yaml
@@ -10,6 +11,28 @@ import yaml
 from .records import ParseCause, Scope, Skill, SkillParseError
 
 MAX_SKILL_BYTES = 1_000_000
+
+_TOP_LEVEL_KEY_VALUE = re.compile(r"^([A-Za-z0-9_.-]+):[ \t]+(.+?)[ \t]*$")
+_YAML_INDICATORS = "{['\"|>&*!%@`#"
+
+
+def _repair_plain_scalars(frontmatter: str) -> str:
+    """Quote top-level plain scalars containing ': ', which YAML forbids but Claude Code accepts.
+
+    shortcut: only single-line top-level values are repaired; a nested multiline bad value still
+    refuses as INVALID_YAML.
+    """
+    repaired: list[str] = []
+    for line in frontmatter.splitlines(keepends=True):
+        core = line.rstrip("\r\n")
+        eol = line[len(core) :]
+        match = _TOP_LEVEL_KEY_VALUE.match(core)
+        if match and ": " in match.group(2) and match.group(2)[0] not in _YAML_INDICATORS:
+            value = match.group(2).replace("\\", "\\\\").replace('"', '\\"')
+            core = f'{match.group(1)}: "{value}"'
+        repaired.append(core + eol)
+    return "".join(repaired)
+
 
 
 class _UniqueKeyLoader(yaml.SafeLoader):
@@ -86,10 +109,19 @@ def _tools(mapping: dict, path: Path) -> frozenset[str] | None:
     if "allowed-tools" not in mapping:
         return None
     value = mapping["allowed-tools"]
+    if isinstance(value, list):
+        names = [item.strip() for item in value if isinstance(item, str)]
+        if len(names) != len(value) or not all(names):
+            raise SkillParseError(
+                ParseCause.INVALID_SCOPE,
+                "allowed-tools list must contain only non-empty strings",
+                path,
+            )
+        return frozenset(names)
     if not isinstance(value, str) or not value.strip():
         raise SkillParseError(
             ParseCause.INVALID_SCOPE,
-            'allowed-tools must be a non-empty comma-separated string',
+            "allowed-tools must be a non-empty comma-separated string or a list of strings",
             path,
         )
     names = [name.strip() for name in value.split(",")]
@@ -118,7 +150,7 @@ def _scope_list(assay: dict, key: str, path: Path) -> tuple[str, ...] | None:
 
 
 def _load_yaml(frontmatter: str, path: Path) -> dict:
-    loader = _UniqueKeyLoader(frontmatter)
+    loader = _UniqueKeyLoader(_repair_plain_scalars(frontmatter))
     loader.path = path
     try:
         data = loader.get_single_data()

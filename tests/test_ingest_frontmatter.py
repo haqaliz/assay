@@ -31,6 +31,16 @@ def test_bom_and_crlf_twins_parse_the_same_and_keep_their_body_bytes():
     assert _parse_frontmatter(crlf.read_bytes(), crlf)[1] == "# Plain\r\n\r\nBody.\r\n"
 
 
+def test_unquoted_plain_scalar_with_a_colon_space_is_repaired_not_refused():
+    path = FIXTURES / "unquoted_colon" / "SKILL.md"
+    mapping, _ = _parse_frontmatter(path.read_bytes(), path)
+    assert mapping["description"] == (
+        "Use when deciding something. Triggers: unquoted-colon, colon test."
+    )
+    assert mapping["allowed-tools"] == "Read, Grep"
+    assert mapping["metadata"] == {"owner": "someone"}
+
+
 @pytest.mark.parametrize(
     ("fixture", "cause"),
     [

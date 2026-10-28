@@ -6,12 +6,13 @@ from assay.ingest import SkillParseError, parse_skill
 
 PLUMB = Path.home() / "dev/at/plumb/.claude/skills"
 INSTALLED = Path.home() / ".claude/skills"
+PLUGINS = Path.home() / ".claude/plugins"
 
 
-def _corpus(root: Path) -> list[Path]:
+def _corpus(root: Path, *, recursive: bool = False) -> list[Path]:
     if not root.is_dir():
         pytest.skip(f"dogfood corpus not present: {root}")
-    paths = sorted(root.glob("*/SKILL.md"))
+    paths = sorted(root.rglob("SKILL.md") if recursive else root.glob("*/SKILL.md"))
     if not paths:
         pytest.skip(f"no skills under {root}")
     return paths
@@ -22,8 +23,9 @@ def test_plumb_skills_parse_and_match_their_directory():
         assert parse_skill(path).name == path.parent.name, path
 
 
-def test_installed_skills_parse_or_refuse_with_a_named_cause():
-    for path in _corpus(INSTALLED):
+@pytest.mark.parametrize("root", [INSTALLED, PLUGINS], ids=["installed", "plugins"])
+def test_real_skills_parse_or_refuse_with_a_named_cause(root):
+    for path in _corpus(root, recursive=root is PLUGINS):
         try:
             parse_skill(path)
         except SkillParseError:

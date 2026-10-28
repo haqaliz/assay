@@ -14,6 +14,28 @@ def test_allowed_tools_is_a_comma_separated_string():
     )
 
 
+def test_allowed_tools_accepts_the_yaml_list_form_used_by_official_plugins():
+    assert _scope({"allowed-tools": ["Read", "Write", "Bash(git *)"]}, PATH) == Scope(
+        tools={"Read", "Write", "Bash(git *)"}
+    )
+
+
+def test_explicitly_empty_allowed_tools_list_is_declared_none():
+    assert _scope({"allowed-tools": []}, PATH).tools == frozenset()
+
+
+def test_allowed_tools_list_with_an_empty_member_is_refused():
+    with pytest.raises(SkillParseError) as caught:
+        _scope({"allowed-tools": ["Read", ""]}, PATH)
+    assert caught.value.cause is ParseCause.INVALID_SCOPE
+
+
+def test_allowed_tools_list_with_a_non_string_member_is_refused():
+    with pytest.raises(SkillParseError) as caught:
+        _scope({"allowed-tools": ["Read", 1]}, PATH)
+    assert caught.value.cause is ParseCause.INVALID_SCOPE
+
+
 def test_absent_allowed_tools_is_undeclared_not_empty():
     assert _scope({}, PATH).tools is None
 
@@ -43,7 +65,6 @@ def test_assay_lists_preserve_order_and_values():
     [
         {"allowed-tools": ""},
         {"allowed-tools": 3},
-        {"allowed-tools": ["Read"]},
         {"allowed-tools": "Read,"},
         {"metadata": "not-a-mapping"},
         {"metadata": {"assay": "not-a-mapping"}},
