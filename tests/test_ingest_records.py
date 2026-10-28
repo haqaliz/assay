@@ -59,6 +59,13 @@ def test_scope_rejects_non_string_members_instead_of_coercing():
         Scope(tools=["Read", 2])
 
 
+def test_ordered_scope_dimensions_reject_sets_for_determinism():
+    with pytest.raises(TypeError, match="files"):
+        Scope(files={"alpha", "beta"})
+    with pytest.raises(TypeError, match="network"):
+        Scope(network={"a:1", "b:2"})
+
+
 def test_skill_is_frozen():
     skill = Skill(
         name="demo",

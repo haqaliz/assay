@@ -32,6 +32,8 @@ class SkillParseError(Exception):
 def _strings(value: object, field: str, *, ordered: bool) -> frozenset[str] | tuple[str, ...] | None:
     if value is None:
         return None
+    if ordered and isinstance(value, (set, frozenset)):
+        raise TypeError(f"Scope.{field} must be an ordered collection of strings or None")
     if isinstance(value, str) or not isinstance(value, (list, tuple, set, frozenset)):
         raise TypeError(f"Scope.{field} must be a collection of strings or None, got {value!r}")
     for item in value:
@@ -56,6 +58,11 @@ class Scope:
 
 @dataclass(frozen=True, slots=True)
 class Skill:
+    """A parsed skill. `content_hash` covers the `SKILL.md` bytes only, bare lowercase hex.
+
+    A6 owns any prefixed/project-level hash; a skill directory's other files need their own
+    manifest before a bundle can claim to attest the whole skill.
+    """
     name: str
     description: str
     scope: Scope

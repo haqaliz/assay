@@ -19,6 +19,7 @@ _YAML_INDICATORS = "{['\"|>&*!%@`#"
 def _repair_plain_scalars(frontmatter: str) -> str:
     """Quote top-level plain scalars containing ': ', which YAML forbids but Claude Code accepts.
 
+    Only invoked after strict YAML has refused the file, so a valid declaration is never rewritten.
     shortcut: only single-line top-level values are repaired; a nested multiline bad value still
     refuses as INVALID_YAML.
     """
@@ -32,7 +33,6 @@ def _repair_plain_scalars(frontmatter: str) -> str:
             core = f'{match.group(1)}: "{value}"'
         repaired.append(core + eol)
     return "".join(repaired)
-
 
 
 class _UniqueKeyLoader(yaml.SafeLoader):
@@ -53,8 +53,6 @@ class _UniqueKeyLoader(yaml.SafeLoader):
 
 
 def _parse_frontmatter(raw: bytes, path: Path) -> tuple[dict, str]:
-    if not path.is_file():
-        raise SkillParseError(ParseCause.NOT_A_FILE, "skill path must be a regular file", path)
     if len(raw) > MAX_SKILL_BYTES:
         raise SkillParseError(
             ParseCause.TOO_LARGE,
@@ -146,30 +144,40 @@ def _scope_list(assay: dict, key: str, path: Path) -> tuple[str, ...] | None:
             f"metadata.assay.{key} must be a list of non-empty strings",
             path,
         )
-    return tuple(value)
+    return tuple(item.strip() for item in value)
 
 
 def _load_yaml(frontmatter: str, path: Path) -> dict:
-    loader = _UniqueKeyLoader(_repair_plain_scalars(frontmatter))
-    loader.path = path
     try:
+        return _load_yaml_once(frontmatter, path)
+    except _InvalidYaml:
+        try:
+            return _load_yaml_once(_repair_plain_scalars(frontmatter), path)
+        except _InvalidYaml as exc:
+            raise SkillParseError(ParseCause.INVALID_YAML, str(exc), path) from None
+
+
+class _InvalidYaml(Exception):
+    """Internal: retry once with the de-facto repair before refusing."""
+
+
+def _load_yaml_once(frontmatter: str, path: Path) -> dict:
+    loader = None
+    try:
+        loader = _UniqueKeyLoader(frontmatter)
+        loader.path = path
         data = loader.get_single_data()
     except SkillParseError:
         raise
-    except (yaml.YAMLError, TypeError) as exc:
-        raise SkillParseError(
-            ParseCause.INVALID_YAML, f"frontmatter is not valid YAML: {exc}", path
-        ) from None
+    except (yaml.YAMLError, TypeError, RecursionError) as exc:
+        raise _InvalidYaml(f"frontmatter is not valid YAML: {exc}") from None
     finally:
-        loader.dispose()
+        if loader is not None:
+            loader.dispose()
     if data is None:
         return {}
     if not isinstance(data, dict):
-        raise SkillParseError(
-            ParseCause.INVALID_YAML,
-            f"frontmatter root must be a mapping, got {type(data).__name__}",
-            path,
-        )
+        raise _InvalidYaml(f"frontmatter root must be a mapping, got {type(data).__name__}")
     return data
 
 
@@ -181,14 +189,19 @@ def _required_text(mapping: dict, key: str, cause: ParseCause, path: Path) -> st
 
 
 def _read_bytes(path: Path) -> bytes:
-    if not path.is_file():
-        raise SkillParseError(ParseCause.NOT_A_FILE, "skill path must be a regular file", path)
-    size = path.stat().st_size
-    if size > MAX_SKILL_BYTES:
-        raise SkillParseError(
-            ParseCause.TOO_LARGE, f"file is {size} bytes; the limit is {MAX_SKILL_BYTES}", path
-        )
-    return path.read_bytes()
+    try:
+        if not path.is_file():
+            raise SkillParseError(ParseCause.NOT_A_FILE, "skill path must be a regular file", path)
+        size = path.stat().st_size
+        if size > MAX_SKILL_BYTES:
+            raise SkillParseError(
+                ParseCause.TOO_LARGE, f"file is {size} bytes; the limit is {MAX_SKILL_BYTES}", path
+            )
+        return path.read_bytes()
+    except SkillParseError:
+        raise
+    except OSError as exc:
+        raise SkillParseError(ParseCause.NOT_A_FILE, f"cannot read {path}: {exc}", path) from None
 
 
 class ClaudeSkillParser:

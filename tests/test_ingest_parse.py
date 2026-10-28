@@ -48,8 +48,11 @@ def test_empty_declarations_survive_the_full_parse():
     assert skill.scope.tools is None
 
 
-def test_claude_parser_satisfies_the_parser_protocol():
-    assert isinstance(ClaudeSkillParser(), Parser)
+def test_plain_skill_declares_nothing_in_any_dimension():
+    skill = parse_skill(FIXTURES / "plain" / "SKILL.md")
+    assert skill.scope.tools is None
+    assert skill.scope.files is None
+    assert skill.scope.network is None
 
 
 def test_parse_skill_refuses_with_the_named_error():

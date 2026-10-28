@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from assay.ingest import ParseCause, SkillParseError
+from assay.ingest import ParseCause, SkillParseError, parse_skill
 from assay.ingest.claude import MAX_SKILL_BYTES, _parse_frontmatter
 
 FIXTURES = Path(__file__).parent / "fixtures" / "skills"
@@ -41,6 +41,17 @@ def test_unquoted_plain_scalar_with_a_colon_space_is_repaired_not_refused():
     assert mapping["metadata"] == {"owner": "someone"}
 
 
+def test_comments_and_multiline_quoted_scalars_are_left_to_strict_yaml(tmp_path):
+    path = tmp_path / "SKILL.md"
+    path.write_bytes(
+        b'---\nname: n\nallowed-tools: Read, Write # allow: all\n'
+        b'description: "first line\nsecond: line"\n---\n'
+    )
+    mapping, _ = _parse_frontmatter(path.read_bytes(), path)
+    assert mapping["allowed-tools"] == "Read, Write"
+    assert mapping["description"] == "first line second: line"
+
+
 @pytest.mark.parametrize(
     ("fixture", "cause"),
     [
@@ -54,28 +65,19 @@ def test_fixture_refusals(fixture, cause):
     _refuses(FIXTURES / fixture / "SKILL.md", cause)
 
 
-def test_missing_file_is_not_a_file(tmp_path):
-    with pytest.raises(SkillParseError) as caught:
-        _parse_frontmatter(b"", tmp_path / "SKILL.md")
-    assert caught.value.cause is ParseCause.NOT_A_FILE
-
-
-def test_directory_is_not_a_file(tmp_path):
-    with pytest.raises(SkillParseError) as caught:
-        _parse_frontmatter(b"", tmp_path)
-    assert caught.value.cause is ParseCause.NOT_A_FILE
-
-
 def test_non_utf8_bytes_are_named(tmp_path):
     path = tmp_path / "SKILL.md"
     path.write_bytes(b"---\nname: \xff\n---\n")
     _refuses(path, ParseCause.INVALID_UTF8)
 
 
-def test_oversized_file_is_refused_before_parsing(tmp_path):
+def test_oversized_file_is_refused_before_reading(tmp_path, monkeypatch):
     path = tmp_path / "SKILL.md"
     path.write_bytes(b"x" * (MAX_SKILL_BYTES + 1))
-    _refuses(path, ParseCause.TOO_LARGE)
+    monkeypatch.setattr(Path, "read_bytes", lambda self: pytest.fail("read_bytes must not run"))
+    with pytest.raises(SkillParseError) as caught:
+        parse_skill(path)
+    assert caught.value.cause is ParseCause.TOO_LARGE
 
 
 def test_duplicate_nested_key_is_refused(tmp_path):

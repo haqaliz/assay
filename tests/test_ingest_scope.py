@@ -82,6 +82,13 @@ def test_bad_scope_shapes_are_invalid_scope(mapping):
     assert caught.value.cause is ParseCause.INVALID_SCOPE
 
 
+def test_assay_lists_are_stripped_like_tool_names():
+    mapping = {"metadata": {"assay": {"files": [" out.md "], "network": [" api:443 "]}}}
+    scope = _scope(mapping, PATH)
+    assert scope.files == ("out.md",)
+    assert scope.network == ("api:443",)
+
+
 def test_unknown_keys_and_foreign_metadata_are_ignored():
     mapping = {
         "name": "extras",

@@ -72,9 +72,10 @@ Not a goal: a verdict, a diff, a CLI, or any opinion about whether a skill is sa
 6. **Lenient on extras**: unknown frontmatter keys (`license`, `homepage`, `compatibility`,
    `version`, `model`, `effort`, `argument-hint`, `tags`, `metadata.*` other than `assay`) are
    ignored without error or warning. **De-facto-valid YAML**: a top-level `key: value` line whose
-   plain scalar contains `": "` (e.g. `description: … Triggers: a, b`) is repaired by quoting that
-   one value before parsing. Claude Code accepts these files (6 of 174 on the dev machine), and
-   refusing them would lose real coverage. The repair is identity on already-quoted or
+   plain scalar contains `": "` (e.g. `description: … Triggers: a, b`) is retried with that one
+   value quoted only after strict YAML refuses it. Claude Code accepts these files (6 of 174 files
+   in the local corpora at the time of writing), and refusing them would lose real coverage. The
+   repair never touches a file strict YAML already parses; it is identity on quoted, commented or
    indicator-led values and never invents nested structure.
 7. **Deterministic hash**: `content_hash = sha256` of the file's raw bytes, lowercase hex.
 

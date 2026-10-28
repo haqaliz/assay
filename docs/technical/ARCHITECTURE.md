@@ -1,7 +1,8 @@
 # Assay: Architecture
 
-Design intent, not a description of built behavior. **A2 (`src/assay/sandbox/`) is implemented**;
-everything else below is still intent — verify against the code and `git log`.
+Design intent, not a description of built behavior. **A1 (`src/assay/ingest/`) and A2
+(`src/assay/sandbox/`) are implemented**; everything else below is still intent — verify against
+the code and `git log`.
 
 ## Pipeline
 
