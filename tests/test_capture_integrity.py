@@ -33,3 +33,15 @@ def test_capture_directory_that_is_a_file_fails_closed(tmp_path):
     (tmp_path / ".assay").write_text("not a directory")
     with pytest.raises(SandboxFailed):
         SeatbeltSandbox(SANDBOX_EXEC).run(["/bin/true"], JailConfig(run_root=tmp_path))
+
+
+def test_capture_directory_that_is_a_symlink_fails_closed(tmp_path):
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    (tmp_path / "run").mkdir()
+    (tmp_path / "run" / ".assay").symlink_to(elsewhere)
+    with pytest.raises(SandboxFailed):
+        SeatbeltSandbox(SANDBOX_EXEC).run(
+            ["/bin/true"], JailConfig(run_root=tmp_path / "run")
+        )
+    assert list(elsewhere.iterdir()) == []

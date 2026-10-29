@@ -60,6 +60,8 @@ class SeatbeltSandbox:
             raise ValueError("argv must not be empty")
         command = [str(self.sandbox_exec), "-p", build_profile(config), *(str(a) for a in argv)]
         out_dir = config.run_root / ".assay"
+        if out_dir.is_symlink():
+            raise SandboxFailed(f"capture directory {out_dir} must not be a symlink")
         try:
             out_dir.mkdir(parents=True, exist_ok=True)
         except OSError as exc:

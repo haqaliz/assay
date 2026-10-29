@@ -180,7 +180,17 @@ def test_http_get_resolves_a_hostname_in_the_parent(run_root, fake_curl, monkeyp
 
 @pytest.mark.parametrize(
     "url",
-    ["file:///etc/hosts", "-Kcfg", "ftp://example.com", "https://", "gopher://x"],
+    [
+        "file:///etc/hosts",
+        "-Kcfg",
+        "ftp://example.com",
+        "https://",
+        "gopher://x",
+        "https://example.com:99999",
+        "https://example.com:notaport",
+        "https://[::1",
+        "https://example..com/",
+    ],
 )
 def test_http_get_refuses_non_http_urls_and_curl_options(run_root, fake_curl, url):
     sandbox = FakeSandbox()

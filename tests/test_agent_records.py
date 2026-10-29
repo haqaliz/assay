@@ -17,6 +17,22 @@ from assay.agent import (
 )
 
 
+def test_non_finite_budget_and_price_values_are_rejected():
+    for bad in (float("nan"), float("inf"), float("-inf")):
+        with pytest.raises(ValueError):
+            Budget(max_usd=bad)
+        with pytest.raises(ValueError):
+            Budget(max_usd=1.0, max_wall_seconds=bad)
+        with pytest.raises(ValueError):
+            ModelPrice(input_per_mtok=bad, output_per_mtok=1.0)
+
+
+def test_max_actions_must_be_positive():
+    for bad in (0, -1, True):
+        with pytest.raises(ValueError):
+            Budget(max_usd=1.0, max_actions=bad)
+
+
 def test_run_cause_is_the_closed_seven_name_set():
     assert {c.name for c in RunCause} == {
         "MISSING_KEY",

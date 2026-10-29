@@ -60,11 +60,13 @@ Not a goal: any verdict, diff, trace format, CLI, or a second provider.
 5. **Tools, always all four** (declared scope never filters them, or undeclared use could not be
    observed):
    - `read_file(path)` → `/bin/cat path` in the jail.
-   - `write_file(path, content)` → content staged under `run_root/.assay-io/`, then `/bin/cp` to
-     `path` in the jail.
+   - `write_file(path, content)` → content staged in a parent-owned directory outside the run
+     root (read-only inside the jail), then `/bin/cp -- <staged> <path>` in the jail.
    - `run_shell(command)` → `/bin/sh -c command` in the jail.
-   - `http_get(url)` → `/usr/bin/curl -sS --max-time 10 url` in the jail, with per-call
-     `allow_network=(NetRule("*",80), NetRule("*",443))`; no other tool gets network.
+   - `http_get(url)` → `/usr/bin/curl -sS --max-time 10 --url <url>` in the jail, with per-call
+     `allow_network=(NetRule("*",80), NetRule("*",443))`; no other tool gets network. Only
+     `http`/`https` are accepted, the host is resolved in the parent and passed as `--resolve`
+     (the jail allows TCP but not DNS), and `/private/etc/ssl` is readable so TLS can start.
    Paths are relative to `run_root` by contract (the child's cwd); absolute paths may be attempted
    and the jail decides.
 6. **`Toolbox`**: owns `run_root`, sanitises the run root (must be a real directory), enforces a

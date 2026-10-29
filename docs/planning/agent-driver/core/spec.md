@@ -4,7 +4,7 @@
 
 Given a parsed `Skill`, a task string, a `Model` and a `Toolbox`, run a bounded agent loop in which
 the model's tool calls are executed inside the A2 sandbox and return a `RunOutcome` (actions,
-transcript, usage, cost, named stop cause). Never assigns a verdict; never lets the API key reach
+final text, usage, cost, named stop cause). Never assigns a verdict; never lets the API key reach
 the jail; never makes a network or model call in tests.
 
 ## In scope
@@ -34,9 +34,9 @@ runs, MCP.
    final_text is not None`.
 3. `Toolbox.execute` maps each tool to exactly one `Sandbox.run`:
    - `read_file` → `/bin/cat <path>`, no network
-   - `write_file` → content staged under `run_root/.assay-io/`, `/bin/cp <staged> <path>`, no network
+   - `write_file` → content staged outside the run root in a parent-owned dir, `/bin/cp -- <staged> <path>`, no network
    - `run_shell` → `/bin/sh -c <command>`, no network
-   - `http_get` → `/usr/bin/curl -sS --max-time 10 <url>`, `allow_network=(NetRule("*",80), NetRule("*",443))`
+   - `http_get` → `/usr/bin/curl -sS --max-time 10 --url <url>` (+ `--resolve` from a parent lookup), `allow_network=(NetRule("*",80), NetRule("*",443))`
    All other calls get `allow_network=()`.
 4. Every `JailConfig` the toolbox builds has `env == {}` (no model credential) and
    `run_root == toolbox.run_root`.

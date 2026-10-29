@@ -163,19 +163,28 @@ class Toolbox:
 
 
 def _http_argv(url: str) -> list[str]:
-    parts = urlsplit(url)
-    if url.startswith("-") or parts.scheme not in ("http", "https") or not parts.hostname:
-        raise _InvalidArguments("http_get: url must be an http or https URL")
-    port = parts.port or (443 if parts.scheme == "https" else 80)
+    try:
+        parts = urlsplit(url)
+        host = parts.hostname
+        if url.startswith("-") or parts.scheme not in ("http", "https") or not host:
+            raise _InvalidArguments("http_get: url must be an http or https URL")
+        port = parts.port or (443 if parts.scheme == "https" else 80)
+    except _InvalidArguments:
+        raise
+    except (ValueError, UnicodeError) as exc:
+        raise _InvalidArguments(f"http_get: invalid url: {exc}") from None
     argv = [str(CURL), "-sS", "--max-time", "10", "--url", url]
-    address = _resolve(parts.hostname, port)
+    address = _resolve(host, port)
     if address is not None:
-        argv += ["--resolve", f"{parts.hostname}:{port}:{address}"]
+        argv += ["--resolve", f"{host}:{port}:{address}"]
     return argv
 
 
 def _resolve(host: str, port: int) -> str | None:
-    """Resolve in the parent: the jail allows TCP only, not DNS. IP literals need no lookup."""
+    """Resolve in the parent: the jail allows TCP only, not DNS. IP literals need no lookup.
+
+    shortcut: getaddrinfo has no timeout; a hung resolver delays the action past the wall budget.
+    """
     try:
         ipaddress.ip_address(host)
         return None
@@ -183,7 +192,7 @@ def _resolve(host: str, port: int) -> str | None:
         pass
     try:
         infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
-    except OSError as exc:
+    except (OSError, UnicodeError) as exc:
         raise _InvalidArguments(f"http_get: cannot resolve {host!r}: {exc}") from None
     return str(infos[0][4][0])
 
