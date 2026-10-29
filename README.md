@@ -3,7 +3,7 @@
 **Execution-grounded security verifier for AI agent skills.** Runs a skill in a sandbox against a
 real agent, captures what it actually did, and checks that against what it claims to do.
 
-[![Status](https://img.shields.io/badge/status-A2%20sandbox%20·%20no%20verdicts%20yet-orange)](docs/ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-A1--A4%20engine%20·%20no%20verdicts%20yet-orange)](docs/ROADMAP.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 [Vision](VISION.md) · [Roadmap](docs/ROADMAP.md) · [Architecture](docs/technical/ARCHITECTURE.md) · [Capabilities](docs/technical/CAPABILITY_ROADMAP.md)
@@ -12,10 +12,22 @@ real agent, captures what it actually did, and checks that against what it claim
 
 ## Status
 
-**A2 (sandbox) exists; nothing else does.** `src/assay/sandbox/` runs a command under a macOS
-Seatbelt jail: writes confined to a run root, network deny-by-default with a port-scoped
-allowlist, a scrubbed environment, and CPU/wall limits — returning a `RunRecord`. There is no
-CLI, no ingest, no agent driver and no verdict yet. Read `CLAUDE.md` before writing any code here.
+**A1–A4 exist; the verdict does not.** What is built and tested, all offline:
+
+- **Ingest** (`src/assay/ingest/`) — parses a Claude Code `SKILL.md` into a frozen `Skill` record
+  with a tri-state declared scope (undeclared vs declared none) and a named refusal for malformed
+  input.
+- **Sandbox** (`src/assay/sandbox/`) — runs a command under a macOS Seatbelt jail: writes confined
+  to a run root, network deny-by-default with a port-scoped allowlist, a scrubbed environment,
+  CPU/wall limits, and a capture channel the child cannot rewrite.
+- **Agent driver** (`src/assay/agent/`) — a bounded BYOK loop: the model runs outside the jail, every
+  tool call runs inside it, with cost, step, action and wall caps and a named stop cause.
+- **Capture and diff** (`src/assay/capture/`) — turns a run into a canonical, content-addressed
+  trace of file, network, shell and instruction events and diffs it against the declared scope.
+
+There is no verdict, strictness level, CLI or bundle yet, and the first real keyed run has not
+happened. Read `CLAUDE.md` before writing any code here; do not describe capability that is not in
+`git log`.
 
 ## What Assay is
 

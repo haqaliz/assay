@@ -7,6 +7,12 @@ hosted/registry layer later. Stack: Python via `uv`.
 Milestone order below is my proposal from the capability dependencies; you asked me to order
 them after the full roadmap existed. Reorder freely.
 
+**Progress (2026-10-30).** Phase 0 milestones M0.1 (A1) and M0.2 (A2) are shipped, as are Phase 1's
+M1.1 (A3) and M1.2 (A4): 339 offline tests, `A1–A4` in
+`docs/technical/CAPABILITY_ROADMAP.md`. The Phase 0 gate is **not** yet met: no real keyed run has
+been performed, because no API key exists in CI. M0.3 needs that key plus A5's verdict to report a
+result, and M1.3/M1.4 (verdict, CLI) are the next capabilities.
+
 ---
 
 ## Phase 0: Prove the wedge (weeks 1-3)
@@ -17,7 +23,7 @@ them after the full roadmap existed. Reorder freely.
 |---|---|---|
 | M0.1 | Skill parser (A1) | A `SKILL.md` parses into a typed `Skill` record with declared scope; malformed input is a named refusal |
 | M0.2 | Sandbox spike (A2) | A script runs in an isolated jail: no network, writes confined, no real env vars; escape attempts are captured, not allowed |
-| M0.3 | Dogfood run | Assay runs the 12 skills in `~/dev/at/plumb/.claude/skills/` and reports results, including its own false positives |
+| M0.3 | Dogfood run | Assay runs the 10 skills in `~/dev/at/plumb/.claude/skills/` and reports results, including its own false positives |
 
 ## Phase 1: OSS core (weeks 4-8)
 
