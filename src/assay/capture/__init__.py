@@ -11,6 +11,7 @@ from .diff import (
     diff,
 )
 from .records import CaptureError, Event, EventKind, EventOutcome, Trace, TraceIntegrityError
+from .store import TraceStore
 
 __all__ = [
     "CaptureError",
@@ -26,6 +27,7 @@ __all__ = [
     "EventOutcome",
     "Trace",
     "TraceIntegrityError",
+    "TraceStore",
     "capture",
     "diff",
 ]
