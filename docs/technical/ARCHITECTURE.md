@@ -1,8 +1,10 @@
 # Assay: Architecture
 
 Design intent, not a description of built behavior. **A1 (`src/assay/ingest/`), A2
-(`src/assay/sandbox/`) and A3 (`src/assay/agent/`) are implemented**; everything else below is
-still intent — verify against the code and `git log`.
+(`src/assay/sandbox/`), A3 (`src/assay/agent/`) and A4 (`src/assay/capture/`) are implemented**;
+everything else below is still intent — verify against the code and `git log`. A4 records and
+diffs observed behavior; it assigns no verdict, which is A5's job. The manual BYOK gate run is
+still unperformed.
 
 ## Pipeline
 
@@ -39,7 +41,7 @@ src/assay/
   ingest/     A1: parsers per format, Skill record   ← built (Claude Code SKILL.md)
   sandbox/    A2: jail setup, limits, teardown   ← built (macOS Seatbelt)
   agent/      A3: BYOK driver, task generation, cost caps   ← built (Anthropic Messages adapter)
-  capture/    A4: event recorder, trace store, diff
+  capture/    A4: event recorder, trace store, diff   ← built (canonical traces, scope diff)
   verdict/    A5: findings, strictness, floor
   bundle/     A6: hash list, signing, verify
   corpus/     A7: labeled cases, metrics
