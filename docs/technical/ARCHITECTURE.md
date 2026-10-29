@@ -1,8 +1,8 @@
 # Assay: Architecture
 
-Design intent, not a description of built behavior. **A1 (`src/assay/ingest/`) and A2
-(`src/assay/sandbox/`) are implemented**; everything else below is still intent — verify against
-the code and `git log`.
+Design intent, not a description of built behavior. **A1 (`src/assay/ingest/`), A2
+(`src/assay/sandbox/`) and A3 (`src/assay/agent/`) are implemented**; everything else below is
+still intent — verify against the code and `git log`.
 
 ## Pipeline
 
@@ -16,7 +16,7 @@ skill (SKILL.md | ClawHub | Cursor rule | MCP manifest)
   A2 sandbox  <----  jail config (fs, network, env, limits)
         |
         v
-  A3 agent driver (BYOK)  --  synthetic tasks from declared behavior
+  A3 agent driver (BYOK)  --  one task from the skill's stated purpose
         |
         v
   A4 capture  ---->  content-addressed event trace (file, net, shell, instruction)
@@ -38,7 +38,7 @@ skill (SKILL.md | ClawHub | Cursor rule | MCP manifest)
 src/assay/
   ingest/     A1: parsers per format, Skill record   ← built (Claude Code SKILL.md)
   sandbox/    A2: jail setup, limits, teardown   ← built (macOS Seatbelt)
-  agent/      A3: BYOK driver, task generation, cost caps
+  agent/      A3: BYOK driver, task generation, cost caps   ← built (Anthropic Messages adapter)
   capture/    A4: event recorder, trace store, diff
   verdict/    A5: findings, strictness, floor
   bundle/     A6: hash list, signing, verify
