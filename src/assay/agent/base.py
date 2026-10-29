@@ -26,5 +26,6 @@ class ModelReply:
 
 class Model(Protocol):
     price: ModelPrice
+    max_tokens: int
 
     def complete(self, messages: Sequence[Message], tools: Sequence[ToolSpec]) -> ModelReply: ...

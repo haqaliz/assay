@@ -44,6 +44,8 @@ def call(name, **arguments):
 
 
 class FakeModel:
+    max_tokens = 1024
+
     def __init__(self, replies, price=PRICE, error=None):
         self.price = price
         self.replies = list(replies)
@@ -182,7 +184,7 @@ def test_model_failure_becomes_a_named_cause_and_keeps_prior_actions():
     assert outcome.final_text is None
 
 
-def test_other_agent_errors_and_sandbox_unavailability_propagate():
+def test_other_agent_errors_propagate_but_a_lost_sandbox_is_a_named_cause():
     model = FakeModel([])
     model.error = AgentUnavailable("no key", cause=RunCause.MISSING_KEY)
     with pytest.raises(AgentUnavailable):
@@ -193,8 +195,46 @@ def test_other_agent_errors_and_sandbox_unavailability_propagate():
             raise SandboxUnavailable("cannot confine")
 
     model = FakeModel([reply("working", [call("read_file", path="a")])])
-    with pytest.raises(SandboxUnavailable):
-        drive(skill(), "task", model, BrokenToolbox(), Budget(max_usd=1.0))
+    outcome = drive(skill(), "task", model, BrokenToolbox(), Budget(max_usd=1.0))
+    assert outcome.cause is RunCause.SANDBOX_UNAVAILABLE
+    assert outcome.steps == 1
+    assert outcome.actions == ()
+
+
+def test_pre_call_estimate_stops_before_an_unaffordable_call():
+    class BigOutput(FakeModel):
+        max_tokens = 1_000_000
+
+    model = BigOutput([reply("never")], price=ModelPrice(input_per_mtok=0.0, output_per_mtok=1.0))
+    outcome = drive(skill(), "task", model, FakeToolbox(), Budget(max_usd=0.5))
+    assert outcome.cause is RunCause.COST_CAPPED
+    assert outcome.steps == 0
+    assert model.seen == []
+    assert outcome.cost_usd == 0.0
+
+
+def test_action_limit_bounds_a_single_reply_with_many_tool_calls():
+    calls = [call("run_shell", command=f"echo {i}") for i in range(6)]
+    model = FakeModel([reply("many", calls)])
+    toolbox = FakeToolbox()
+    outcome = drive(
+        skill(), "task", model, toolbox, Budget(max_usd=10.0, max_actions=3)
+    )
+    assert outcome.cause is RunCause.ACTION_LIMIT
+    assert len(outcome.actions) == 3
+    assert len(toolbox.calls) == 3
+
+
+def test_tool_output_sent_back_to_the_model_is_truncated():
+    from assay.agent.driver import MAX_TOOL_CONTENT_CHARS
+
+    model = FakeModel([reply("working", [call("read_file", path="a")]), reply("done")])
+    toolbox = FakeToolbox([ToolResult(True, "x" * (MAX_TOOL_CONTENT_CHARS + 500))])
+    drive(skill(), "task", model, toolbox, Budget(max_usd=1.0))
+    tool_message = model.seen[1][0][3]
+    assert tool_message.role == "tool"
+    assert len(tool_message.content) < MAX_TOOL_CONTENT_CHARS + 100
+    assert tool_message.content.endswith("...[truncated]")
 
 
 def test_empty_text_without_tool_calls_finishes_with_empty_string():
@@ -235,7 +275,7 @@ def test_no_model_credential_reaches_any_sandbox_config_during_a_run(tmp_path, m
         call("read_file", path="a.txt"),
         call("write_file", path="b.txt", content="x"),
         call("run_shell", command="true"),
-        call("http_get", url="https://example.com"),
+        call("http_get", url="https://203.0.113.10"),
     ]
     model = FakeModel([reply("working", calls), reply("done")])
     outcome = drive(skill(), "task", model, toolbox, Budget(max_usd=1.0))

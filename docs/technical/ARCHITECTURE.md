@@ -16,7 +16,7 @@ skill (SKILL.md | ClawHub | Cursor rule | MCP manifest)
   A2 sandbox  <----  jail config (fs, network, env, limits)
         |
         v
-  A3 agent driver (BYOK)  --  synthetic tasks from declared behavior
+  A3 agent driver (BYOK)  --  one task from the skill's stated purpose
         |
         v
   A4 capture  ---->  content-addressed event trace (file, net, shell, instruction)

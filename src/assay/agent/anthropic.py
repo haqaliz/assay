@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import http.client
 import json
 import os
 import urllib.error
@@ -34,7 +35,7 @@ class AnthropicModel:
         transport: Transport | None = None,
         endpoint: str = DEFAULT_ENDPOINT,
     ) -> None:
-        if not isinstance(api_key, str) or not api_key:
+        if not isinstance(api_key, str) or not api_key.strip():
             raise AgentUnavailable("ANTHROPIC_API_KEY is not set", cause=RunCause.MISSING_KEY)
         if not isinstance(model, str) or not model:
             raise ValueError("model must be a non-empty string")
@@ -50,7 +51,7 @@ class AnthropicModel:
     @classmethod
     def from_env(cls, model: str, price: ModelPrice, **kwargs: object) -> AnthropicModel:
         api_key = os.environ.get("ANTHROPIC_API_KEY")
-        if not api_key:
+        if not api_key or not api_key.strip():
             raise AgentUnavailable("ANTHROPIC_API_KEY is not set", cause=RunCause.MISSING_KEY)
         return cls(model, api_key, price, **kwargs)  # type: ignore[arg-type]
 
@@ -67,7 +68,14 @@ class AnthropicModel:
         )
         try:
             raw = self._transport(request)
-        except (urllib.error.URLError, OSError, TimeoutError) as exc:
+        except urllib.error.HTTPError as exc:
+            detail = ""
+            try:
+                detail = exc.read(500).decode("utf-8", "replace")
+            except Exception:
+                pass
+            raise ModelFailed(f"http {exc.code}: {detail or exc.reason}") from exc
+        except (urllib.error.URLError, OSError, TimeoutError, http.client.HTTPException) as exc:
             raise ModelFailed(f"transport failed: {exc}") from exc
         try:
             return self._parse(raw)
@@ -141,6 +149,8 @@ class AnthropicModel:
         payload = json.loads(raw)  # type: ignore[arg-type]
         if not isinstance(payload, dict):
             raise ModelFailed("response is not a JSON object")
+        if payload.get("stop_reason") in ("max_tokens", "refusal", "pause_turn"):
+            raise ModelFailed(f"response truncated or refused: {payload.get('stop_reason')}")
         content = payload["content"]
         if not isinstance(content, list):
             raise ModelFailed("response content must be a list")

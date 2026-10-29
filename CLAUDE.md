@@ -25,8 +25,9 @@ none), refusing malformed input with a named cause. The sandbox (`src/assay/sand
 command under macOS Seatbelt with confined writes, port-scoped network, a scrubbed env and
 CPU/wall limits. The agent driver (`src/assay/agent/`) runs a bounded BYOK model loop: the model
 runs outside the jail, every tool call runs through the sandbox, and the result is actions, usage
-and cost with a named stop cause — never a verdict. There is no capture/diff, no CLI and no
-verdict yet. Do not describe capability that isn't there.
+and cost with a named stop cause — never a verdict. It is tested offline against a fake model; the
+first real keyed run (the Phase 0 gate) has not happened yet. There is no capture/diff, no CLI and
+no verdict yet. Do not describe capability that isn't there.
 
 Lineage: Assay is one of three siblings scaffolded together on 2026-10-22 (with Tenon and Pry),
 drawn from a market-demand research pass (`~/dev/at/ideas/market-demand-2026-10.md`) and sharing

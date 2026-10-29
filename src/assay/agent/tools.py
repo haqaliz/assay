@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+import ipaddress
+import shutil
+import socket
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Sequence
+from urllib.parse import urlsplit
 
 from assay.sandbox import (
     JailConfig,
     NetRule,
-    SandboxError,
+    SandboxFailed,
     SandboxUnavailable,
 )
 from assay.sandbox.base import Sandbox
@@ -20,6 +24,7 @@ from .records import AgentUnavailable, ToolCall, ToolResult
 MAX_TOOL_PAYLOAD_BYTES = 1_000_000
 CURL = Path("/usr/bin/curl")
 CP = "/bin/cp"
+SSL_DIR = Path("/private/etc/ssl")
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,23 +97,36 @@ class Toolbox:
             raise AgentUnavailable(f"missing-tool: curl not found at {CURL}")
         self.sandbox = sandbox
         self.run_root = root.resolve()
+        # Staged payloads live outside the run root: the child can write its root, so a
+        # child-created symlink there could redirect a parent-side write onto the host.
+        self.io_root = Path(tempfile.mkdtemp(prefix="assay-io-")).resolve()
+
+    def close(self) -> None:
+        shutil.rmtree(self.io_root, ignore_errors=True)
+
+    def __enter__(self) -> "Toolbox":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()
 
     def execute(self, call: ToolCall) -> ToolResult:
         staged: Path | None = None
         try:
             try:
-                argv, staged = self._command(call)
+                argv, staged, reads = self._plan(call)
             except _InvalidArguments as exc:
                 return ToolResult(ok=False, output=str(exc))
             config = JailConfig(
                 run_root=self.run_root,
                 allow_network=_NETWORK if call.name == "http_get" else (),
+                allow_read_extra=reads,
                 env={},
                 keep=True,
             )
             try:
                 record = self.sandbox.run(argv, config)
-            except SandboxError as exc:
+            except SandboxFailed as exc:
                 return ToolResult(ok=False, output=f"{type(exc).__name__}: {exc}")
             output = record.stdout if record.ok else record.stdout + record.stderr
             return ToolResult(record.ok, _capped(output), record)
@@ -116,14 +134,14 @@ class Toolbox:
             if staged is not None:
                 staged.unlink(missing_ok=True)
 
-    def _command(self, call: ToolCall) -> tuple[Sequence[str], Path | None]:
+    def _plan(self, call: ToolCall) -> tuple[Sequence[str], Path | None, tuple[Path, ...]]:
         required = _REQUIRED.get(call.name)
         if required is None:
             raise _InvalidArguments(f"unknown tool: {call.name!r}")
         args = {name: _string_arg(call, name) for name in required}
 
         if call.name == "read_file":
-            return ["/bin/cat", args["path"]], None
+            return ["/bin/cat", "--", args["path"]], None, ()
         if call.name == "write_file":
             content = args["content"]
             if len(content.encode("utf-8")) > MAX_TOOL_PAYLOAD_BYTES:
@@ -131,25 +149,55 @@ class Toolbox:
                     f"write_file: content exceeds {MAX_TOOL_PAYLOAD_BYTES} bytes"
                 )
             staged = self._stage(content)
-            return [CP, str(staged), args["path"]], staged
+            return [CP, "--", str(staged), args["path"]], staged, (self.io_root,)
         if call.name == "run_shell":
-            return ["/bin/sh", "-c", args["command"]], None
-        return [str(CURL), "-sS", "--max-time", "10", args["url"]], None
+            return ["/bin/sh", "-c", args["command"]], None, ()
+        return _http_argv(args["url"]), None, ((SSL_DIR,) if SSL_DIR.exists() else ())
 
     def _stage(self, content: str) -> Path:
-        io_dir = self.run_root / ".assay-io"
-        io_dir.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(
-            "w", dir=io_dir, delete=False, encoding="utf-8"
+            "w", dir=self.io_root, delete=False, encoding="utf-8"
         ) as payload:
             payload.write(content)
             return Path(payload.name)
+
+
+def _http_argv(url: str) -> list[str]:
+    parts = urlsplit(url)
+    if url.startswith("-") or parts.scheme not in ("http", "https") or not parts.hostname:
+        raise _InvalidArguments("http_get: url must be an http or https URL")
+    port = parts.port or (443 if parts.scheme == "https" else 80)
+    argv = [str(CURL), "-sS", "--max-time", "10", "--url", url]
+    address = _resolve(parts.hostname, port)
+    if address is not None:
+        argv += ["--resolve", f"{parts.hostname}:{port}:{address}"]
+    return argv
+
+
+def _resolve(host: str, port: int) -> str | None:
+    """Resolve in the parent: the jail allows TCP only, not DNS. IP literals need no lookup."""
+    try:
+        ipaddress.ip_address(host)
+        return None
+    except ValueError:
+        pass
+    try:
+        infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+    except OSError as exc:
+        raise _InvalidArguments(f"http_get: cannot resolve {host!r}: {exc}") from None
+    return str(infos[0][4][0])
 
 
 def _string_arg(call: ToolCall, name: str) -> str:
     value = call.arguments.get(name)
     if not isinstance(value, str) or not value:
         raise _InvalidArguments(f"{call.name}: {name} must be a non-empty string")
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        raise _InvalidArguments(f"{call.name}: {name} is not valid unicode") from None
+    if "\x00" in value:
+        raise _InvalidArguments(f"{call.name}: {name} must not contain a NUL byte")
     return value
 
 

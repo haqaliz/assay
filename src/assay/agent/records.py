@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Mapping
@@ -14,6 +15,7 @@ class RunCause(StrEnum):
     MODEL_FAILED = "model-failed"
     COST_CAPPED = "cost-capped"
     STEP_LIMIT = "step-limit"
+    ACTION_LIMIT = "action-limit"
     WALL_LIMIT = "wall-limit"
     SANDBOX_UNAVAILABLE = "sandbox-unavailable"
 
@@ -24,8 +26,13 @@ def _non_negative_int(value: object, name: str) -> None:
 
 
 def _non_negative_float(value: object, name: str) -> None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
-        raise ValueError(f"{name} must be a non-negative number, got {value!r}")
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        or value < 0
+    ):
+        raise ValueError(f"{name} must be a finite non-negative number, got {value!r}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,15 +73,17 @@ class ModelPrice:
 class Budget:
     max_usd: float
     max_steps: int = 20
+    max_actions: int = 40
     max_wall_seconds: float = 300.0
 
     def __post_init__(self) -> None:
         if (
             isinstance(self.max_usd, bool)
             or not isinstance(self.max_usd, (int, float))
+            or not math.isfinite(self.max_usd)
             or self.max_usd <= 0
         ):
-            raise ValueError(f"max_usd must be a positive number, got {self.max_usd!r}")
+            raise ValueError(f"max_usd must be a finite positive number, got {self.max_usd!r}")
         if (
             isinstance(self.max_steps, bool)
             or not isinstance(self.max_steps, int)
@@ -82,12 +91,19 @@ class Budget:
         ):
             raise ValueError(f"max_steps must be an int >= 1, got {self.max_steps!r}")
         if (
+            isinstance(self.max_actions, bool)
+            or not isinstance(self.max_actions, int)
+            or self.max_actions < 1
+        ):
+            raise ValueError(f"max_actions must be an int >= 1, got {self.max_actions!r}")
+        if (
             isinstance(self.max_wall_seconds, bool)
             or not isinstance(self.max_wall_seconds, (int, float))
+            or not math.isfinite(self.max_wall_seconds)
             or self.max_wall_seconds <= 0
         ):
             raise ValueError(
-                f"max_wall_seconds must be a positive number, got {self.max_wall_seconds!r}"
+                f"max_wall_seconds must be a finite positive number, got {self.max_wall_seconds!r}"
             )
 
 

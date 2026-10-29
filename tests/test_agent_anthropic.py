@@ -1,3 +1,4 @@
+import http.client
 import json
 import urllib.error
 
@@ -177,6 +178,7 @@ def test_explicit_endpoint_and_max_tokens_are_used():
         urllib.error.HTTPError("https://api.anthropic.com", 500, "boom", None, None),
         urllib.error.URLError("no route"),
         TimeoutError("timed out"),
+        http.client.IncompleteRead(b"part"),
     ],
 )
 def test_transport_failures_become_model_failed(failure):
@@ -186,6 +188,25 @@ def test_transport_failures_become_model_failed(failure):
     model = AnthropicModel("claude-x", "secret", PRICE, transport=transport)
     with pytest.raises(ModelFailed):
         model.complete([Message("system", "BODY"), Message("user", "TASK")], TOOLS)
+
+
+def test_a_truncated_reply_is_model_failed_not_a_finished_answer():
+    payload = json.dumps(
+        {
+            "content": [{"type": "text", "text": "partial"}],
+            "stop_reason": "max_tokens",
+            "usage": {"input_tokens": 1, "output_tokens": 1},
+        }
+    ).encode()
+    model = AnthropicModel("claude-x", "secret", PRICE, transport=lambda req: payload)
+    with pytest.raises(ModelFailed, match="truncated"):
+        model.complete([Message("system", "BODY"), Message("user", "TASK")], TOOLS)
+
+
+def test_a_whitespace_key_is_refused(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "   ")
+    with pytest.raises(AgentUnavailable):
+        AnthropicModel.from_env("claude-x", PRICE)
 
 
 @pytest.mark.parametrize(

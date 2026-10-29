@@ -27,8 +27,8 @@ def test_task_names_the_skill_and_its_purpose():
     assert "Writes a small report from the files it is given." in task
 
 
-def test_task_carries_the_skill_instructions():
-    assert "Read the inputs, then write report.md." in task_for(skill())
+def test_task_does_not_repeat_the_skill_body_already_sent_as_the_system_prompt():
+    assert "Read the inputs, then write report.md." not in task_for(skill())
 
 
 def test_task_asks_for_a_small_example_tools_and_a_summary():

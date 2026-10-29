@@ -100,7 +100,7 @@ def test_read_file_is_one_confined_cat_with_no_network(run_root, fake_curl):
     sandbox = FakeSandbox(record(stdout="hello\n"))
     result = box(sandbox, run_root, fake_curl).execute(call("read_file", path="notes/a.txt"))
     (argv, config), = sandbox.calls
-    assert argv == ["/bin/cat", "notes/a.txt"]
+    assert argv == ["/bin/cat", "--", "notes/a.txt"]
     assert config.allow_network == ()
     assert config.env == {}
     assert config.run_root == run_root.resolve()
@@ -110,23 +110,29 @@ def test_read_file_is_one_confined_cat_with_no_network(run_root, fake_curl):
     assert result.record is sandbox.result
 
 
-def test_write_file_stages_content_then_copies_it(run_root, fake_curl):
+def test_write_file_stages_outside_the_run_root_then_copies_it(run_root, fake_curl):
     seen = []
 
     class CapturingSandbox:
         def run(self, argv, config):
-            seen.append((list(argv), Path(argv[1]).read_text()))
+            seen.append((list(argv), Path(argv[2]).read_text(), config))
             return record()
 
     toolbox = Toolbox(CapturingSandbox(), run_root)
     result = toolbox.execute(call("write_file", path="out.md", content="hi there"))
-    (argv, staged_content), = seen
+    (argv, staged_content, config), = seen
     assert argv[0] == "/bin/cp"
-    assert argv[2] == "out.md"
-    assert argv[1].startswith(str(run_root.resolve() / ".assay-io"))
+    assert argv[1] == "--"
+    assert argv[3] == "out.md"
+    staged = Path(argv[2])
+    assert toolbox.io_root in staged.parents
+    assert run_root.resolve() not in staged.parents
+    assert config.allow_read_extra == (toolbox.io_root,)
     assert staged_content == "hi there"
     assert result.ok
-    assert list((run_root / ".assay-io").iterdir()) == []
+    assert list(toolbox.io_root.iterdir()) == []
+    toolbox.close()
+    assert not toolbox.io_root.exists()
 
 
 def test_write_file_refuses_an_oversized_payload_without_running(run_root, fake_curl):
@@ -150,10 +156,37 @@ def test_run_shell_is_one_sh_with_no_network(run_root, fake_curl):
 
 def test_http_get_is_curl_with_ports_80_and_443_only(run_root, fake_curl):
     sandbox = FakeSandbox()
-    box(sandbox, run_root, fake_curl).execute(call("http_get", url="https://example.com/x"))
+    box(sandbox, run_root, fake_curl).execute(call("http_get", url="https://203.0.113.10/x"))
     (argv, config), = sandbox.calls
-    assert argv == [str(fake_curl), "-sS", "--max-time", "10", "https://example.com/x"]
+    assert argv == [
+        str(fake_curl),
+        "-sS",
+        "--max-time",
+        "10",
+        "--url",
+        "https://203.0.113.10/x",
+    ]
     assert config.allow_network == (NetRule("*", 80), NetRule("*", 443))
+
+
+def test_http_get_resolves_a_hostname_in_the_parent(run_root, fake_curl, monkeypatch):
+    monkeypatch.setattr(tools, "_resolve", lambda host, port: "203.0.113.10")
+    sandbox = FakeSandbox()
+    box(sandbox, run_root, fake_curl).execute(call("http_get", url="https://example.com/x"))
+    (argv, _), = sandbox.calls
+    assert "--resolve" in argv
+    assert argv[argv.index("--resolve") + 1] == "example.com:443:203.0.113.10"
+
+
+@pytest.mark.parametrize(
+    "url",
+    ["file:///etc/hosts", "-Kcfg", "ftp://example.com", "https://", "gopher://x"],
+)
+def test_http_get_refuses_non_http_urls_and_curl_options(run_root, fake_curl, url):
+    sandbox = FakeSandbox()
+    result = Toolbox(sandbox, run_root).execute(call("http_get", url=url))
+    assert not result.ok
+    assert sandbox.calls == []
 
 
 @pytest.mark.parametrize(
@@ -170,6 +203,9 @@ def test_http_get_is_curl_with_ports_80_and_443_only(run_root, fake_curl):
         call("run_shell", command=""),
         call("http_get", url=""),
         call("http_get", url=["https://example.com"]),
+        call("read_file", path="a\x00b"),
+        call("read_file", path="a\ud800b"),
+        call("write_file", path="a.txt", content="\ud800"),
     ],
 )
 def test_invalid_tool_calls_fail_without_running_the_sandbox(run_root, fake_curl, bad_call):
@@ -187,7 +223,7 @@ def test_every_action_gets_a_scrubbed_env_and_the_shared_run_root(run_root, fake
         call("read_file", path="a"),
         call("write_file", path="b", content="x"),
         call("run_shell", command="true"),
-        call("http_get", url="https://example.com"),
+        call("http_get", url="https://203.0.113.10"),
     ):
         toolbox.execute(each)
     assert len(sandbox.calls) == 4
@@ -209,14 +245,21 @@ def test_denied_run_is_not_ok_and_keeps_its_denials(run_root, fake_curl):
     assert "Permission denied" in result.output
 
 
-@pytest.mark.parametrize("error", [SandboxFailed("no jail"), SandboxUnavailable("no backend")])
-def test_sandbox_errors_become_a_failed_result_not_an_exception(run_root, fake_curl, error):
+def test_sandbox_failure_becomes_a_failed_result_not_an_exception(run_root, fake_curl):
+    error = SandboxFailed("no jail")
     result = box(FakeSandbox(error=error), run_root, fake_curl).execute(
         call("read_file", path="a.txt")
     )
     assert not result.ok
     assert result.record is None
     assert str(error) in result.output
+
+
+def test_sandbox_unavailable_propagates_so_the_driver_can_name_it(run_root, fake_curl):
+    with pytest.raises(SandboxUnavailable):
+        box(FakeSandbox(error=SandboxUnavailable("no backend")), run_root, fake_curl).execute(
+            call("read_file", path="a.txt")
+        )
 
 
 def test_long_output_is_capped_to_one_megabyte_of_utf8(run_root, fake_curl):

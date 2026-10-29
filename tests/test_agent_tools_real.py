@@ -46,7 +46,9 @@ def test_write_outside_the_run_root_is_denied_and_captured(toolbox):
     assert not escape.exists()
 
 
-def test_read_of_host_ssh_is_not_ok(toolbox):
+def test_read_of_host_data_is_denied_and_captured(toolbox):
     result = toolbox.execute(call("read_file", path=str(Path.home() / ".ssh")))
     assert not result.ok
     assert result.record is not None
+    # A readable-but-invalid target (a directory) would not produce a denial record.
+    assert result.record.denials

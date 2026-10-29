@@ -17,12 +17,13 @@ from assay.agent import (
 )
 
 
-def test_run_cause_is_the_closed_six_name_set():
+def test_run_cause_is_the_closed_seven_name_set():
     assert {c.name for c in RunCause} == {
         "MISSING_KEY",
         "MODEL_FAILED",
         "COST_CAPPED",
         "STEP_LIMIT",
+        "ACTION_LIMIT",
         "WALL_LIMIT",
         "SANDBOX_UNAVAILABLE",
     }
