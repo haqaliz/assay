@@ -4,7 +4,6 @@ import pytest
 
 from assay.capture import (
     Dimension,
-    DimensionStatus,
     DivergenceStatus,
     Event,
     EventKind,
@@ -57,7 +56,6 @@ def test_dimension_and_status_enums_are_the_closed_sets():
         "shell",
         "instructions",
     }
-    assert {status.value for status in DimensionStatus} == {"declared", "undeclared"}
     assert {status.value for status in DivergenceStatus} == {"exceeded", "undeclared"}
 
 
@@ -69,12 +67,10 @@ def test_empty_trace_has_no_divergences_and_four_coverage_rows():
         (Dimension.FILES, False, 0),
         (Dimension.NETWORK, False, 0),
         (Dimension.SHELL, False, 0),
-        (Dimension.INSTRUCTIONS, True, 0),
+        (Dimension.INSTRUCTIONS, False, 0),
     ]
-    assert all(
-        row.declared
-        for row in diff(skill(Scope(files=(), network=(), tools=())), trace()).coverage
-    )
+    declared = diff(skill(Scope(files=(), network=(), tools=())), trace()).coverage
+    assert [row.declared for row in declared] == [True, True, True, False]
 
 
 @pytest.mark.parametrize(
@@ -87,6 +83,10 @@ def test_empty_trace_has_no_divergences_and_four_coverage_rows():
         (("out/x.txt",), "./out/x.txt", None),
         (("in/*",), "out/x.txt", DivergenceStatus.EXCEEDED),
         (("out/*",), "../out/x.txt", DivergenceStatus.EXCEEDED),
+        (("out/*",), "out/../../etc/passwd", DivergenceStatus.EXCEEDED),
+        (("out/*",), "out/a/../../etc/passwd", DivergenceStatus.EXCEEDED),
+        (("out/*",), ".//out/x.txt", None),
+        (("/out/*",), ".//out/x.txt", DivergenceStatus.EXCEEDED),
     ],
 )
 def test_file_matrix(declared, target, expected):
@@ -225,6 +225,38 @@ def test_denied_and_failed_file_events_diverge_like_successful_ones(outcome):
         skill(Scope(files=())),
         trace(event(EventKind.FILE_READ, "out/x", outcome)),
     )
-    assert [(d.target, d.status) for d in result.divergences] == [
-        ("out/x", DivergenceStatus.EXCEEDED)
+    assert [(d.target, d.status, d.outcome) for d in result.divergences] == [
+        ("out/x", DivergenceStatus.EXCEEDED, outcome)
     ]
+
+
+def test_a_trace_from_another_skill_is_refused():
+    from assay.capture import CaptureError
+
+    other = Trace(
+        skill_name="other",
+        skill_content_hash="d" * 64,
+        task_sha256="b" * 64,
+        cause=None,
+        input_tokens=0,
+        output_tokens=0,
+        cost_usd=0.0,
+        events=(event(EventKind.FILE_READ, "out/x"),),
+    )
+    with pytest.raises(CaptureError, match="trace belongs to skill"):
+        diff(skill(Scope(files=())), other)
+
+
+def test_diff_carries_both_hashes_so_a_caller_can_verify_the_pairing():
+    result = diff(skill(Scope()), trace())
+    assert result.skill_content_hash == "a" * 64
+    assert result.trace_hash == trace().hash
+
+
+def test_a_restricted_bash_permission_still_counts_as_shell_scope():
+    # Approved product decision: any Bash(...) entry declares shell use; A4 does not parse commands.
+    result = diff(
+        skill(Scope(tools=frozenset({"Bash(git:*)"}))),
+        trace(event(EventKind.SHELL, "curl evil")),
+    )
+    assert result.divergences == ()

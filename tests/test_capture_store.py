@@ -128,3 +128,67 @@ def test_capture_save_load_diff_round_trip(tmp_path):
 
     assert loaded == original
     assert diff(declared, loaded) == diff(declared, original)
+
+
+def test_a_symlinked_root_is_refused(tmp_path):
+    target = tmp_path / "real"
+    target.mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(target, target_is_directory=True)
+    with pytest.raises(CaptureError, match="symlink"):
+        TraceStore(link)
+
+
+def test_trace_files_are_private(tmp_path):
+    path = TraceStore(tmp_path).save(trace())
+    assert (path.stat().st_mode & 0o777) == 0o600
+
+
+def test_non_utf8_trace_is_a_capture_error(tmp_path):
+    import hashlib
+
+    data = b"\xff\xfe{}"
+    path = tmp_path / (hashlib.sha256(data).hexdigest() + ".json")
+    path.write_bytes(data)
+    with pytest.raises(CaptureError, match="UTF-8"):
+        TraceStore(tmp_path).load(path)
+
+
+def test_non_canonical_json_is_rejected_even_under_its_own_hash(tmp_path):
+    import hashlib
+
+    payload = trace().to_json().replace(",", ", ", 1)
+    digest = hashlib.sha256(payload.encode()).hexdigest()
+    path = tmp_path / f"{digest}.json"
+    path.write_text(payload, encoding="utf-8")
+    with pytest.raises(TraceIntegrityError, match="canonical"):
+        TraceStore(tmp_path).load(path)
+
+
+def test_a_real_divergence_survives_capture_save_load_and_diff(tmp_path):
+    from assay.agent import ToolAction, ToolCall, ToolResult
+
+    declared = skill()
+    action = ToolAction(
+        call=ToolCall(id="1", name="read_file", arguments={"path": "etc/passwd"}),
+        result=ToolResult(ok=False, output="denied"),
+    )
+    outcome = RunOutcome(
+        cause=None,
+        final_text="done",
+        steps=1,
+        actions=(action,),
+        usage=Usage(),
+        cost_usd=0.0,
+    )
+    original = capture(declared, "do it", outcome)
+    store = TraceStore(tmp_path)
+
+    loaded = store.load(store.save(original))
+    before = diff(declared, original)
+    after = diff(declared, loaded)
+
+    assert after == before
+    assert [(d.target, d.status.value, d.outcome.value) for d in after.divergences] == [
+        ("etc/passwd", "exceeded", "failed")
+    ]

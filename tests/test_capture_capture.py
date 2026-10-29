@@ -166,25 +166,26 @@ def test_two_captures_of_identical_inputs_have_the_same_hash():
 
 
 def test_excerpt_is_the_first_4096_bytes_and_valid_utf8():
-    content = "é" * 3000
+    content = "aa" + "€" * 3000
     trace = capture(
         skill(),
         "task",
-        outcome([action("read_file", path="a", output=content, record_=record())]),
+        outcome([action("read_file", path="a", record_=record(stdout=content))]),
     )
     event = trace.events[0]
 
-    assert event.content_bytes == 6000
+    assert event.content_bytes == len(content.encode("utf-8"))
     assert event.content_sha256 == hashlib.sha256(content.encode("utf-8")).hexdigest()
-    assert event.excerpt == "é" * 2048
-    assert len(event.excerpt.encode("utf-8")) == 4096
+    assert len(event.excerpt.encode("utf-8")) <= 4096
+    assert event.excerpt == content.encode("utf-8")[:4096].decode("utf-8", "ignore")
+    assert event.excerpt == "aa" + "€" * 1364
 
 
 def test_empty_output_hashes_the_empty_bytes():
     trace = capture(
         skill(),
         "task",
-        outcome([action("run_shell", command="true", output="", record_=record())]),
+        outcome([action("run_shell", command="true", record_=record(stdout="", stderr=""))]),
     )
     event = trace.events[0]
 
@@ -225,3 +226,61 @@ def test_write_file_hashes_the_model_payload_and_no_other_kind_does():
 def test_network_targets_are_a_lowercase_host_and_port(url, expected):
     trace = capture(skill(), "task", outcome([action("http_get", url=url, record_=record())]))
     assert trace.events[0].target == expected
+
+
+def test_successful_stderr_and_truncation_are_kept():
+    trace = capture(
+        skill(),
+        "task",
+        outcome(
+            [
+                action(
+                    "run_shell",
+                    command="echo hi",
+                    record_=record(stdout="out", stderr="err", truncated=True),
+                )
+            ]
+        ),
+    )
+    event = trace.events[0]
+    assert event.content_sha256 == hashlib.sha256(b"outerr").hexdigest()
+    assert "err" in event.excerpt
+    assert event.truncated is True
+
+
+def test_instruction_events_appear_only_after_a_model_call():
+    trace = capture(skill(), "task", outcome([], steps=0, cause=RunCause.MISSING_KEY))
+    assert [event.kind for event in trace.events] == []
+
+
+def test_a_write_without_content_has_no_input_hash_instead_of_an_empty_one():
+    trace = capture(
+        skill(),
+        "task",
+        outcome([action("write_file", path="x", ok=False, record_=record(exit_code=1))]),
+    )
+    assert trace.events[0].input_sha256 is None
+
+
+def test_a_symlink_that_leaves_the_run_root_is_recorded_as_its_real_target(tmp_path):
+    root = tmp_path / "run"
+    root.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "secret").write_text("x")
+    (root / "out").mkdir()
+    (root / "out" / "link").symlink_to(outside / "secret")
+    trace = capture(
+        skill(),
+        "task",
+        outcome(
+            [
+                action(
+                    "read_file",
+                    path="out/link",
+                    record_=record(run_root=str(root)),
+                )
+            ]
+        ),
+    )
+    assert trace.events[0].target == (outside / "secret").as_posix()

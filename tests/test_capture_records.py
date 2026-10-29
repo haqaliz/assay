@@ -1,3 +1,4 @@
+import json
 from dataclasses import FrozenInstanceError
 
 import pytest
@@ -114,7 +115,7 @@ def test_capture_errors_are_named_value_errors():
 def test_golden_hash_pins_the_canonical_encoding():
     assert (
         trace().hash
-        == "a15864d61d62ad4680abd8202ae7c9d1daa09bf8b03cf5ecd36f76a99eb4d57b"
+        == "d15f2fd77ec6118b991888348e0c330b29837991d6dd7fc941a0fabc656625f2"
     )
 
 
@@ -142,3 +143,83 @@ def test_hash_is_stable_and_changes_with_an_event():
     changed = trace(events=(event(excerpt="bye"),))
     assert changed.hash != first.hash
     assert changed.hash == trace(events=(event(excerpt="bye"),)).hash
+
+
+def test_event_requires_typed_kind_outcome_and_string_target():
+    with pytest.raises(ValueError, match="kind"):
+        Event(kind="file-read", outcome=EventOutcome.OK, target="x",
+              content_sha256="a" * 64, content_bytes=0, excerpt="")
+    with pytest.raises(ValueError, match="outcome"):
+        Event(kind=EventKind.FILE_READ, outcome="ok", target="x",
+              content_sha256="a" * 64, content_bytes=0, excerpt="")
+    with pytest.raises(ValueError, match="target"):
+        Event(kind=EventKind.FILE_READ, outcome=EventOutcome.OK, target=None,
+              content_sha256="a" * 64, content_bytes=0, excerpt="")
+    with pytest.raises(ValueError, match="excerpt"):
+        Event(kind=EventKind.FILE_READ, outcome=EventOutcome.OK, target="x",
+              content_sha256="a" * 64, content_bytes=0, excerpt=None)
+
+
+def test_trace_schema_must_be_the_int_one():
+    with pytest.raises(ValueError, match="schema"):
+        Trace(skill_name="demo", skill_content_hash="a" * 64, task_sha256="b" * 64,
+              cause=None, input_tokens=0, output_tokens=0, cost_usd=0.0,
+              events=(), schema=1.0)
+
+
+def test_from_json_rejects_a_null_target_as_a_capture_error():
+    payload = json.loads(trace().to_json())
+    payload["events"] = [
+        {
+            "kind": "file-read",
+            "outcome": "ok",
+            "target": None,
+            "input_sha256": None,
+            "request": None,
+            "content_sha256": "a" * 64,
+            "content_bytes": 0,
+            "excerpt": "",
+            "denials": [],
+            "truncated": False,
+        }
+    ]
+    with pytest.raises(CaptureError):
+        Trace.from_json(json.dumps(payload))
+
+
+def test_from_json_rejects_a_string_where_denials_must_be_a_list():
+    payload = json.loads(trace().to_json())
+    payload["events"] = [
+        {
+            "kind": "shell",
+            "outcome": "ok",
+            "target": "true",
+            "input_sha256": None,
+            "request": None,
+            "content_sha256": "a" * 64,
+            "content_bytes": 0,
+            "excerpt": "",
+            "denials": "network: x",
+            "truncated": False,
+        }
+    ]
+    with pytest.raises(CaptureError):
+        Trace.from_json(json.dumps(payload))
+
+
+def test_request_and_truncated_round_trip():
+    event = Event(
+        kind=EventKind.NETWORK,
+        outcome=EventOutcome.OK,
+        target="api.example.com:443",
+        request="https://api.example.com/collect?secret=x",
+        content_sha256="a" * 64,
+        content_bytes=12,
+        excerpt="body",
+        truncated=True,
+    )
+    loaded = Trace.from_json(Trace(skill_name="demo", skill_content_hash="a" * 64,
+                                   task_sha256="b" * 64, cause=None, input_tokens=0,
+                                   output_tokens=0, cost_usd=0.0, events=(event,)).to_json())
+    assert loaded.events[0].request == event.request
+    assert loaded.events[0].truncated is True

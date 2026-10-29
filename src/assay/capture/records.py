@@ -63,9 +63,23 @@ class Event:
     content_bytes: int
     excerpt: str
     input_sha256: str | None = None
+    request: str | None = None
     denials: tuple[str, ...] = ()
+    truncated: bool = False
 
     def __post_init__(self) -> None:
+        if not isinstance(self.kind, EventKind):
+            raise ValueError(f"kind must be an EventKind, got {self.kind!r}")
+        if not isinstance(self.outcome, EventOutcome):
+            raise ValueError(f"outcome must be an EventOutcome, got {self.outcome!r}")
+        if not isinstance(self.target, str) or not self.target:
+            raise ValueError(f"target must be a non-empty string, got {self.target!r}")
+        if not isinstance(self.excerpt, str):
+            raise ValueError(f"excerpt must be a string, got {type(self.excerpt).__name__}")
+        if self.request is not None and not isinstance(self.request, str):
+            raise ValueError(f"request must be a string or None, got {self.request!r}")
+        if not isinstance(self.truncated, bool):
+            raise ValueError(f"truncated must be a bool, got {self.truncated!r}")
         _hash64(self.content_sha256, "content_sha256")
         if self.input_sha256 is not None:
             _hash64(self.input_sha256, "input_sha256")
@@ -89,13 +103,17 @@ class Trace:
     schema: int = 1
 
     def __post_init__(self) -> None:
+        if not isinstance(self.skill_name, str) or not self.skill_name:
+            raise ValueError(f"skill_name must be a non-empty string, got {self.skill_name!r}")
+        if self.cause is not None and not isinstance(self.cause, str):
+            raise ValueError(f"cause must be a string or None, got {self.cause!r}")
         _hash64(self.skill_content_hash, "skill_content_hash")
         _hash64(self.task_sha256, "task_sha256")
         _non_negative_int(self.input_tokens, "input_tokens")
         _non_negative_int(self.output_tokens, "output_tokens")
         _non_negative_float(self.cost_usd, "cost_usd")
-        if isinstance(self.schema, bool) or self.schema != 1:
-            raise ValueError(f"schema must be 1, got {self.schema!r}")
+        if isinstance(self.schema, bool) or not isinstance(self.schema, int) or self.schema != 1:
+            raise ValueError(f"schema must be the int 1, got {self.schema!r}")
         events = tuple(self.events)
         if not all(isinstance(event, Event) for event in events):
             raise ValueError("events must be Event records")
@@ -118,10 +136,12 @@ class Trace:
                     "outcome": event.outcome.value,
                     "target": event.target,
                     "input_sha256": event.input_sha256,
+                    "request": event.request,
                     "content_sha256": event.content_sha256,
                     "content_bytes": event.content_bytes,
                     "excerpt": event.excerpt,
                     "denials": list(event.denials),
+                    "truncated": event.truncated,
                 }
                 for event in self.events
             ],
@@ -142,6 +162,30 @@ class Trace:
             payload = json.loads(text)
             if not isinstance(payload, dict):
                 raise CaptureError("trace JSON must be an object")
+            items = payload["events"]
+            if not isinstance(items, list):
+                raise CaptureError("trace events must be a list")
+            events = []
+            for item in items:
+                if not isinstance(item, dict):
+                    raise CaptureError("each trace event must be an object")
+                denials = item.get("denials", ())
+                if not isinstance(denials, list) or not all(isinstance(d, str) for d in denials):
+                    raise CaptureError("event denials must be a list of strings")
+                events.append(
+                    Event(
+                        kind=EventKind(item["kind"]),
+                        outcome=EventOutcome(item["outcome"]),
+                        target=item["target"],
+                        input_sha256=item.get("input_sha256"),
+                        request=item.get("request"),
+                        content_sha256=item["content_sha256"],
+                        content_bytes=item["content_bytes"],
+                        excerpt=item["excerpt"],
+                        denials=tuple(denials),
+                        truncated=item.get("truncated", False),
+                    )
+                )
             return cls(
                 schema=payload["schema"],
                 skill_name=payload["skill_name"],
@@ -151,21 +195,9 @@ class Trace:
                 input_tokens=payload["input_tokens"],
                 output_tokens=payload["output_tokens"],
                 cost_usd=payload["cost_usd"],
-                events=tuple(
-                    Event(
-                        kind=EventKind(item["kind"]),
-                        outcome=EventOutcome(item["outcome"]),
-                        target=item["target"],
-                        input_sha256=item["input_sha256"],
-                        content_sha256=item["content_sha256"],
-                        content_bytes=item["content_bytes"],
-                        excerpt=item["excerpt"],
-                        denials=tuple(item["denials"]),
-                    )
-                    for item in payload["events"]
-                ),
+                events=tuple(events),
             )
         except CaptureError:
             raise
-        except (KeyError, TypeError, ValueError) as exc:
+        except (KeyError, TypeError, ValueError, RecursionError, UnicodeError) as exc:
             raise CaptureError(f"invalid trace JSON: {exc}") from None
