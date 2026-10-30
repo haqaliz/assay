@@ -18,7 +18,7 @@ from assay.sandbox import SandboxUnavailable
 from assay.sandbox.base import Sandbox, select_sandbox
 from assay.verdict import Strictness, StrictnessPolicy, Verdict, assess
 
-from .output import refusal
+from .output import refusal, render_human, render_json
 
 
 class UsageError(Exception):
@@ -146,8 +146,12 @@ def _check(
         with Toolbox(sandbox, run_root) as toolbox:
             outcome = drive(skill, task, model, toolbox, budget)
         trace = capture(skill, task, outcome)
-        TraceStore(args.out).save(trace).resolve()
+        trace_path = TraceStore(args.out).save(trace).resolve()
         assessment = assess(skill, trace, policy=StrictnessPolicy(level=args.strictness))
+        if args.json:
+            print(render_json(skill, assessment, trace_path, trace), end="")
+        else:
+            print(render_human(skill, assessment, trace_path, trace), end="")
         if args.keep_run_root:
             print(f"run root: {run_root}", file=sys.stderr if args.json else sys.stdout)
         return 0 if assessment.verdict is Verdict.CLEAN else 1
