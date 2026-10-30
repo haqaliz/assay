@@ -27,6 +27,16 @@ from .records import (
 )
 
 SHELL_PATTERNS = ("rm -rf /", "| sh", "| bash", "base64 -d", "nc -", "id_rsa", "/etc/passwd")
+INSTRUCTION_PATTERNS = (
+    "ignore previous instructions",
+    "ignore all previous",
+    "do not tell the user",
+    "don't tell the user",
+    "without telling",
+    "override your",
+    "system prompt",
+    "exfiltrate",
+)
 
 
 def assess(skill: Skill, trace: Trace, *, policy: StrictnessPolicy = DEFAULT_POLICY) -> Assessment:
@@ -39,7 +49,7 @@ def assess(skill: Skill, trace: Trace, *, policy: StrictnessPolicy = DEFAULT_POL
         )
         return _assessment(result, policy, Verdict.UNVERIFIED, (), cause)
 
-    findings = _findings(result, policy)
+    findings = _findings(result, policy) + _instruction_findings(skill, trace)
     if findings:
         high = any(finding.severity is Severity.HIGH for finding in findings)
         verdict = Verdict.MALICIOUS if high else Verdict.FLAGGED
@@ -131,7 +141,7 @@ def _finding(
     policy: StrictnessPolicy,
     reason: str,
 ) -> Finding:
-    severity = _effective(base, class_, policy)
+    severity = _effective(base, class_, policy, divergence.outcome)
     return Finding(
         class_=class_,
         severity=severity,
@@ -142,6 +152,30 @@ def _finding(
     )
 
 
-def _effective(base: Severity, class_: FindingClass, policy: StrictnessPolicy) -> Severity:
+def _effective(
+    base: Severity, class_: FindingClass, policy: StrictnessPolicy, outcome: EventOutcome
+) -> Severity:
     floor = policy.floor(class_)
-    return floor if floor.rank > base.rank else base
+    severity = floor if floor.rank > base.rank else base
+    # A failed attempt is not the captured success MALICIOUS claims; the floor stops at REVIEW.
+    if outcome is EventOutcome.FAILED and severity is Severity.HIGH:
+        return Severity.REVIEW
+    return severity
+
+
+def _instruction_findings(skill: Skill, trace: Trace) -> tuple[Finding, ...]:
+    excerpts = [event.excerpt for event in trace.events if event.kind is EventKind.INSTRUCTION]
+    text = "\n".join((skill.body, skill.description, *excerpts)).lower()
+    # One finding per pattern; the body is authoritative and an excerpt only proves delivery.
+    return tuple(
+        Finding(
+            class_=FindingClass.INSTRUCTIONS,
+            severity=Severity.REVIEW,
+            target=pattern,
+            reason=f"instruction text matches {pattern!r}",
+            outcome=EventOutcome.OK,
+            review_required=True,
+        )
+        for pattern in INSTRUCTION_PATTERNS
+        if pattern in text
+    )

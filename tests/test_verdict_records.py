@@ -74,6 +74,18 @@ def test_finding_rejects_empty_text(over, field):
         Finding(**base)
 
 
+def test_finding_review_required_must_be_a_bool():
+    with pytest.raises(VerdictError, match="review_required"):
+        Finding(
+            class_=FindingClass.UNDECLARED_FILE,
+            severity=Severity.REVIEW,
+            target="out/x.txt",
+            reason="file scope is declared empty",
+            outcome=EventOutcome.OK,
+            review_required=1,
+        )
+
+
 def assessment(**over):
     base = dict(
         verdict=Verdict.CLEAN,

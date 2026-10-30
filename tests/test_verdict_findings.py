@@ -196,6 +196,27 @@ def test_raising_the_shell_floor_to_high_turns_a_benign_command_malicious():
     assert result.verdict is Verdict.MALICIOUS
 
 
+@pytest.mark.parametrize(
+    "kind, class_",
+    [
+        (EventKind.SHELL, FindingClass.SHELL),
+        (EventKind.FILE_WRITE, FindingClass.UNDECLARED_FILE),
+    ],
+)
+def test_a_raised_floor_cannot_make_a_failed_action_high(kind, class_):
+    policy = StrictnessPolicy(floors={**FLOOR, class_: Severity.HIGH})
+    target = "rm -rf /" if kind is EventKind.SHELL else "/etc/authorized_keys"
+
+    result = assess(
+        skill(), trace(event(kind, target, EventOutcome.FAILED)), policy=policy
+    )
+
+    [finding] = result.findings
+    assert finding.class_ is class_
+    assert finding.severity is Severity.REVIEW
+    assert result.verdict is Verdict.FLAGGED
+
+
 def test_raising_the_file_floor_to_high_turns_a_read_malicious():
     policy = StrictnessPolicy(floors={**FLOOR, FindingClass.UNDECLARED_FILE: Severity.HIGH})
 

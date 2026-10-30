@@ -73,6 +73,10 @@ class Finding:
             value = getattr(self, name)
             if not isinstance(value, str) or not value:
                 raise VerdictError(f"{name} must be a non-empty string, got {value!r}")
+        if not isinstance(self.review_required, bool):
+            raise VerdictError(
+                f"review_required must be a bool, got {self.review_required!r}"
+            )
 
 
 @dataclass(frozen=True, slots=True)

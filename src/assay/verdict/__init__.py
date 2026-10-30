@@ -11,7 +11,7 @@ from .records import (
     VerdictError,
 )
 from .policy import DEFAULT_POLICY, FLOOR, FloorViolation, StrictnessPolicy
-from .assess import assess
+from .assess import INSTRUCTION_PATTERNS, SHELL_PATTERNS, assess
 
 __all__ = [
     "Assessment",
@@ -20,6 +20,8 @@ __all__ = [
     "Finding",
     "FindingClass",
     "FloorViolation",
+    "INSTRUCTION_PATTERNS",
+    "SHELL_PATTERNS",
     "Severity",
     "Strictness",
     "StrictnessPolicy",
