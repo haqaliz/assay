@@ -109,6 +109,8 @@ def test_a_missing_declared_dimension_is_unverified_no_declared_scope(scope):
         ("cost-capped", UnverifiedCause.COST_CAPPED),
         ("model-failed", UnverifiedCause.AGENT_FAILED),
         ("sandbox-unavailable", UnverifiedCause.AGENT_FAILED),
+        ("step-limit", UnverifiedCause.BUDGET_LIMIT),
+        ("wall-limit", UnverifiedCause.BUDGET_LIMIT),
     ],
 )
 def test_a_trace_cause_wins_over_everything(cause, expected):

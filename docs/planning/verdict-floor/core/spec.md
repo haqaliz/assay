@@ -41,8 +41,10 @@ instruction candidate, remediation text, multi-task aggregation.
 7. Findings from captured events, independent of declarations:
    - any `SHELL` event with outcome `OK`/`DENIED` whose normalised command matches a dangerous
      regex → `SHELL`, `HIGH`, even when `allowed-tools` declares `Bash` or `Bash(...)`;
-   - any `FILE_WRITE` event with an absolute target and outcome `OK`/`DENIED` → `UNDECLARED_FILE`,
-     `HIGH`, even when a declared glob (for example `*`) matches it;
+   - any `FILE_WRITE` event with an absolute target and outcome `OK`/`DENIED` → `UNDECLARED_FILE`.
+     It is `HIGH` when the target is a sensitive location (`/etc`, `/private/etc`, `~/.ssh`,
+     launch agents, shell profiles) or when `scope.files is not None`; otherwise `REVIEW` (the
+     Desktop-report calibration);
    - any event with outcome `DENIED` → at least `REVIEW` in its class, with the denial text in the
      reason, even inside declared scope.
    A `FAILED` outcome never produces `HIGH`. A `HIGH` finding replaces a `REVIEW` finding for the

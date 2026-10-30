@@ -354,3 +354,37 @@ def test_a_declared_glob_cannot_hide_an_absolute_write():
     result = assess(skill(scope), trace(write))
     assert result.verdict is Verdict.MALICIOUS
     assert result.review_required is True
+
+
+def test_a_desktop_write_without_a_declared_file_scope_is_review_not_malicious():
+    # The dogfood false positive: plumb-report writes its report to the Desktop. The jail denies it,
+    # and the skill declared no file scope, so this is review-worthy, never an accusation.
+    write = event(
+        EventKind.FILE_WRITE,
+        "/Users/aliz/Desktop/report.md",
+        EventOutcome.DENIED,
+        denials=("file-write: /Users/aliz/Desktop/report.md",),
+    )
+    result = assess(skill(Scope()), trace(write))
+
+    [finding] = result.findings
+    assert finding.severity is Severity.REVIEW
+    assert result.verdict is Verdict.FLAGGED
+    assert result.review_required is False
+
+
+def test_a_sensitive_absolute_write_without_scope_is_still_malicious():
+    write = event(
+        EventKind.FILE_WRITE,
+        "/etc/authorized_keys",
+        EventOutcome.DENIED,
+        denials=("file-write: /etc/authorized_keys",),
+    )
+    result = assess(skill(Scope()), trace(write))
+    assert result.verdict is Verdict.MALICIOUS
+
+
+def test_an_absolute_write_outside_a_declared_scope_is_malicious():
+    write = event(EventKind.FILE_WRITE, "/Users/aliz/Desktop/report.md")
+    result = assess(skill(Scope(files=("out/*",))), trace(write))
+    assert result.verdict is Verdict.MALICIOUS

@@ -51,6 +51,24 @@ INSTRUCTION_PATTERNS = (
 )
 
 _BEHAVIOR = (EventKind.FILE_READ, EventKind.FILE_WRITE, EventKind.NETWORK, EventKind.SHELL)
+_BUDGET_CAUSES = ("step-limit", "action-limit", "wall-limit")
+# Absolute writes are only a known-bad pattern in places a skill has no business writing, or when
+# the skill declared a file scope and went outside it. A report on the Desktop is review-worthy,
+# not an accusation.
+_SENSITIVE_PATHS = (
+    "/etc/",
+    "/private/etc/",
+    "/library/launch",
+    "/system/",
+    "/usr/bin/",
+    "/usr/local/bin/",
+    "/.ssh/",
+    "/id_rsa",
+    "/authorized_keys",
+    "/.zshrc",
+    "/.bashrc",
+    "/.bash_profile",
+)
 _DENIAL_CLASS = {
     EventKind.FILE_READ: FindingClass.UNDECLARED_FILE,
     EventKind.FILE_WRITE: FindingClass.UNDECLARED_FILE,
@@ -64,11 +82,12 @@ def assess(skill: Skill, trace: Trace, *, policy: StrictnessPolicy = DEFAULT_POL
     findings = _findings(skill, trace, result) + _instruction_findings(skill, trace)
     if trace.cause is not None:
         # The run stopped early, but what it did before stopping is still evidence.
-        cause = (
-            UnverifiedCause.COST_CAPPED
-            if trace.cause == "cost-capped"
-            else UnverifiedCause.AGENT_FAILED
-        )
+        if trace.cause == "cost-capped":
+            cause = UnverifiedCause.COST_CAPPED
+        elif trace.cause in _BUDGET_CAUSES:
+            cause = UnverifiedCause.BUDGET_LIMIT
+        else:
+            cause = UnverifiedCause.AGENT_FAILED
         return _assessment(result, policy, Verdict.UNVERIFIED, findings, cause)
 
     if findings:
@@ -140,20 +159,24 @@ def _findings(skill: Skill, trace: Trace, result: Diff) -> tuple[Finding, ...]:
 
     # A denial is a captured attempt, even inside declared scope.
     for event in trace.events:
-        if event.kind is EventKind.FILE_WRITE and PurePath(event.target).is_absolute():
-            if event.outcome in (EventOutcome.OK, EventOutcome.DENIED):
-                _put(
-                    findings,
-                    index,
-                    Finding(
-                        class_=FindingClass.UNDECLARED_FILE,
-                        severity=Severity.HIGH,
-                        target=event.target,
-                        reason=f"absolute write {event.target!r}",
-                        outcome=event.outcome,
-                        review_required=True,
-                    ),
-                )
+        if (
+            event.kind is EventKind.FILE_WRITE
+            and PurePath(event.target).is_absolute()
+            and event.outcome in (EventOutcome.OK, EventOutcome.DENIED)
+        ):
+            high = skill.scope.files is not None or _sensitive(event.target)
+            _put(
+                findings,
+                index,
+                Finding(
+                    class_=FindingClass.UNDECLARED_FILE,
+                    severity=Severity.HIGH if high else Severity.REVIEW,
+                    target=event.target,
+                    reason=f"absolute write {event.target!r}",
+                    outcome=event.outcome,
+                    review_required=high,
+                ),
+            )
         if event.outcome is not EventOutcome.DENIED:
             continue
         class_ = _DENIAL_CLASS.get(event.kind)
@@ -263,3 +286,8 @@ def _normalise(text: str) -> str:
     stripped = "".join(char for char in decomposed if not unicodedata.combining(char))
     folded = stripped.casefold().replace("\u2019", "'")
     return " ".join(folded.split())
+
+
+def _sensitive(path: str) -> bool:
+    lowered = path.casefold()
+    return any(part in lowered for part in _SENSITIVE_PATHS)

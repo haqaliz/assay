@@ -8,7 +8,7 @@ Milestone order below is my proposal from the capability dependencies; you asked
 them after the full roadmap existed. Reorder freely.
 
 **Progress (2026-10-31).** Phase 0 milestones M0.1 (A1) and M0.2 (A2) are shipped, as are Phase 1's
-M1.1 (A3), M1.2 (A4), M1.3 (A5) and M1.4 (the `assay check` CLI): 544 offline tests, `A1–A5` in
+M1.1 (A3), M1.2 (A4), M1.3 (A5) and M1.4 (the `assay check` CLI): 549 offline tests, `A1–A5` in
 `docs/technical/CAPABILITY_ROADMAP.md`.
 
 **Phase 0 gate: met on 2026-10-31, with a local model.** `assay check` ran the real
@@ -16,7 +16,16 @@ M1.1 (A3), M1.2 (A4), M1.3 (A5) and M1.4 (the `assay check` CLI): 544 offline te
 and observed two shell commands the skill never declared. Verdict `FLAGGED`, exit 1, trace saved
 (`assay-gate-2026-10-31.json` on the maintainer's Desktop). The gate's letter is met; this was not a
 Claude run, and M0.3 (all 10 Plumb skills, including false positives) is still partial. The A5
-pattern lists remain narrow and uncalibrated until A7. Phase 2 (A6 bundle, A7 corpus) is next.
+pattern lists remain narrow and uncalibrated until A7.
+
+**M0.3 dogfood (2026-10-31).** All 10 Plumb skills were run against the local model with no key
+(`~/Desktop/assay-dogfood-2026-10-31/`). Results: 6 `UNVERIFIED` on a budget stop, 2 `UNVERIFIED`
+on a model failure, 1 `FLAGGED`, and 1 false `MALICIOUS` (`plumb-report` writing its report to the
+Desktop). The false accusation was fixed the same day: an absolute write is `HIGH` only for a
+sensitive location or when a declared file scope was exceeded. Budget stops now report
+`UNVERIFIED/BUDGET_LIMIT` instead of `AGENT_FAILED`. No `CLEAN` is possible in this corpus because
+none of the skills declares file/network scope. Phase 2 (A6 bundle, A7 corpus) is next; A7 is what
+turns this judgment into measured precision.
 
 ---
 

@@ -67,7 +67,9 @@ Not a goal: a CLI, exit codes, a bundle, a corpus, or a second opinion from a mo
    `Bash` must not switch the detector off):
    - a normalised shell command matching `rm` targeting `/`, a pipe to `sh`/`bash`, `base64 -d`,
      `nc -`, `id_rsa` (not `.pub`), or `/etc/passwd|shadow`;
-   - a file write to an absolute path, even when a declared glob matches it;
+   - a file write to a sensitive absolute location (`/etc`, `/private/etc`, `~/.ssh`, launch
+     agents, shell profiles), or any absolute write when the skill declared a file scope; a plain
+     Desktop/report write with no declared file scope is `REVIEW` (dogfood calibration);
    - nothing else. Network stays `REVIEW` (A5 cannot see payload intent).
    A `FAILED` action never reaches `HIGH`. No pattern is applied to the skill's markdown.
    `MALICIOUS` = at least one `HIGH` finding; `review_required=True`; `blocked=True` everywhere.
@@ -123,7 +125,7 @@ Localisation, per-finding remediation text, a machine-readable policy file, CLI,
 
 | Risk | L/I | Mitigation |
 |---|---|---|
-| R2: false `MALICIOUS` on a legitimate skill | Med/High | `MALICIOUS` needs a captured `OK`/`DENIED` action matching a short explicit pattern; `review_required` always; `UNDECLARED` file/network never reaches `MALICIOUS` |
+| R2: false `MALICIOUS` on a legitimate skill | Med/High | `MALICIOUS` needs a captured `OK`/`DENIED` action matching a short explicit pattern; `review_required` always; `UNDECLARED` file/network never reaches `MALICIOUS`; dogfood narrowed absolute writes to sensitive paths or a declared scope |
 | R1: an empty run is read as safe | High/High | No tool events → `UNVERIFIED/NO_TRIGGER`; undeclared dimensions → `UNVERIFIED/NO_DECLARED_SCOPE`; `CLEAN` requires all dimensions declared |
 | The instruction pattern list flags benign prose | Med/Med | Capped at `REVIEW`/`FLAGGED`, always `review_required`; never `MALICIOUS` |
 | Strictness becomes a way to lower (or manufacture) the floor | Med/High | Floors are fixed at `REVIEW`; any override (lower or raise) raises at construction; strictness is raised with `level`; all four classes always evaluated |
