@@ -50,6 +50,7 @@ class UnverifiedCause(StrEnum):
     NO_TRIGGER = "no-trigger"
     NO_DECLARED_SCOPE = "no-declared-scope"
     AGENT_FAILED = "agent-failed"
+    BUDGET_LIMIT = "budget-limit"
     COST_CAPPED = "cost-capped"
 
 

@@ -31,6 +31,7 @@ def test_enums_are_the_closed_sets():
         "no-trigger",
         "no-declared-scope",
         "agent-failed",
+        "budget-limit",
         "cost-capped",
     }
     assert {level.value for level in Strictness} == {"baseline", "standard", "strict"}

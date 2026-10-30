@@ -65,8 +65,8 @@ tests/        offline; recorded traces; no network, no model calls
 - **Tests run offline.** The agent driver sits behind an injectable seam; CI uses recorded traces.
   No model call and no network in any test.
 - **BYOK.** Keys live in the environment of the user, are never committed, and are never defaults.
-- **UNVERIFIED causes.** A5 names `NO_TRIGGER`, `NO_DECLARED_SCOPE`, `AGENT_FAILED` and
-  `COST_CAPPED`. A skill that will not parse is refused before a trace exists; the CLI maps that
+- **UNVERIFIED causes.** A5 names `NO_TRIGGER`, `NO_DECLARED_SCOPE`, `AGENT_FAILED`,
+  `BUDGET_LIMIT` (step/action/wall stop) and `COST_CAPPED`. A skill that will not parse is refused before a trace exists; the CLI maps that
   to `UNVERIFIED/WONT_PARSE`, and a missing sandbox to `UNVERIFIED/SANDBOX_UNAVAILABLE`.
 
 ## CLI
