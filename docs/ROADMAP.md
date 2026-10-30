@@ -7,11 +7,11 @@ hosted/registry layer later. Stack: Python via `uv`.
 Milestone order below is my proposal from the capability dependencies; you asked me to order
 them after the full roadmap existed. Reorder freely.
 
-**Progress (2026-10-30).** Phase 0 milestones M0.1 (A1) and M0.2 (A2) are shipped, as are Phase 1's
-M1.1 (A3), M1.2 (A4) and M1.3 (A5): 451 offline tests, `A1–A5` in
+**Progress (2026-10-31).** Phase 0 milestones M0.1 (A1) and M0.2 (A2) are shipped, as are Phase 1's
+M1.1 (A3), M1.2 (A4), M1.3 (A5) and M1.4 (the `assay check` CLI): 501 offline tests, `A1–A5` in
 `docs/technical/CAPABILITY_ROADMAP.md`. The Phase 0 gate is **not** yet met: no real keyed run has
-been performed, because no API key exists in CI. M0.3 needs that key; A5's verdict is ready to
-report the result. M1.4 (the `assay check` CLI) is next. The A5 pattern lists are deliberately
+been performed, because no API key exists in CI. M0.3 needs that key; A5's verdict and the CLI are
+ready to report the result. The A5 pattern lists are deliberately
 narrow and uncalibrated until A7.
 
 ---
@@ -33,7 +33,7 @@ narrow and uncalibrated until A7.
 | M1.1 | Real-agent driver (A3), BYOK | A user-supplied key drives an agent in the sandbox against synthetic tasks; cost cap enforced |
 | M1.2 | Behavior capture + diff (A4) | File, network, shell and instruction events captured; diffed against declared scope; four finding classes |
 | M1.3 | Verdict + strictness levels (A5) — built | `CLEAN/FLAGGED/MALICIOUS/UNVERIFIED`; user raises strictness; the floor cannot be lowered |
-| M1.4 | `assay check <skill>` CLI | Exit code reflects verdict; JSON output byte-stable |
+| M1.4 | `assay check <skill>` CLI — built | Exit code reflects verdict; JSON output byte-stable |
 
 ## Phase 2: Proof and reputation (weeks 8-12)
 

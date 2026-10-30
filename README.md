@@ -27,10 +27,26 @@ real agent, captures what it actually did, and checks that against what it claim
 - **Verdict and strictness** (`src/assay/verdict/`) — turns that diff into one `Assessment` with a
   `CLEAN/FLAGGED/MALICIOUS/UNVERIFIED` verdict, findings with evidence, a named cause when
   undecidable, and a `blocked` flag. The four-class severity floor cannot be lowered.
+- **CLI** (`src/assay/cli/`) — `assay check <skill>` composes A1–A5, saves the trace, prints a
+  human or canonical JSON report, and exits `0` only on `CLEAN`.
 
-There is no CLI, bundle or corpus yet, the pattern lists are narrow and uncalibrated until A7, and
+There is no bundle or corpus yet, the pattern lists are narrow and uncalibrated until A7, and
 the first real keyed run has not happened. Read `CLAUDE.md` before writing any code here; do not
 describe capability that is not in `git log`.
+
+## Usage
+
+```sh
+ANTHROPIC_API_KEY=... uv run assay check path/to/SKILL.md \
+  --model claude-sonnet-4-5 --input-price 3 --output-price 15 --max-cost 0.50
+```
+
+`--model`, `--input-price`, `--output-price` and `--max-cost` are required, with env fallbacks
+`ASSAY_MODEL`, `ASSAY_INPUT_PRICE`, `ASSAY_OUTPUT_PRICE` and `ASSAY_MAX_COST`. Prices are USD per
+million tokens. Traces are written to `./.assay/traces/<sha256>.json`
+unless `--out` says otherwise, and `--json` prints one canonical line for CI. Exit `0` only on
+`CLEAN`; `1` on `FLAGGED`, `MALICIOUS` or `UNVERIFIED`; `2` on a usage, config or environment
+error. The keyed run is still the maintainer's: the suite injects a scripted model and fake sandbox.
 
 ## What Assay is
 

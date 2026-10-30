@@ -66,14 +66,35 @@ tests/        offline; recorded traces; no network, no model calls
   No model call and no network in any test.
 - **BYOK.** Keys live in the environment of the user, are never committed, and are never defaults.
 - **UNVERIFIED causes.** A5 names `NO_TRIGGER`, `NO_DECLARED_SCOPE`, `AGENT_FAILED` and
-  `COST_CAPPED`. A skill that will not parse is refused before a trace exists; that refusal needs
-  its own mapping when the CLI lands (M1.4).
+  `COST_CAPPED`. A skill that will not parse is refused before a trace exists; the CLI maps that
+  to `UNVERIFIED/WONT_PARSE`, and a missing sandbox to `UNVERIFIED/SANDBOX_UNAVAILABLE`.
 
-## CLI shape (target)
+## CLI
 
-`assay check <skill> [--strictness LEVEL] [--max-cost USD] [--out DIR] [--json]`
+`assay check <skill>` composes A1–A5: parse, model (`AnthropicModel.from_env`), sandbox
+(`select_sandbox`), a private run root, `task_for`, `drive`, `capture`, `TraceStore(out).save`,
+`assess`, then a human or JSON report. It adds no detection logic.
 
-Exit 0 on `CLEAN`, 1 on `FLAGGED/MALICIOUS/UNVERIFIED`, 2 on usage error. Never a traceback.
+```
+assay check <skill> [--strictness baseline|standard|strict]
+                    --max-cost USD --model NAME --input-price USD_PER_MTOK
+                    --output-price USD_PER_MTOK
+                    [--max-steps 20] [--max-actions 40] [--max-wall-seconds 300]
+                    [--out ./.assay/traces] [--json] [--keep-run-root]
+```
+
+The four cost/model settings are required (model and prices also fall back to `ASSAY_MODEL`,
+`ASSAY_INPUT_PRICE`, `ASSAY_OUTPUT_PRICE`; the cap to `ASSAY_MAX_COST`). The default trace
+directory resolves against the invocation directory. `--json` is one canonical line
+(`sort_keys`, compact separators, UTF-8, trailing newline) with a versioned `schema`; identical
+runs produce identical bytes.
+
+Exit is verdict-only: `0` on `CLEAN`, `1` on `FLAGGED/MALICIOUS/UNVERIFIED`, `2` on a usage,
+config or environment error, `130` on Ctrl-C. `blocked` is reported but never changes the code.
+Parse and sandbox refusals use a `UNVERIFIED` envelope and exit `1`; no other failure prints a
+traceback. The API key is read from `ANTHROPIC_API_KEY` and never reaches stdout, the JSON, the
+trace or `JailConfig.env`. The first real keyed run is still the maintainer's; the suite injects a
+scripted model and fake sandbox.
 
 ## Open questions
 
