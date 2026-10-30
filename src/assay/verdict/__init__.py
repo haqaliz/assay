@@ -11,6 +11,7 @@ from .records import (
     VerdictError,
 )
 from .policy import DEFAULT_POLICY, FLOOR, FloorViolation, StrictnessPolicy
+from .assess import assess
 
 __all__ = [
     "Assessment",
@@ -25,4 +26,6 @@ __all__ = [
     "UnverifiedCause",
     "Verdict",
     "VerdictError",
+    "assess",
 ]
+
