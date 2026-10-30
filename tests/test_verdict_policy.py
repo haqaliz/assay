@@ -37,7 +37,7 @@ def test_an_unknown_floor_class_is_refused(floors):
 
 
 def test_the_instructions_floor_cannot_exceed_review():
-    with pytest.raises(FloorViolation, match="INSTRUCTIONS"):
+    with pytest.raises(FloorViolation, match="instructions"):
         StrictnessPolicy(floors={**FLOOR, FindingClass.INSTRUCTIONS: Severity.HIGH})
 
 
@@ -47,14 +47,16 @@ def test_a_bad_strictness_level_is_refused(level):
         StrictnessPolicy(level=level)
 
 
-def test_a_class_may_be_raised_to_high_and_the_rest_stay_at_review():
-    policy = StrictnessPolicy(
-        level=Strictness.STRICT, floors={**FLOOR, FindingClass.SHELL: Severity.HIGH}
-    )
+def test_raising_a_floor_is_refused_until_the_config_surface_supports_it():
+    with pytest.raises(FloorViolation, match="fixed"):
+        StrictnessPolicy(floors={**FLOOR, FindingClass.SHELL: Severity.HIGH})
 
-    assert policy.level is Strictness.STRICT
-    assert policy.floor(FindingClass.SHELL) is Severity.HIGH
-    assert policy.floor(FindingClass.UNDECLARED_FILE) is Severity.REVIEW
+
+def test_a_non_mapping_or_oddly_keyed_floor_is_refused_cleanly():
+    with pytest.raises(FloorViolation, match="mapping"):
+        StrictnessPolicy(floors=None)
+    with pytest.raises(FloorViolation, match="floors must contain"):
+        StrictnessPolicy(floors={**FLOOR, 1: Severity.REVIEW})
 
 
 def test_a_floor_value_must_be_a_severity():

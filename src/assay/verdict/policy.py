@@ -25,21 +25,25 @@ class StrictnessPolicy:
     def __post_init__(self) -> None:
         if not isinstance(self.level, Strictness):
             raise FloorViolation(f"level must be a Strictness, got {self.level!r}")
-        if set(self.floors) != set(FindingClass) or not all(
-            isinstance(class_, FindingClass) for class_ in self.floors
+        if not isinstance(self.floors, Mapping):
+            raise FloorViolation(f"floors must be a mapping, got {self.floors!r}")
+        floors = dict(self.floors)
+        if set(floors) != set(FindingClass) or not all(
+            isinstance(class_, FindingClass) for class_ in floors
         ):
             raise FloorViolation(
-                f"floors must contain exactly {sorted(FindingClass)}, got {sorted(self.floors)}"
+                f"floors must contain exactly {sorted(FindingClass, key=str)}, "
+                f"got {sorted(floors, key=str)}"
             )
-        for class_, severity in self.floors.items():
-            floor = FLOOR[class_]
-            if not isinstance(severity, Severity) or severity.rank < floor.rank:
-                raise FloorViolation(f"{class_} floor cannot be below {floor}, got {severity!r}")
-            if class_ is FindingClass.INSTRUCTIONS and severity is not Severity.REVIEW:
+        # The floor is fixed for now: raising it is not implemented (the level raises strictness),
+        # and lowering it is forbidden by the contract.
+        for class_, severity in floors.items():
+            if severity is not FLOOR[class_]:
                 raise FloorViolation(
-                    f"INSTRUCTIONS floor is capped at {Severity.REVIEW}, got {severity!r}"
+                    f"{class_} floor is fixed at {FLOOR[class_]}, got {severity!r}; "
+                    "raise strictness with a level instead"
                 )
-        object.__setattr__(self, "floors", MappingProxyType(dict(self.floors)))
+        object.__setattr__(self, "floors", MappingProxyType(floors))
 
     def floor(self, class_: FindingClass) -> Severity:
         return self.floors[class_]

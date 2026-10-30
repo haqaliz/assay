@@ -63,9 +63,10 @@ def test_a_trace_from_another_skill_is_refused_before_any_assessment():
 
 
 def test_all_dimensions_declared_one_event_and_no_divergence_is_clean():
-    run = trace(event(EventKind.TOOL, "mystery"))
+    clean = skill(Scope(files=("out/*",), network=(), tools=frozenset()))
+    run = trace(event(EventKind.FILE_READ, "out/x"))
 
-    result = assess(skill(), run)
+    result = assess(clean, run)
 
     assert result.verdict is Verdict.CLEAN
     assert result.cause is None
@@ -95,7 +96,7 @@ def test_no_behavior_events_is_unverified_no_trigger(events):
     ],
 )
 def test_a_missing_declared_dimension_is_unverified_no_declared_scope(scope):
-    result = assess(skill(scope), trace(event(EventKind.TOOL, "mystery")))
+    result = assess(skill(scope), trace(event(EventKind.FILE_READ, "out/x")))
 
     assert result.verdict is Verdict.UNVERIFIED
     assert result.cause is UnverifiedCause.NO_DECLARED_SCOPE
@@ -144,3 +145,9 @@ def test_the_verdict_does_not_change_with_strictness(run):
     }
 
     assert len(verdicts) == 1
+
+
+def test_a_tool_only_run_is_not_behavior():
+    result = assess(skill(), trace(event(EventKind.TOOL, "mystery")))
+    assert result.verdict is Verdict.UNVERIFIED
+    assert result.cause is UnverifiedCause.NO_TRIGGER

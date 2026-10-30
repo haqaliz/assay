@@ -57,10 +57,11 @@ tests/        offline; recorded traces; no network, no model calls
   signals only order the work.
 - **Strictness model.** Levels (for example `baseline`, `standard`, `strict`) change which
   findings block, never the verdict they produce. A hard floor defines minimum severities for the
-  four classes; a policy that tries to go below it is rejected at construction. An instruction
+  four classes; any policy that tries to change it is rejected at construction. An instruction
   match is capped at `REVIEW`, so it can never become `MALICIOUS`.
 - **Determinism.** The agent is non-deterministic, so the replayable unit is the *recorded trace*,
-  not a re-run. A verdict re-derives from the trace alone, and the bundle carries the trace.
+  not a re-run. A verdict re-derives from the trace and the strictness policy alone, and the
+  bundle carries the trace.
 - **Tests run offline.** The agent driver sits behind an injectable seam; CI uses recorded traces.
   No model call and no network in any test.
 - **BYOK.** Keys live in the environment of the user, are never committed, and are never defaults.

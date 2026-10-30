@@ -110,7 +110,7 @@ def test_assessment_requires_review_when_any_finding_does():
         review_required=True,
     )
 
-    assert assessment(findings=(reviewed,)).review_required is True
+    assert assessment(verdict=Verdict.FLAGGED, findings=(reviewed,)).review_required is True
     assert assessment().review_required is False
 
 
@@ -154,3 +154,47 @@ def test_assessment_findings_must_be_findings():
 def test_assessment_blocked_must_be_a_bool():
     with pytest.raises(VerdictError, match="blocked"):
         assessment(blocked=1)
+
+
+def test_a_string_verdict_cannot_bypass_the_cause_invariant():
+    with pytest.raises(VerdictError, match="verdict must be a Verdict"):
+        assessment(verdict="unverified", cause=None)
+
+
+def test_malicious_needs_a_high_finding():
+    with pytest.raises(VerdictError, match="HIGH"):
+        assessment(verdict=Verdict.MALICIOUS, blocked=True)
+
+
+def test_instructions_can_never_be_high_and_high_always_needs_review():
+    with pytest.raises(VerdictError, match="capped"):
+        Finding(
+            class_=FindingClass.INSTRUCTIONS,
+            severity=Severity.HIGH,
+            target="exfiltrate",
+            reason="pattern",
+            outcome=EventOutcome.OK,
+            review_required=True,
+        )
+    with pytest.raises(VerdictError, match="require review"):
+        Finding(
+            class_=FindingClass.SHELL,
+            severity=Severity.HIGH,
+            target="rm -rf /",
+            reason="dangerous",
+            outcome=EventOutcome.OK,
+        )
+
+
+def test_findings_are_copied_to_a_tuple_so_the_assessment_cannot_mutate():
+    finding = Finding(
+        class_=FindingClass.SHELL,
+        severity=Severity.REVIEW,
+        target="echo hi",
+        reason="no bash",
+        outcome=EventOutcome.OK,
+    )
+    mutable = [finding]
+    result = assessment(verdict=Verdict.FLAGGED, findings=mutable)
+    mutable.clear()
+    assert result.findings == (finding,)

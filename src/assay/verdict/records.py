@@ -69,6 +69,12 @@ class Finding:
     review_required: bool = False
 
     def __post_init__(self) -> None:
+        if not isinstance(self.class_, FindingClass):
+            raise VerdictError(f"class_ must be a FindingClass, got {self.class_!r}")
+        if not isinstance(self.severity, Severity):
+            raise VerdictError(f"severity must be a Severity, got {self.severity!r}")
+        if not isinstance(self.outcome, EventOutcome):
+            raise VerdictError(f"outcome must be an EventOutcome, got {self.outcome!r}")
         for name in ("target", "reason"):
             value = getattr(self, name)
             if not isinstance(value, str) or not value:
@@ -77,6 +83,10 @@ class Finding:
             raise VerdictError(
                 f"review_required must be a bool, got {self.review_required!r}"
             )
+        if self.severity is Severity.HIGH and not self.review_required:
+            raise VerdictError("a HIGH finding must require review")
+        if self.class_ is FindingClass.INSTRUCTIONS and self.severity is not Severity.REVIEW:
+            raise VerdictError("an INSTRUCTIONS finding is capped at REVIEW")
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,17 +100,32 @@ class Assessment:
     trace_hash: str
 
     def __post_init__(self) -> None:
+        if not isinstance(self.verdict, Verdict):
+            raise VerdictError(f"verdict must be a Verdict, got {self.verdict!r}")
+        if not isinstance(self.strictness, Strictness):
+            raise VerdictError(f"strictness must be a Strictness, got {self.strictness!r}")
+        if self.cause is not None and not isinstance(self.cause, UnverifiedCause):
+            raise VerdictError(f"cause must be an UnverifiedCause or None, got {self.cause!r}")
+        if not isinstance(self.blocked, bool):
+            raise VerdictError(f"blocked must be a bool, got {self.blocked!r}")
+        findings = tuple(self.findings)
+        if not all(isinstance(finding, Finding) for finding in findings):
+            raise VerdictError("findings must be Finding records")
+        object.__setattr__(self, "findings", findings)
         if (self.verdict is Verdict.UNVERIFIED) != (self.cause is not None):
             raise VerdictError(
                 "verdict UNVERIFIED iff cause is set, "
                 f"got verdict={self.verdict!r} cause={self.cause!r}"
             )
+        high = any(finding.severity is Severity.HIGH for finding in findings)
+        if self.verdict is Verdict.CLEAN and findings:
+            raise VerdictError("CLEAN cannot carry findings")
+        if self.verdict is Verdict.FLAGGED and (not findings or high):
+            raise VerdictError("FLAGGED needs at least one finding and no HIGH finding")
+        if self.verdict is Verdict.MALICIOUS and not high:
+            raise VerdictError("MALICIOUS needs at least one HIGH finding")
         _hash64(self.skill_content_hash, "skill_content_hash")
         _hash64(self.trace_hash, "trace_hash")
-        if not all(isinstance(finding, Finding) for finding in self.findings):
-            raise VerdictError("findings must be Finding records")
-        if not isinstance(self.blocked, bool):
-            raise VerdictError(f"blocked must be a bool, got {self.blocked!r}")
 
     @property
     def review_required(self) -> bool:

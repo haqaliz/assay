@@ -8,7 +8,7 @@ Milestone order below is my proposal from the capability dependencies; you asked
 them after the full roadmap existed. Reorder freely.
 
 **Progress (2026-10-30).** Phase 0 milestones M0.1 (A1) and M0.2 (A2) are shipped, as are Phase 1's
-M1.1 (A3), M1.2 (A4) and M1.3 (A5): 430 offline tests, `A1–A5` in
+M1.1 (A3), M1.2 (A4) and M1.3 (A5): 451 offline tests, `A1–A5` in
 `docs/technical/CAPABILITY_ROADMAP.md`. The Phase 0 gate is **not** yet met: no real keyed run has
 been performed, because no API key exists in CI. M0.3 needs that key; A5's verdict is ready to
 report the result. M1.4 (the `assay check` CLI) is next. The A5 pattern lists are deliberately

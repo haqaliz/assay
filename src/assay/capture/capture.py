@@ -99,7 +99,9 @@ def _argument(action: ToolAction, name: str) -> str | None:
     return value if isinstance(value, str) else None
 
 
-def _network_target(url: str) -> str:
+def _network_target(url: str | None) -> str:
+    if url is None:
+        return "invalid-url"
     try:
         parts = urlsplit(url)
         if parts.scheme not in ("http", "https") or not parts.hostname:
@@ -142,7 +144,7 @@ def _canonical_host(host: str) -> str:
 
 def _path(raw: str | None, record: RunRecord | None) -> str:
     if raw is None:
-        return ""
+        return "invalid-path"
     normal = posixpath.normpath(raw)
     if record is None:
         return normal

@@ -284,3 +284,17 @@ def test_a_symlink_that_leaves_the_run_root_is_recorded_as_its_real_target(tmp_p
         ),
     )
     assert trace.events[0].target == (outside / "secret").as_posix()
+
+
+def test_a_missing_path_or_url_does_not_crash_capture():
+    trace = capture(
+        skill(),
+        "task",
+        outcome(
+            [
+                action("read_file", record_=record()),
+                action("http_get", record_=record()),
+            ]
+        ),
+    )
+    assert [event.target for event in trace.events[:2]] == ["invalid-path", "invalid-url"]

