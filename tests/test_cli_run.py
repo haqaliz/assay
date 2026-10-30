@@ -268,3 +268,108 @@ def test_the_model_and_cap_are_shown_on_stderr_before_the_run(tmp_path, monkeypa
     err = capsys.readouterr().err
     assert "model: fake" in err
     assert "max-cost: $1.00" in err
+
+
+def test_openai_compatible_provider_builds_the_adapter_and_runs(tmp_path, monkeypatch, capsys):
+    captured = {}
+
+    class FakeOpenAI:
+        max_tokens = 1024
+
+        def __init__(self, model, price, base_url, api_key=None):
+            captured.update(model=model, base_url=base_url, api_key=api_key)
+            self.price = price
+
+        def complete(self, messages, tools):
+            return reply("done")
+
+    monkeypatch.setattr(cli_main, "OpenAICompatibleModel", FakeOpenAI)
+    monkeypatch.setenv("ASSAY_API_KEY", "sk-local-not-used")
+    code = main(
+        [
+            "check",
+            str(write_skill(tmp_path)),
+            *BASE,
+            "--provider",
+            "openai-compatible",
+            "--base-url",
+            "http://127.0.0.1:11434/v1",
+            "--api-key",
+            "sk-explicit",
+            "--out",
+            str(tmp_path / "traces"),
+        ],
+        sandbox=FakeSandbox(),
+    )
+
+    assert code == 1  # no tool calls, but all dimensions declared -> NO_TRIGGER
+    assert captured["base_url"] == "http://127.0.0.1:11434/v1"
+    assert captured["model"] == "fake"
+    assert captured["api_key"] == "sk-explicit"
+    out = capsys.readouterr()
+    assert "sk-explicit" not in out.out + out.err
+    assert "sk-local-not-used" not in out.out + out.err
+
+
+def test_openai_compatible_requires_a_base_url(tmp_path, capsys):
+    code = main(
+        ["check", str(write_skill(tmp_path)), *BASE, "--provider", "openai-compatible"],
+        model=object(),
+        sandbox=object(),
+    )
+    assert code == 2
+    assert "--base-url is required" in capsys.readouterr().err
+
+
+def test_base_url_is_rejected_for_anthropic(tmp_path, capsys):
+    code = main(
+        ["check", str(write_skill(tmp_path)), *BASE, "--base-url", "http://127.0.0.1:1/v1"],
+        model=object(),
+        sandbox=object(),
+    )
+    assert code == 2
+    assert "only valid with" in capsys.readouterr().err
+
+
+def test_a_remote_openai_compatible_url_without_a_key_exits_2(tmp_path, monkeypatch, capsys):
+    monkeypatch.delenv("ASSAY_API_KEY", raising=False)
+    code = main(
+        [
+            "check",
+            str(write_skill(tmp_path)),
+            *BASE,
+            "--provider",
+            "openai-compatible",
+            "--base-url",
+            "https://api.example.com/v1",
+        ],
+        sandbox=FakeSandbox(),
+    )
+    assert code == 2
+    assert "ASSAY_API_KEY" in capsys.readouterr().err
+
+
+def test_a_skill_directory_is_accepted(tmp_path, monkeypatch):
+    directory = tmp_path / "demo-skill"
+    directory.mkdir()
+    (directory / "SKILL.md").write_text(
+        "---\nname: demo\ndescription: Does a demo.\nmetadata:\n  assay:\n"
+        "    files: []\n    network: []\nallowed-tools: Read\n---\nBODY\n"
+    )
+    model = FakeModel([reply("done")])
+    code = main(
+        ["check", str(directory), *BASE, "--out", str(tmp_path / "traces")],
+        model=model,
+        sandbox=FakeSandbox(),
+    )
+    assert code == 1  # no events -> NO_TRIGGER
+
+
+def test_api_key_is_rejected_for_anthropic(tmp_path, capsys):
+    code = main(
+        ["check", str(write_skill(tmp_path)), *BASE, "--api-key", "sk-ant"],
+        model=object(),
+        sandbox=object(),
+    )
+    assert code == 2
+    assert "--api-key is only valid" in capsys.readouterr().err

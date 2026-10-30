@@ -1,28 +1,27 @@
-# feat check-cli — M1.4: `assay check <skill>`
+# feat local-model — OpenAI-compatible model adapter for keyless local runs
 
 ## Brief
 
-> Build the `assay` CLI and its `check` command for Phase 1 milestone M1.4: one command runs the
-> whole pipeline — parse the skill (A1), drive a BYOK agent in the sandbox (A3), capture and diff
-> (A4), assess (A5) — writes the trace, prints a human report or byte-stable JSON, and exits with a
-> code that reflects the verdict. Add the `assay` console script to `pyproject.toml`. Options:
-> `--strictness`, `--max-cost`, `--out`, `--json`, plus the BYOK model settings. No traceback ever
-> reaches the user; usage/config errors exit 2, a refused parse exits 1 with a named cause.
-> `--json` must be byte-stable for the same inputs. This slice is the product surface of A1–A5 and
-> the way the Phase 0 gate run will be performed; it adds no new detection logic.
+> Add a second `Model` adapter for the OpenAI-compatible chat-completions protocol, and let the CLI
+> select it (`--provider openai-compatible --base-url URL`). It must work with a local Ollama server
+> (the dev machine has `qwen3-coder:30b` running at `127.0.0.1:11434`), so the Phase 0 gate can be
+> run with no API key, no spend and no consumer-subscription automation. The adapter maps messages,
+> tool calls, tool results and usage to the existing `Model`/`Message`/`ModelReply` seam; tests are
+> offline with an injected transport. Auth is optional only for a loopback base URL; a remote base
+> URL requires a key from `ASSAY_API_KEY`. Keep Anthropic as the default provider. No new dependency.
+> This partially covers the deferred "provider #2" nice-to-have and does not change any detection
+> logic.
 
-Source: the last Phase 1 milestone (`docs/ROADMAP.md` M1.4), after A5 merged and the manual keyed run
-proved to be a one-command job.
+Source: direct user need after `M1.4`; the subscription route is forbidden by `CLAUDE.md`/R6, and a
+local OpenAI-compatible server is the zero-key path.
 
 ## Context carried from the pick
 
-- `docs/ROADMAP.md` M1.4: *"`assay check <skill>` CLI — exit code reflects verdict; JSON output
-  byte-stable"*.
-- `docs/technical/ARCHITECTURE.md` CLI shape: `assay check <skill> [--strictness LEVEL]
-  [--max-cost USD] [--out DIR] [--json]`; `0 CLEAN`, `1 FLAGGED/MALICIOUS/UNVERIFIED`, `2 usage`;
-  *"Never a traceback"*.
-- `CLAUDE.md`: BYOK only (no subscription path); `UNVERIFIED` is never rendered `CLEAN`; the suite is
-  offline, no model call in tests.
-- Shipped: `assay.ingest.parse_skill`, `assay.agent.{AnthropicModel, Toolbox, drive, Budget,
-  ModelPrice, task_for}`, `assay.capture.{capture, TraceStore}`, `assay.verdict.{assess,
-  StrictnessPolicy}`. `pyproject.toml` has no `[project.scripts]` yet.
+- `CLAUDE.md` BYOK rule and `docs/ROADMAP.md` R6: no consumer-subscription automation. This slice
+  does not touch that; it uses a local model server.
+- `docs/technical/CAPABILITY_ROADMAP.md` A3 lists provider #2 as deferred; the `Model` protocol in
+  `src/assay/agent/base.py` was designed for exactly this.
+- `src/assay/agent/anthropic.py` is the reference adapter (transport injection, key handling, error
+  mapping, 60 s timeout); `src/assay/cli/main.py` builds the model from `ANTHROPIC_API_KEY`.
+- Ollama on the dev machine: version 0.40.10, model `qwen3-coder:30b`, OpenAI-compatible base
+  `http://127.0.0.1:11434/v1`.

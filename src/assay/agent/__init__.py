@@ -2,6 +2,7 @@
 
 from .anthropic import AnthropicModel
 from .base import Message, Model, ModelReply
+from .openai_compat import OpenAICompatibleModel
 from .driver import drive
 from .records import (
     AgentError,
@@ -30,6 +31,7 @@ __all__ = [
     "ModelFailed",
     "ModelPrice",
     "ModelReply",
+    "OpenAICompatibleModel",
     "RunCause",
     "RunOutcome",
     "TOOLS",

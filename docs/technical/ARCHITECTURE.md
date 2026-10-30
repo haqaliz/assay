@@ -40,7 +40,7 @@ skill (SKILL.md | ClawHub | Cursor rule | MCP manifest)
 src/assay/
   ingest/     A1: parsers per format, Skill record   ← built (Claude Code SKILL.md)
   sandbox/    A2: jail setup, limits, teardown   ← built (macOS Seatbelt)
-  agent/      A3: BYOK driver, task generation, cost caps   ← built (Anthropic Messages adapter)
+  agent/      A3: driver, task generation, cost caps   ← built (Anthropic + OpenAI-compatible)
   capture/    A4: event recorder, trace store, diff   ← built (canonical traces, scope diff)
   verdict/    A5: findings, strictness, floor   ← built (assessment, pattern lists)
   bundle/     A6: hash list, signing, verify

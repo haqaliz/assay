@@ -11,7 +11,16 @@ import tempfile
 from pathlib import Path
 from typing import Sequence
 
-from assay.agent import AnthropicModel, Budget, Model, ModelPrice, Toolbox, drive, task_for
+from assay.agent import (
+    AnthropicModel,
+    Budget,
+    Model,
+    ModelPrice,
+    OpenAICompatibleModel,
+    Toolbox,
+    drive,
+    task_for,
+)
 from assay.capture import TraceStore, capture
 from assay.ingest import SkillParseError, parse_skill
 from assay.sandbox import SandboxUnavailable
@@ -35,6 +44,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     check.add_argument("--max-cost", metavar="USD")
     check.add_argument("--model", metavar="NAME")
+    check.add_argument(
+        "--provider", choices=["anthropic", "openai-compatible"], default="anthropic"
+    )
+    check.add_argument("--base-url", metavar="URL")
+    check.add_argument("--api-key", metavar="KEY")
     check.add_argument("--input-price", metavar="USD_PER_MTOK")
     check.add_argument("--output-price", metavar="USD_PER_MTOK")
     check.add_argument("--max-steps", default=20)
@@ -75,6 +89,15 @@ def _validate(args: argparse.Namespace) -> None:
     args.output_price = _number(
         args, "output_price", "--output-price", "ASSAY_OUTPUT_PRICE", positive=False
     )
+    if args.provider == "anthropic" and args.base_url:
+        raise UsageError("--base-url is only valid with --provider openai-compatible")
+    if args.provider == "anthropic" and args.api_key:
+        raise UsageError("--api-key is only valid with --provider openai-compatible")
+    if args.provider == "openai-compatible":
+        if not args.base_url:
+            raise UsageError("--base-url is required with --provider openai-compatible")
+        if args.api_key is None:
+            args.api_key = os.environ.get("ASSAY_API_KEY")
     if not args.model:
         args.model = os.environ.get("ASSAY_MODEL")
     if not isinstance(args.model, str) or not args.model.strip():
@@ -118,15 +141,21 @@ def _check(
     args: argparse.Namespace, model: Model | None, sandbox: Sandbox | None
 ) -> int:
     path = Path(args.skill)
+    if path.is_dir():
+        path = path / "SKILL.md"
     try:
         skill = parse_skill(path)
     except SkillParseError as exc:
         _emit(refusal("wont-parse", exc.detail, exc.path, args.json), sys.stdout)
         return 1
     if model is None:
-        model = AnthropicModel.from_env(
-            args.model, ModelPrice(args.input_price, args.output_price)
-        )
+        price = ModelPrice(args.input_price, args.output_price)
+        if args.provider == "anthropic":
+            model = AnthropicModel.from_env(args.model, price)
+        else:
+            model = OpenAICompatibleModel(
+                args.model, price, args.base_url, api_key=args.api_key
+            )
     if sandbox is None:
         try:
             sandbox = select_sandbox()
@@ -142,7 +171,10 @@ def _check(
     )
     # Validate the destination before spending a single token.
     store = TraceStore(args.out)
-    _emit(f"model: {args.model} | max-cost: ${args.max_cost:.2f}\n", sys.stderr)
+    provider = args.provider
+    if args.base_url:
+        provider = f"{provider} @ {args.base_url}"
+    _emit(f"model: {args.model} ({provider}) | max-cost: ${args.max_cost:.2f}\n", sys.stderr)
     run_root = _make_run_root()
     if args.keep_run_root:
         _emit(f"run root: {run_root}\n", sys.stderr)

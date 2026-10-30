@@ -8,11 +8,15 @@ Milestone order below is my proposal from the capability dependencies; you asked
 them after the full roadmap existed. Reorder freely.
 
 **Progress (2026-10-31).** Phase 0 milestones M0.1 (A1) and M0.2 (A2) are shipped, as are Phase 1's
-M1.1 (A3), M1.2 (A4), M1.3 (A5) and M1.4 (the `assay check` CLI): 509 offline tests, `A1–A5` in
-`docs/technical/CAPABILITY_ROADMAP.md`. The Phase 0 gate is **not** yet met: no real keyed run has
-been performed, because no API key exists in CI. M0.3 needs that key; A5's verdict and the CLI are
-ready to report the result. The A5 pattern lists are deliberately narrow and uncalibrated until A7.
-Phase 2 (A6 bundle, A7 corpus) starts once the gate run has been observed.
+M1.1 (A3), M1.2 (A4), M1.3 (A5) and M1.4 (the `assay check` CLI): 544 offline tests, `A1–A5` in
+`docs/technical/CAPABILITY_ROADMAP.md`.
+
+**Phase 0 gate: met on 2026-10-31, with a local model.** `assay check` ran the real
+`~/dev/at/plumb/.claude/skills/plumb-next` against `qwen3-coder:30b` on Ollama (no API key, no spend)
+and observed two shell commands the skill never declared. Verdict `FLAGGED`, exit 1, trace saved
+(`assay-gate-2026-10-31.json` on the maintainer's Desktop). The gate's letter is met; this was not a
+Claude run, and M0.3 (all 10 Plumb skills, including false positives) is still partial. The A5
+pattern lists remain narrow and uncalibrated until A7. Phase 2 (A6 bundle, A7 corpus) is next.
 
 ---
 
