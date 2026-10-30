@@ -9,9 +9,13 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
-from assay.agent import Model
-from assay.sandbox.base import Sandbox
+from assay.agent import AnthropicModel, Model, ModelPrice
+from assay.ingest import SkillParseError, parse_skill
+from assay.sandbox import SandboxUnavailable
+from assay.sandbox.base import Sandbox, select_sandbox
 from assay.verdict import Strictness
+
+from .output import refusal
 
 
 class UsageError(Exception):
@@ -110,4 +114,20 @@ def _integer(raw: object, flag: str) -> int:
 def _check(
     args: argparse.Namespace, model: Model | None, sandbox: Sandbox | None
 ) -> int:
+    path = Path(args.skill)
+    try:
+        parse_skill(path)
+    except SkillParseError as exc:
+        print(refusal("wont-parse", exc.detail, exc.path, args.json), end="")
+        return 1
+    if model is None:
+        AnthropicModel.from_env(
+            args.model, ModelPrice(args.input_price, args.output_price)
+        )
+    if sandbox is None:
+        try:
+            select_sandbox()
+        except SandboxUnavailable as exc:
+            print(refusal("sandbox-unavailable", str(exc), path, args.json), end="")
+            return 1
     raise NotImplementedError("the check pipeline is not wired yet")
