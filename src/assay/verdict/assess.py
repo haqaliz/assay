@@ -2,19 +2,31 @@
 
 from __future__ import annotations
 
-from assay.capture import EventKind, Trace, diff
+from pathlib import PurePath
+
+from assay.capture import (
+    Diff,
+    Divergence,
+    DivergenceStatus,
+    EventKind,
+    EventOutcome,
+    Trace,
+    diff,
+)
 from assay.ingest import Skill
 
 from .policy import DEFAULT_POLICY, StrictnessPolicy
-from .records import Assessment, Finding, Severity, Strictness, UnverifiedCause, Verdict
+from .records import (
+    Assessment,
+    Finding,
+    FindingClass,
+    Severity,
+    Strictness,
+    UnverifiedCause,
+    Verdict,
+)
 
-
-def _blocked(verdict: Verdict, findings: tuple[Finding, ...], level: Strictness) -> bool:
-    if level is Strictness.BASELINE:
-        return any(finding.severity is Severity.HIGH for finding in findings)
-    if level is Strictness.STANDARD:
-        return bool(findings)
-    return bool(findings) or verdict is Verdict.UNVERIFIED
+SHELL_PATTERNS = ("rm -rf /", "| sh", "| bash", "base64 -d", "nc -", "id_rsa", "/etc/passwd")
 
 
 def assess(skill: Skill, trace: Trace, *, policy: StrictnessPolicy = DEFAULT_POLICY) -> Assessment:
@@ -25,19 +37,111 @@ def assess(skill: Skill, trace: Trace, *, policy: StrictnessPolicy = DEFAULT_POL
             if trace.cause == "cost-capped"
             else UnverifiedCause.AGENT_FAILED
         )
-        verdict = Verdict.UNVERIFIED
-    elif not any(change.kind is not EventKind.INSTRUCTION for change in trace.events):
+        return _assessment(result, policy, Verdict.UNVERIFIED, (), cause)
+
+    findings = _findings(result, policy)
+    if findings:
+        high = any(finding.severity is Severity.HIGH for finding in findings)
+        verdict = Verdict.MALICIOUS if high else Verdict.FLAGGED
+        return _assessment(result, policy, verdict, findings, None)
+
+    if not any(change.kind is not EventKind.INSTRUCTION for change in trace.events):
         verdict, cause = Verdict.UNVERIFIED, UnverifiedCause.NO_TRIGGER
     elif skill.scope.files is None or skill.scope.network is None or skill.scope.tools is None:
         verdict, cause = Verdict.UNVERIFIED, UnverifiedCause.NO_DECLARED_SCOPE
     else:
         verdict, cause = Verdict.CLEAN, None
+    return _assessment(result, policy, verdict, (), cause)
+
+
+def _assessment(
+    result: Diff,
+    policy: StrictnessPolicy,
+    verdict: Verdict,
+    findings: tuple[Finding, ...],
+    cause: UnverifiedCause | None,
+) -> Assessment:
     return Assessment(
         verdict=verdict,
-        findings=(),
+        findings=findings,
         cause=cause,
-        blocked=_blocked(verdict, (), policy.level),
+        blocked=_blocked(verdict, findings, policy.level),
         strictness=policy.level,
         skill_content_hash=result.skill_content_hash,
         trace_hash=result.trace_hash,
     )
+
+
+def _blocked(verdict: Verdict, findings: tuple[Finding, ...], level: Strictness) -> bool:
+    if level is Strictness.BASELINE:
+        return any(finding.severity is Severity.HIGH for finding in findings)
+    if level is Strictness.STANDARD:
+        return bool(findings)
+    return bool(findings) or verdict is Verdict.UNVERIFIED
+
+
+def _findings(result: Diff, policy: StrictnessPolicy) -> tuple[Finding, ...]:
+    findings: list[Finding] = []
+    for divergence in result.divergences:
+        if divergence.kind is EventKind.SHELL:
+            base = Severity.REVIEW
+            reason = divergence.reason
+            if divergence.outcome in (EventOutcome.OK, EventOutcome.DENIED):
+                pattern = next(
+                    (item for item in SHELL_PATTERNS if item in divergence.target.lower()),
+                    None,
+                )
+                if pattern is not None:
+                    base = Severity.HIGH
+                    reason = f"{divergence.reason}; dangerous shell pattern {pattern!r}"
+            findings.append(_finding(FindingClass.SHELL, base, divergence, policy, reason))
+            continue
+        if divergence.status is not DivergenceStatus.EXCEEDED:
+            continue
+        if divergence.kind is EventKind.NETWORK:
+            findings.append(
+                _finding(
+                    FindingClass.UNDECLARED_NETWORK,
+                    Severity.REVIEW,
+                    divergence,
+                    policy,
+                    divergence.reason,
+                )
+            )
+            continue
+        if divergence.kind not in (EventKind.FILE_READ, EventKind.FILE_WRITE):
+            continue
+        base = Severity.REVIEW
+        reason = divergence.reason
+        if (
+            divergence.kind is EventKind.FILE_WRITE
+            and PurePath(divergence.target).is_absolute()
+            and divergence.outcome in (EventOutcome.OK, EventOutcome.DENIED)
+        ):
+            base = Severity.HIGH
+            reason = f"{divergence.reason}; absolute write {divergence.target!r}"
+        findings.append(_finding(FindingClass.UNDECLARED_FILE, base, divergence, policy, reason))
+    return tuple(findings)
+
+
+def _finding(
+    class_: FindingClass,
+    base: Severity,
+    divergence: Divergence,
+    policy: StrictnessPolicy,
+    reason: str,
+) -> Finding:
+    severity = _effective(base, class_, policy)
+    return Finding(
+        class_=class_,
+        severity=severity,
+        target=divergence.target,
+        reason=reason,
+        outcome=divergence.outcome,
+        review_required=severity is Severity.HIGH,
+    )
+
+
+def _effective(base: Severity, class_: FindingClass, policy: StrictnessPolicy) -> Severity:
+    floor = policy.floor(class_)
+    return floor if floor.rank > base.rank else base
