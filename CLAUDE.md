@@ -23,9 +23,11 @@ Status: **A1–A5 exist, nothing else.** Ingest (`src/assay/ingest/`) turns a Cl
 into a frozen `Skill` record with a tri-state declared `Scope` (undeclared vs declared none),
 refusing malformed input with a named cause. The sandbox (`src/assay/sandbox/`) runs a command
 under macOS Seatbelt with confined writes, port-scoped network, a scrubbed env and CPU/wall limits.
-The agent driver (`src/assay/agent/`) runs a bounded BYOK model loop: the model runs outside the
-jail, every tool call runs through the sandbox, and the result is actions, usage and cost with a
-named stop cause — never a verdict. Capture (`src/assay/capture/`) turns that outcome into a
+The agent driver (`src/assay/agent/`) runs a bounded model loop: the model runs outside the jail,
+every tool call runs through the sandbox, and the result is actions, usage and cost with a named
+stop cause — never a verdict. Two providers share the `Model` seam: Anthropic (BYOK) and
+OpenAI-compatible (keyless local Ollama; a non-local base URL must be https and needs
+`ASSAY_API_KEY`). Capture (`src/assay/capture/`) turns that outcome into a
 canonical, content-addressed trace of file, network, shell and instruction events, stores it
 atomically as `<sha256>.json`, and diffs observed events against the skill's declared scope while
 keeping "undeclared" and "declared none" distinct. The verdict layer (`src/assay/verdict/`) turns

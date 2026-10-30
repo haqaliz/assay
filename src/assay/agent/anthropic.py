@@ -12,6 +12,7 @@ from typing import Callable, Mapping, Sequence
 from .base import Message, ModelReply
 from .records import AgentUnavailable, ModelFailed, ModelPrice, RunCause, ToolCall, Usage
 from .tools import ToolSpec
+from .transport import redact, urlopen_bounded
 
 DEFAULT_ENDPOINT = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
@@ -21,8 +22,7 @@ Transport = Callable[[urllib.request.Request], bytes]
 
 
 def _urlopen(request: urllib.request.Request) -> bytes:
-    with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
-        return response.read()
+    return urlopen_bounded(request)
 
 
 class AnthropicModel:
@@ -79,7 +79,8 @@ class AnthropicModel:
                 detail = exc.read(500).decode("utf-8", "replace")
             except Exception:
                 pass
-            raise ModelFailed(f"http {exc.code}: {detail or exc.reason}") from exc
+            message = redact(f"http {exc.code}: {detail or exc.reason}", self._api_key)
+            raise ModelFailed(message) from exc
         except (urllib.error.URLError, OSError, TimeoutError, http.client.HTTPException) as exc:
             raise ModelFailed(f"transport failed: {exc}") from exc
         except ValueError:

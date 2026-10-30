@@ -41,13 +41,23 @@ ANTHROPIC_API_KEY=... uv run assay check path/to/SKILL.md \
   --model claude-sonnet-4-5 --input-price 3 --output-price 15 --max-cost 0.50
 ```
 
-`--model`, `--input-price`, `--output-price` and `--max-cost` are required, with env fallbacks
-`ASSAY_MODEL`, `ASSAY_INPUT_PRICE`, `ASSAY_OUTPUT_PRICE` and `ASSAY_MAX_COST`. Prices are USD per
-million tokens. Traces are written to `./.assay/traces/<sha256>.json`
-unless `--out` says otherwise, and `--json` prints one canonical line for CI. Exit `0` only on
-`CLEAN`; `1` on `FLAGGED`, `MALICIOUS` or `UNVERIFIED` (including a sandbox that cannot start);
-`2` on a usage or config error
-error. The keyed run is still the maintainer's: the suite injects a scripted model and fake sandbox.
+A local model needs no key at all. With Ollama running:
+
+```sh
+uv run assay check path/to/SKILL.md \
+  --provider openai-compatible --base-url http://127.0.0.1:11434/v1 \
+  --model qwen3-coder:30b --input-price 0 --output-price 0 --max-cost 0.01
+```
+
+`<skill>` may be the `SKILL.md` file or its directory. `--model`, `--input-price`,
+`--output-price` and `--max-cost` are required, with env fallbacks `ASSAY_MODEL`,
+`ASSAY_INPUT_PRICE`, `ASSAY_OUTPUT_PRICE` and `ASSAY_MAX_COST`; the OpenAI-compatible provider also
+reads `ASSAY_API_KEY`, but only for a non-local base URL (local URLs need no key, and a non-local URL
+must be https). Prices are USD per million tokens. Traces are written to
+`./.assay/traces/<sha256>.json` unless `--out` says otherwise, and `--json` prints one canonical
+line for CI. Exit `0` only on `CLEAN`; `1` on `FLAGGED`, `MALICIOUS` or `UNVERIFIED` (including a
+sandbox that cannot start); `2` on a usage or config error. The suite injects a scripted model and
+fake sandbox; a real Anthropic-keyed run is still the maintainer's.
 
 ## What Assay is
 
