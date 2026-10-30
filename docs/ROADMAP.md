@@ -15,8 +15,7 @@ M1.1 (A3), M1.2 (A4), M1.3 (A5) and M1.4 (the `assay check` CLI): 549 offline te
 `~/dev/at/plumb/.claude/skills/plumb-next` against `qwen3-coder:30b` on Ollama (no API key, no spend)
 and observed two shell commands the skill never declared. Verdict `FLAGGED`, exit 1, trace saved
 (`assay-gate-2026-10-31.json` on the maintainer's Desktop). The gate's letter is met; this was not a
-Claude run, and M0.3 (all 10 Plumb skills, including false positives) is still partial. The A5
-pattern lists remain narrow and uncalibrated until A7.
+Claude run. M0.3 is complete below. The A5 pattern lists remain narrow and uncalibrated until A7.
 
 **M0.3 dogfood (2026-10-31).** All 10 Plumb skills were run against the local model with no key
 (`~/Desktop/assay-dogfood-2026-10-31/`). Results: 6 `UNVERIFIED` on a budget stop, 2 `UNVERIFIED`
