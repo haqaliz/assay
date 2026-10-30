@@ -229,3 +229,19 @@ def test_malformed_responses_become_model_failed(payload):
     model = AnthropicModel("claude-x", "secret", PRICE, transport=lambda req: payload)
     with pytest.raises(ModelFailed):
         model.complete([Message("system", "BODY"), Message("user", "TASK")], TOOLS)
+
+
+def test_a_control_character_key_is_refused_without_echo():
+    with pytest.raises(AgentUnavailable) as caught:
+        AnthropicModel("claude-x", "sk-SECRET\n", PRICE)
+    assert "SECRET" not in str(caught.value)
+
+
+def test_a_transport_value_error_does_not_echo_the_key():
+    def transport(request):
+        raise ValueError("Invalid header value b'sk-SECRET'")
+
+    model = AnthropicModel("claude-x", "sk-SECRET", PRICE, transport=transport)
+    with pytest.raises(ModelFailed) as caught:
+        model.complete([Message("system", "BODY"), Message("user", "TASK")], TOOLS)
+    assert "SECRET" not in str(caught.value)

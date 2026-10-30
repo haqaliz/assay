@@ -4,7 +4,7 @@ import pytest
 
 from assay.capture import CaptureError, Event, EventKind, EventOutcome, Trace
 from assay.ingest import Scope, Skill
-from assay.verdict import Strictness, UnverifiedCause, Verdict
+from assay.verdict import Severity, Strictness, UnverifiedCause, Verdict
 from assay.verdict.assess import assess
 from assay.verdict.policy import DEFAULT_POLICY, StrictnessPolicy
 
@@ -118,7 +118,8 @@ def test_a_trace_cause_wins_over_everything(cause, expected):
 
     assert result.verdict is Verdict.UNVERIFIED
     assert result.cause is expected
-    assert result.findings == ()
+    # What ran before the stop is still evidence.
+    assert [f.severity for f in result.findings] == [Severity.HIGH]
 
 
 @pytest.mark.parametrize(

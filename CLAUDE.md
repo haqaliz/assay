@@ -33,9 +33,11 @@ that diff into exactly one `Assessment`: a `CLEAN/FLAGGED/MALICIOUS/UNVERIFIED` 
 with severity and evidence, a named `UNVERIFIED` cause, and a `blocked` flag from the chosen
 strictness. `MALICIOUS` needs a `HIGH` finding from a captured `OK`/`DENIED` action; an
 instruction-pattern match is capped at `REVIEW` and can never produce it. Strictness changes only
-what blocks; the four-class floor cannot be lowered. There is no CLI, bundle or corpus yet, and
-precision is unmeasured until A7. The suite is offline on synthetic outcomes; the first real keyed
-run (the Phase 0 gate) has not happened yet. Do not describe capability that isn't there.
+what blocks; the four-class floor cannot be lowered. `assay check <skill>` (`src/assay/cli/`)
+composes A1–A5 into one command with a verdict-only exit code and a canonical JSON report. There
+is no bundle or corpus yet, and precision is unmeasured until A7. The suite is offline on synthetic
+outcomes; the first real keyed run (the Phase 0 gate) has not happened yet. Do not describe
+capability that isn't there.
 
 Lineage: Assay is one of three siblings scaffolded together on 2026-10-22 (with Tenon and Pry),
 drawn from a market-demand research pass (`~/dev/at/ideas/market-demand-2026-10.md`) and sharing

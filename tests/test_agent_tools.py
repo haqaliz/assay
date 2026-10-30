@@ -255,14 +255,12 @@ def test_denied_run_is_not_ok_and_keeps_its_denials(run_root, fake_curl):
     assert "Permission denied" in result.output
 
 
-def test_sandbox_failure_becomes_a_failed_result_not_an_exception(run_root, fake_curl):
+def test_sandbox_failure_aborts_instead_of_becoming_a_tool_result(run_root, fake_curl):
     error = SandboxFailed("no jail")
-    result = box(FakeSandbox(error=error), run_root, fake_curl).execute(
-        call("read_file", path="a.txt")
-    )
-    assert not result.ok
-    assert result.record is None
-    assert str(error) in result.output
+    with pytest.raises(SandboxFailed):
+        box(FakeSandbox(error=error), run_root, fake_curl).execute(
+            call("read_file", path="a.txt")
+        )
 
 
 def test_sandbox_unavailable_propagates_so_the_driver_can_name_it(run_root, fake_curl):

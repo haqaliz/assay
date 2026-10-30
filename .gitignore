@@ -12,6 +12,9 @@ dist/
 build/
 *.egg-info/
 
+# Assay's default trace directory
+.assay/
+
 # Env / secrets (BYOK for any LLM assist)
 .env
 .env.*

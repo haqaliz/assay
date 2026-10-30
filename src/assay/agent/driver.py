@@ -6,7 +6,7 @@ import time
 from typing import Callable
 
 from assay.ingest import Skill
-from assay.sandbox import SandboxUnavailable
+from assay.sandbox import SandboxFailed, SandboxUnavailable
 
 from .base import Message, Model
 from .records import Budget, ModelFailed, RunCause, RunOutcome, ToolAction, Usage
@@ -85,7 +85,7 @@ def drive(
                 return outcome(RunCause.WALL_LIMIT)
             try:
                 result = toolbox.execute(tool_call)
-            except SandboxUnavailable:
+            except (SandboxUnavailable, SandboxFailed):
                 return outcome(RunCause.SANDBOX_UNAVAILABLE)
             actions.append(ToolAction(call=tool_call, result=result))
             content = result.output[:MAX_TOOL_CONTENT_CHARS]

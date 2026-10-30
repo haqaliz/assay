@@ -1,6 +1,7 @@
 # Assay: Capability Roadmap
 
-Engine capabilities in build order. Each lands test-first. A1–A5 are built; the rest are not.
+Engine capabilities in build order. Each lands test-first. A1–A5 are built and composed by the
+`assay check` CLI (M1.4); the rest are not.
 
 | ID | Capability | Depends on | Guardrail tie-in |
 |---|---|---|---|

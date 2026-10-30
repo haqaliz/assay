@@ -124,10 +124,9 @@ class Toolbox:
                 env={},
                 keep=True,
             )
-            try:
-                record = self.sandbox.run(argv, config)
-            except SandboxFailed as exc:
-                return ToolResult(ok=False, output=f"{type(exc).__name__}: {exc}")
+            # A jail that cannot be established means nothing trustworthy ran; let it abort the
+            # run instead of reporting a mere tool failure.
+            record = self.sandbox.run(argv, config)
             output = record.stdout if record.ok else record.stdout + record.stderr
             return ToolResult(record.ok, _capped(output), record)
         finally:
