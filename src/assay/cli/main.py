@@ -5,15 +5,18 @@ from __future__ import annotations
 import argparse
 import math
 import os
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 from typing import Sequence
 
-from assay.agent import AnthropicModel, Model, ModelPrice
+from assay.agent import AnthropicModel, Budget, Model, ModelPrice, Toolbox, drive, task_for
+from assay.capture import TraceStore, capture
 from assay.ingest import SkillParseError, parse_skill
 from assay.sandbox import SandboxUnavailable
 from assay.sandbox.base import Sandbox, select_sandbox
-from assay.verdict import Strictness
+from assay.verdict import Strictness, StrictnessPolicy, Verdict, assess
 
 from .output import refusal
 
@@ -116,18 +119,42 @@ def _check(
 ) -> int:
     path = Path(args.skill)
     try:
-        parse_skill(path)
+        skill = parse_skill(path)
     except SkillParseError as exc:
         print(refusal("wont-parse", exc.detail, exc.path, args.json), end="")
         return 1
     if model is None:
-        AnthropicModel.from_env(
+        model = AnthropicModel.from_env(
             args.model, ModelPrice(args.input_price, args.output_price)
         )
     if sandbox is None:
         try:
-            select_sandbox()
+            sandbox = select_sandbox()
         except SandboxUnavailable as exc:
             print(refusal("sandbox-unavailable", str(exc), path, args.json), end="")
             return 1
-    raise NotImplementedError("the check pipeline is not wired yet")
+
+    budget = Budget(
+        max_usd=args.max_cost,
+        max_steps=args.max_steps,
+        max_actions=args.max_actions,
+        max_wall_seconds=args.max_wall_seconds,
+    )
+    run_root = _make_run_root()
+    try:
+        task = task_for(skill)
+        with Toolbox(sandbox, run_root) as toolbox:
+            outcome = drive(skill, task, model, toolbox, budget)
+        trace = capture(skill, task, outcome)
+        TraceStore(args.out).save(trace).resolve()
+        assessment = assess(skill, trace, policy=StrictnessPolicy(level=args.strictness))
+        if args.keep_run_root:
+            print(f"run root: {run_root}", file=sys.stderr if args.json else sys.stdout)
+        return 0 if assessment.verdict is Verdict.CLEAN else 1
+    finally:
+        if not args.keep_run_root:
+            shutil.rmtree(run_root, ignore_errors=True)
+
+
+def _make_run_root() -> Path:
+    return Path(tempfile.mkdtemp(prefix="assay-run-"))
