@@ -1,32 +1,33 @@
-# feat behavior-capture — A4: Behavior capture and diff
+# feat verdict-floor — A5: Verdict and strictness
 
 ## Brief
 
-> Build A4, behavior capture and diff, for Phase 1 milestone M1.2 in `docs/ROADMAP.md`: turn an A3
-> `RunOutcome` into a content-addressed trace of file, network, shell and instruction events, persist
-> it under a caller-supplied trace root, and diff those observed events against the A1 `Skill.scope`.
-> The trace must be replayable: a verdict can later be re-derived from the trace alone, with no
-> re-run and no model call. The diff must preserve A1's tri-state: `None` (the skill declared nothing
-> for that dimension) is not the same as `()` (declared to do nothing), and must never be collapsed
-> into "clean". The diff reports divergences and coverage gaps; it assigns no verdict (A5 owns
-> `CLEAN/FLAGGED/MALICIOUS/UNVERIFIED`). Shell events are compared against the declared tool scope
-> (a `Bash` entry), network against `host:port`, files against declared globs. Everything is offline,
-> deterministic and tested against fixtures; no CLI, no bundle, no corpus.
+> Build A5, the verdict and strictness layer, for Phase 1 milestone M1.3 in `docs/ROADMAP.md`: map an
+> A4 `Diff` (plus the trace it came from) to exactly one of `CLEAN`, `FLAGGED`, `MALICIOUS`,
+> `UNVERIFIED`, with a named cause and a list of findings. Four finding classes are always checked:
+> undeclared file access, undeclared network, shell execution, and hidden or injected instructions.
+> Strictness levels (`baseline`, `standard`, `strict`) change which findings block; a floor defines
+> a minimum severity per class and config that tries to go below it is rejected at load.
+> `MALICIOUS` requires a captured, reproduced behavior and always carries `review_required`.
+> `CLEAN` requires that every dimension was declared and nothing exceeded it; an empty or
+> no-trigger run is `UNVERIFIED`, never `CLEAN`. `UNDECLARED` divergences (the skill declared
+> nothing for that dimension) cannot by themselves produce `MALICIOUS`. Instructions are recorded by
+> A4; the instruction finding is a candidate-level signal capped below `MALICIOUS`, because a static
+> read may flag but may not decide. No CLI (M1.4), no bundle (A6), no corpus (A7).
 
-Source: chosen as the next capability after A1, A2 and A3 shipped. It is the other half of the
-Phase 0 gate ("an observed behavior that differs from a declared one").
+Source: chosen by `assay-next` as the next capability after A1–A4 shipped (`CAPABILITY_ROADMAP.md`
+A5 depends on A4; it retires R2 and enforces `CLAUDE.md` constraint 3).
 
 ## Context carried from the pick
 
-- `docs/technical/CAPABILITY_ROADMAP.md` A4: *"Record file, network, shell and instruction events as
-  content-addressed traces; diff observed against declared scope."* Depends on A2, A3. Guardrail:
-  *"Observation, not inference."*
-- `docs/ROADMAP.md` M1.2: *"File, network, shell and instruction events captured; diffed against
-  declared scope; four finding classes"*.
-- `docs/technical/ARCHITECTURE.md`: *"Determinism. The agent is non-deterministic, so the replayable
-  unit is the recorded trace, not a re-run. A verdict re-derives from the trace alone, and the bundle
-  carries the trace."*
-- `CLAUDE.md` constraint 4: `CLEAN` only means observed behavior matched declared scope; a skill whose
-  dangerous path never triggered is `UNVERIFIED`, never `CLEAN`.
-- Shipped: A1 `Skill.scope` (per-dimension `None` vs empty), A3 `RunOutcome.actions` where each action
-  carries the `ToolCall` and the sandbox `RunRecord`.
+- `docs/technical/CAPABILITY_ROADMAP.md` A5: *"Verdict and strictness. `CLEAN/FLAGGED/MALICIOUS/
+  UNVERIFIED`. Four finding classes … Strictness is user-raisable; a floor cannot be lowered."*
+- `docs/ROADMAP.md` M1.3 and R1/R2; the gate still needs a real keyed run.
+- `CLAUDE.md` constraint 3 (the floor) and constraint 4 (do not over-claim; `MALICIOUS` needs a
+  captured, reproduced behavior; `UNVERIFIED` is never rendered `CLEAN`).
+- `docs/technical/ARCHITECTURE.md`: a verdict re-derives from the trace alone; `UNVERIFIED` causes
+  are `WONT_PARSE`, `SANDBOX_FAILED`, `AGENT_FAILED`, `COST_CAPPED`, `NO_TRIGGER`,
+  `TRACE_INCOMPLETE`.
+- Shipped A4: `Diff` carries `Divergence(kind, target, status, outcome, reason, denials)`, coverage
+  per dimension, and refuses a trace from a different skill. `DivergenceStatus` is
+  `EXCEEDED | UNDECLARED`.

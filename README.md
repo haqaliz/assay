@@ -3,7 +3,7 @@
 **Execution-grounded security verifier for AI agent skills.** Runs a skill in a sandbox against a
 real agent, captures what it actually did, and checks that against what it claims to do.
 
-[![Status](https://img.shields.io/badge/status-A1--A4%20engine%20·%20no%20verdicts%20yet-orange)](docs/ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-A1--A5%20engine%20·%20offline-orange)](docs/ROADMAP.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 [Vision](VISION.md) · [Roadmap](docs/ROADMAP.md) · [Architecture](docs/technical/ARCHITECTURE.md) · [Capabilities](docs/technical/CAPABILITY_ROADMAP.md)
@@ -12,7 +12,7 @@ real agent, captures what it actually did, and checks that against what it claim
 
 ## Status
 
-**A1–A4 exist; the verdict does not.** What is built and tested, all offline:
+**A1–A5 exist; the engine has a verdict.** What is built and tested, all offline:
 
 - **Ingest** (`src/assay/ingest/`) — parses a Claude Code `SKILL.md` into a frozen `Skill` record
   with a tri-state declared scope (undeclared vs declared none) and a named refusal for malformed
@@ -24,10 +24,13 @@ real agent, captures what it actually did, and checks that against what it claim
   tool call runs inside it, with cost, step, action and wall caps and a named stop cause.
 - **Capture and diff** (`src/assay/capture/`) — turns a run into a canonical, content-addressed
   trace of file, network, shell and instruction events and diffs it against the declared scope.
+- **Verdict and strictness** (`src/assay/verdict/`) — turns that diff into one `Assessment` with a
+  `CLEAN/FLAGGED/MALICIOUS/UNVERIFIED` verdict, findings with evidence, a named cause when
+  undecidable, and a `blocked` flag. The four-class severity floor cannot be lowered.
 
-There is no verdict, strictness level, CLI or bundle yet, and the first real keyed run has not
-happened. Read `CLAUDE.md` before writing any code here; do not describe capability that is not in
-`git log`.
+There is no CLI, bundle or corpus yet, the pattern lists are narrow and uncalibrated until A7, and
+the first real keyed run has not happened. Read `CLAUDE.md` before writing any code here; do not
+describe capability that is not in `git log`.
 
 ## What Assay is
 
@@ -49,10 +52,16 @@ a replayable record of the run.
 
 | Verdict | Meaning |
 |---|---|
-| `CLEAN` | Observed behavior matched declared scope |
-| `FLAGGED` | A finding fired, below the user's block threshold |
-| `MALICIOUS` | A captured, reproduced bad behavior — never inferred from text alone |
-| `UNVERIFIED` | Could not decide (sandbox failure, cost cap, conditional path never triggered) |
+| `CLEAN` | No findings, all three dimensions declared, and at least one captured behavior event |
+| `FLAGGED` | At least one finding, none of them `HIGH` |
+| `MALICIOUS` | At least one `HIGH` finding from a captured `OK`/`DENIED` action — never inferred from text alone |
+| `UNVERIFIED` | Could not decide; carries `NO_TRIGGER`, `NO_DECLARED_SCOPE`, `AGENT_FAILED` or `COST_CAPPED` |
+
+Strictness (`baseline`/`standard`/`strict`) decides only whether a run is `blocked`; it never
+changes the verdict. The severity floor for the four finding classes is fixed and cannot be
+lowered. An instruction-pattern match is a candidate capped at `REVIEW`: it can make a run
+`FLAGGED`, never `MALICIOUS`. The shell and instruction pattern lists are deliberately short, and
+their precision is unmeasured until the A7 corpus.
 
 A static scan or model may flag a candidate; the sandboxed, observed run assigns the verdict.
 

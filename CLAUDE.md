@@ -19,19 +19,23 @@ The name: to *assay* a metal is to test its purity by actually putting it throug
 by looking at it. Assay asks of a skill: *does it do only what it says it does, when you actually
 run it?*
 
-Status: **A1, A2, A3 and A4 exist, nothing else.** Ingest (`src/assay/ingest/`) turns a Claude
-Code `SKILL.md` into a frozen `Skill` record with a tri-state declared `Scope` (undeclared vs
-declared none), refusing malformed input with a named cause. The sandbox (`src/assay/sandbox/`)
-runs a command under macOS Seatbelt with confined writes, port-scoped network, a scrubbed env and
-CPU/wall limits. The agent driver (`src/assay/agent/`) runs a bounded BYOK model loop: the model
-runs outside the jail, every tool call runs through the sandbox, and the result is actions, usage
-and cost with a named stop cause — never a verdict. Capture (`src/assay/capture/`) turns that
-outcome into a canonical, content-addressed trace of file, network, shell and instruction events,
-stores it atomically as `<sha256>.json`, and diffs observed events against the skill's declared
-scope while keeping "undeclared" and "declared none" distinct. Capture records; it does not judge —
-there is no verdict, severity or threshold, no CLI and no bundle yet. The suite is offline on
-synthetic outcomes; the first real keyed run (the Phase 0 gate) has not happened yet. Do not
-describe capability that isn't there.
+Status: **A1–A5 exist, nothing else.** Ingest (`src/assay/ingest/`) turns a Claude Code `SKILL.md`
+into a frozen `Skill` record with a tri-state declared `Scope` (undeclared vs declared none),
+refusing malformed input with a named cause. The sandbox (`src/assay/sandbox/`) runs a command
+under macOS Seatbelt with confined writes, port-scoped network, a scrubbed env and CPU/wall limits.
+The agent driver (`src/assay/agent/`) runs a bounded BYOK model loop: the model runs outside the
+jail, every tool call runs through the sandbox, and the result is actions, usage and cost with a
+named stop cause — never a verdict. Capture (`src/assay/capture/`) turns that outcome into a
+canonical, content-addressed trace of file, network, shell and instruction events, stores it
+atomically as `<sha256>.json`, and diffs observed events against the skill's declared scope while
+keeping "undeclared" and "declared none" distinct. The verdict layer (`src/assay/verdict/`) turns
+that diff into exactly one `Assessment`: a `CLEAN/FLAGGED/MALICIOUS/UNVERIFIED` verdict, findings
+with severity and evidence, a named `UNVERIFIED` cause, and a `blocked` flag from the chosen
+strictness. `MALICIOUS` needs a `HIGH` finding from a captured `OK`/`DENIED` action; an
+instruction-pattern match is capped at `REVIEW` and can never produce it. Strictness changes only
+what blocks; the four-class floor cannot be lowered. There is no CLI, bundle or corpus yet, and
+precision is unmeasured until A7. The suite is offline on synthetic outcomes; the first real keyed
+run (the Phase 0 gate) has not happened yet. Do not describe capability that isn't there.
 
 Lineage: Assay is one of three siblings scaffolded together on 2026-10-22 (with Tenon and Pry),
 drawn from a market-demand research pass (`~/dev/at/ideas/market-demand-2026-10.md`) and sharing
