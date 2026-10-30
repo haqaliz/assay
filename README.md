@@ -45,7 +45,8 @@ ANTHROPIC_API_KEY=... uv run assay check path/to/SKILL.md \
 `ASSAY_MODEL`, `ASSAY_INPUT_PRICE`, `ASSAY_OUTPUT_PRICE` and `ASSAY_MAX_COST`. Prices are USD per
 million tokens. Traces are written to `./.assay/traces/<sha256>.json`
 unless `--out` says otherwise, and `--json` prints one canonical line for CI. Exit `0` only on
-`CLEAN`; `1` on `FLAGGED`, `MALICIOUS` or `UNVERIFIED`; `2` on a usage, config or environment
+`CLEAN`; `1` on `FLAGGED`, `MALICIOUS` or `UNVERIFIED` (including a sandbox that cannot start);
+`2` on a usage or config error
 error. The keyed run is still the maintainer's: the suite injects a scripted model and fake sandbox.
 
 ## What Assay is

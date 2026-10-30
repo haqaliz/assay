@@ -37,6 +37,11 @@ class AnthropicModel:
     ) -> None:
         if not isinstance(api_key, str) or not api_key.strip():
             raise AgentUnavailable("ANTHROPIC_API_KEY is not set", cause=RunCause.MISSING_KEY)
+        if any(ord(char) < 32 or ord(char) == 127 for char in api_key):
+            # Never echo the value: the exception is printed by the CLI.
+            raise AgentUnavailable(
+                "ANTHROPIC_API_KEY contains control characters", cause=RunCause.MISSING_KEY
+            )
         if not isinstance(model, str) or not model:
             raise ValueError("model must be a non-empty string")
         if isinstance(max_tokens, bool) or not isinstance(max_tokens, int) or max_tokens < 1:
@@ -77,6 +82,9 @@ class AnthropicModel:
             raise ModelFailed(f"http {exc.code}: {detail or exc.reason}") from exc
         except (urllib.error.URLError, OSError, TimeoutError, http.client.HTTPException) as exc:
             raise ModelFailed(f"transport failed: {exc}") from exc
+        except ValueError:
+            # http.client includes the offending header value in its message; never echo it.
+            raise ModelFailed("transport failed: invalid request") from None
         try:
             return self._parse(raw)
         except (json.JSONDecodeError, UnicodeDecodeError, KeyError, TypeError, ValueError) as exc:

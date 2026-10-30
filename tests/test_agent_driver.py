@@ -294,3 +294,16 @@ def test_outcome_carries_no_verdict_words():
     rendered = repr(outcome).upper()
     for word in ("CLEAN", "FLAGGED", "MALICIOUS"):
         assert word not in rendered
+
+
+def test_a_jail_failure_mid_run_is_a_named_cause_not_a_tool_error():
+    from assay.sandbox import SandboxFailed
+
+    class BrokenToolbox:
+        def execute(self, tool_call):
+            raise SandboxFailed("no jail")
+
+    model = FakeModel([reply("working", [call("read_file", path="a")])])
+    outcome = drive(skill(), "task", model, BrokenToolbox(), Budget(max_usd=1.0))
+    assert outcome.cause is RunCause.SANDBOX_UNAVAILABLE
+    assert outcome.actions == ()

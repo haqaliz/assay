@@ -139,12 +139,13 @@ def test_an_instruction_only_assessment_is_never_malicious_and_blocks_from_stand
         assert result.blocked is (level is not Strictness.BASELINE)
 
 
-def test_a_trace_cause_discards_instruction_findings():
+def test_a_trace_cause_keeps_instruction_findings():
     result = assess(skill(body="exfiltrate"), trace(cause="cost-capped"))
 
     assert result.verdict is Verdict.UNVERIFIED
     assert result.cause is UnverifiedCause.COST_CAPPED
-    assert result.findings == ()
+    [finding] = result.findings
+    assert finding.class_ is FindingClass.INSTRUCTIONS
 
 
 def test_the_user_task_is_not_attributed_to_the_skill():

@@ -59,10 +59,10 @@ def main(
     except KeyboardInterrupt:
         return 130
     except UsageError as exc:
-        print(f"error: {exc}", file=sys.stderr)
+        _emit(f"error: {exc}\n", sys.stderr)
         return 2
     except Exception as exc:  # no traceback ever reaches the user
-        print(f"error: {type(exc).__name__}: {exc}", file=sys.stderr)
+        _emit(f"error: {type(exc).__name__}: {exc}\n", sys.stderr)
         return 2
 
 
@@ -121,7 +121,7 @@ def _check(
     try:
         skill = parse_skill(path)
     except SkillParseError as exc:
-        print(refusal("wont-parse", exc.detail, exc.path, args.json), end="")
+        _emit(refusal("wont-parse", exc.detail, exc.path, args.json), sys.stdout)
         return 1
     if model is None:
         model = AnthropicModel.from_env(
@@ -131,7 +131,7 @@ def _check(
         try:
             sandbox = select_sandbox()
         except SandboxUnavailable as exc:
-            print(refusal("sandbox-unavailable", str(exc), path, args.json), end="")
+            _emit(refusal("sandbox-unavailable", str(exc), path, args.json), sys.stdout)
             return 1
 
     budget = Budget(
@@ -140,21 +140,27 @@ def _check(
         max_actions=args.max_actions,
         max_wall_seconds=args.max_wall_seconds,
     )
+    # Validate the destination before spending a single token.
+    store = TraceStore(args.out)
+    _emit(f"model: {args.model} | max-cost: ${args.max_cost:.2f}\n", sys.stderr)
     run_root = _make_run_root()
+    if args.keep_run_root:
+        _emit(f"run root: {run_root}\n", sys.stderr)
     try:
         task = task_for(skill)
         with Toolbox(sandbox, run_root) as toolbox:
             outcome = drive(skill, task, model, toolbox, budget)
         trace = capture(skill, task, outcome)
-        trace_path = TraceStore(args.out).save(trace).resolve()
+        trace_path = store.save(trace).resolve()
         assessment = assess(skill, trace, policy=StrictnessPolicy(level=args.strictness))
+        exit_code = 0 if assessment.verdict is Verdict.CLEAN else 1
         if args.json:
-            print(render_json(skill, assessment, trace_path, trace), end="")
+            _emit(render_json(skill, assessment, trace_path, trace), sys.stdout)
         else:
-            print(render_human(skill, assessment, trace_path, trace), end="")
-        if args.keep_run_root:
-            print(f"run root: {run_root}", file=sys.stderr if args.json else sys.stdout)
-        return 0 if assessment.verdict is Verdict.CLEAN else 1
+            _emit(
+                render_human(skill, assessment, trace_path, trace, exit_code), sys.stdout
+            )
+        return exit_code
     finally:
         if not args.keep_run_root:
             shutil.rmtree(run_root, ignore_errors=True)
@@ -162,3 +168,11 @@ def _check(
 
 def _make_run_root() -> Path:
     return Path(tempfile.mkdtemp(prefix="assay-run-"))
+
+
+def _emit(text: str, stream: object) -> None:
+    """Write UTF-8 even when the locale is ASCII, without mutating the process stream."""
+    try:
+        stream.write(text)  # type: ignore[attr-defined]
+    except UnicodeEncodeError:
+        stream.buffer.write(text.encode("utf-8"))  # type: ignore[attr-defined]

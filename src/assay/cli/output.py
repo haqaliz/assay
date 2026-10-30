@@ -22,25 +22,30 @@ def refusal(cause: str, detail: str, path: Path, as_json: bool) -> str:
         return canonical(
             {
                 "schema": 1,
-                "skill": {"path": str(path)},
+                "skill": {"path": _path_text(path)},
                 "verdict": "unverified",
                 "cause": cause,
                 "detail": detail,
             }
         )
     return (
-        f"skill: {path}\n"
+        f"skill: {_screen(_path_text(path))}\n"
         "verdict: UNVERIFIED\n"
         f"cause: {cause.upper().replace('-', '_')}\n"
-        f"detail: {detail}\n"
+        f"detail: {_one_line(detail)}\n"
+        "exit: 1\n"
     )
 
 
 def render_human(
-    skill: Skill, assessment: Assessment, trace_path: Path, trace: Trace
+    skill: Skill,
+    assessment: Assessment,
+    trace_path: Path,
+    trace: Trace,
+    exit_code: int,
 ) -> str:
     lines = [
-        f"skill: {skill.name} {skill.content_hash[:12]}",
+        f"skill: {_screen(skill.name)} {skill.content_hash[:12]}",
         f"verdict: {assessment.verdict.value.upper()}",
         f"cause: {_cause(assessment)}",
         f"strictness: {assessment.strictness.value} "
@@ -50,16 +55,17 @@ def render_human(
         lines.append("findings:")
         lines.extend(
             f"[{finding.severity.value.upper()}] {finding.class_.value} "
-            f"{finding.target}: {finding.reason}"
+            f"{_screen(finding.target)}: {_screen(finding.reason)}"
             for finding in assessment.findings
         )
     else:
         lines.append("findings: none")
-    lines.append(f"trace: {trace_path}")
+    lines.append(f"trace: {_path_text(trace_path)}")
     lines.append(
         f"cost: ${trace.cost_usd:.4f} "
         f"({trace.input_tokens} input, {trace.output_tokens} output tokens)"
     )
+    lines.append(f"exit: {exit_code}")
     return "\n".join(lines) + "\n"
 
 
@@ -72,7 +78,7 @@ def render_json(
             "skill": {
                 "name": skill.name,
                 "content_hash": skill.content_hash,
-                "path": str(skill.source_path),
+                "path": _path_text(skill.source_path),
             },
             "verdict": assessment.verdict.value,
             "cause": assessment.cause.value if assessment.cause is not None else None,
@@ -89,7 +95,7 @@ def render_json(
                 }
                 for finding in assessment.findings
             ],
-            "trace": str(trace_path),
+            "trace": _path_text(trace_path),
             "trace_hash": assessment.trace_hash,
             "usage": {
                 "input_tokens": trace.input_tokens,
@@ -104,3 +110,22 @@ def _cause(assessment: Assessment) -> str:
     if assessment.cause is None:
         return "-"
     return assessment.cause.value.upper().replace("-", "_")
+
+
+def _screen(value: str) -> str:
+    """Keep a terminal report from being rewritten by a skill's own text."""
+    return "".join(
+        char
+        if char.isprintable() and char not in "\r\n"
+        else f"\\x{ord(char):02x}"
+        for char in value
+    )
+
+
+def _one_line(value: str) -> str:
+    return _screen(" ".join(value.split()))
+
+
+def _path_text(path: Path) -> str:
+    # A path decoded from argv can carry surrogates; both JSON and the terminal need valid text.
+    return str(path).encode("utf-8", "backslashreplace").decode("utf-8")

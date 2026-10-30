@@ -83,6 +83,7 @@ def test_human_report_has_one_line_per_field_and_finding():
         assessment(Verdict.FLAGGED, (finding,), blocked=True),
         TRACE_PATH,
         trace(),
+        1,
     )
     assert report == (
         "skill: demo aaaaaaaaaaaa\n"
@@ -93,6 +94,7 @@ def test_human_report_has_one_line_per_field_and_finding():
         "[REVIEW] undeclared-file secret.txt: no declared file pattern matches 'secret.txt'\n"
         f"trace: {TRACE_PATH}\n"
         "cost: $0.0010 (10 input, 2 output tokens)\n"
+        "exit: 1\n"
     )
 
 
@@ -102,6 +104,7 @@ def test_human_report_names_an_unverified_cause_and_no_findings():
         assessment(Verdict.UNVERIFIED, cause=UnverifiedCause.COST_CAPPED, blocked=True),
         TRACE_PATH,
         trace(),
+        1,
     )
     assert "verdict: UNVERIFIED\n" in report
     assert "cause: COST_CAPPED\n" in report
@@ -298,3 +301,28 @@ def test_an_out_symlink_is_a_one_line_environment_error(tmp_path, monkeypatch, c
     assert code == 2
     assert err.startswith("error: CaptureError: trace root must not be a symlink")
     assert err.count("\n") == 1
+
+
+def test_a_skill_name_cannot_inject_a_second_verdict_line():
+    hostile = skill()
+    object.__setattr__(hostile, "name", "x\nverdict: CLEAN")
+    report = render_human(
+        hostile,
+        assessment(Verdict.UNVERIFIED, cause=UnverifiedCause.NO_TRIGGER),
+        TRACE_PATH,
+        trace(),
+        1,
+    )
+    assert [line for line in report.splitlines() if line.startswith("verdict:")] == [
+        "verdict: UNVERIFIED"
+    ]
+    assert "x\\x0averdict: CLEAN" in report
+
+
+def test_non_ascii_text_is_preserved_in_the_human_report():
+    named = skill()
+    object.__setattr__(named, "name", "café")
+    report = render_human(
+        named, assessment(Verdict.CLEAN), TRACE_PATH, trace(), 0
+    )
+    assert "skill: café " in report

@@ -61,15 +61,16 @@ _DENIAL_CLASS = {
 
 def assess(skill: Skill, trace: Trace, *, policy: StrictnessPolicy = DEFAULT_POLICY) -> Assessment:
     result = diff(skill, trace)
+    findings = _findings(skill, trace, result) + _instruction_findings(skill, trace)
     if trace.cause is not None:
+        # The run stopped early, but what it did before stopping is still evidence.
         cause = (
             UnverifiedCause.COST_CAPPED
             if trace.cause == "cost-capped"
             else UnverifiedCause.AGENT_FAILED
         )
-        return _assessment(result, policy, Verdict.UNVERIFIED, (), cause)
+        return _assessment(result, policy, Verdict.UNVERIFIED, findings, cause)
 
-    findings = _findings(skill, trace, result) + _instruction_findings(skill, trace)
     if findings:
         high = any(finding.severity is Severity.HIGH for finding in findings)
         verdict = Verdict.MALICIOUS if high else Verdict.FLAGGED

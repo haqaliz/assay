@@ -89,8 +89,8 @@ directory resolves against the invocation directory. `--json` is one canonical l
 (`sort_keys`, compact separators, UTF-8, trailing newline) with a versioned `schema`; identical
 runs produce identical bytes.
 
-Exit is verdict-only: `0` on `CLEAN`, `1` on `FLAGGED/MALICIOUS/UNVERIFIED`, `2` on a usage,
-config or environment error, `130` on Ctrl-C. `blocked` is reported but never changes the code.
+Exit is verdict-only: `0` on `CLEAN`, `1` on `FLAGGED/MALICIOUS/UNVERIFIED`, `2` on a usage or
+config error, `130` on Ctrl-C. `blocked` is reported but never changes the code.
 Parse and sandbox refusals use a `UNVERIFIED` envelope and exit `1`; no other failure prints a
 traceback. The API key is read from `ANTHROPIC_API_KEY` and never reaches stdout, the JSON, the
 trace or `JailConfig.env`. The first real keyed run is still the maintainer's; the suite injects a

@@ -65,6 +65,7 @@ def test_parse_refusal_prints_a_human_envelope_and_exits_1(tmp_path, capsys):
         "verdict: UNVERIFIED\n"
         "cause: WONT_PARSE\n"
         f"detail: {refusal_detail(path)}\n"
+        "exit: 1\n"
     )
     assert captured.err == ""
     assert not out.exists()
@@ -131,6 +132,7 @@ def test_sandbox_unavailable_prints_an_envelope_and_exits_1(
             "verdict: UNVERIFIED\n"
             "cause: SANDBOX_UNAVAILABLE\n"
             "detail: no confining sandbox backend for platform 'linux'\n"
+            "exit: 1\n"
         )
     assert captured.err == ""
 

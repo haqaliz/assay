@@ -1,4 +1,5 @@
 import importlib
+import json
 from pathlib import Path
 
 import pytest
@@ -36,8 +37,10 @@ class FakeModel:
         self.price = price
         self.replies = list(replies)
         self.error = error
+        self.calls = 0
 
     def complete(self, messages, tools):
+        self.calls += 1
         if self.error is not None:
             raise self.error
         return self.replies.pop(0)
@@ -123,13 +126,20 @@ def test_an_undeclared_read_is_flagged_and_exits_1(tmp_path, monkeypatch):
     assert trace.cause is None
 
 
-def test_a_dangerous_shell_command_is_malicious_and_exits_1(tmp_path, monkeypatch):
+def test_a_dangerous_shell_command_is_malicious_and_exits_1(tmp_path, monkeypatch, capsys):
     model = FakeModel(
         [reply("working", [call("run_shell", command="rm -rf /")]), reply("done")]
     )
-    code, out, _ = invoke(tmp_path, monkeypatch, model, skill=write_skill(tmp_path, tools="Bash,Read"))
+    code, out, _ = invoke(
+        tmp_path, monkeypatch, model, skill=write_skill(tmp_path, tools="Bash,Read"),
+        extra=("--json",),
+    )
 
     assert code == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["verdict"] == "malicious"
+    assert payload["findings"][0]["severity"] == "high"
+    assert payload["findings"][0]["review_required"] is True
     trace, _ = saved_trace(out)
     assert [event.target for event in trace.events if event.kind == "shell"] == ["rm -rf /"]
 
@@ -186,7 +196,7 @@ def test_the_run_root_is_removed_unless_kept(tmp_path, monkeypatch, capsys):
     )
     assert code == 0
     assert kept.exists()
-    assert str(kept) in capsys.readouterr().out
+    assert str(kept) in capsys.readouterr().err
 
 
 def test_the_api_key_never_reaches_output_the_trace_or_a_jail_config(tmp_path, monkeypatch, capsys):
@@ -218,3 +228,43 @@ def test_a_missing_key_is_one_line_and_exits_2_before_a_trace(tmp_path, monkeypa
     assert captured.err == "error: AgentUnavailable: ANTHROPIC_API_KEY is not set\n"
     assert "Traceback" not in captured.err
     assert not out.exists()
+
+
+def test_a_sandbox_that_cannot_start_is_unverified_never_clean(tmp_path, monkeypatch):
+    from assay.sandbox import SandboxFailed
+
+    class BrokenSandbox:
+        def run(self, argv, config):
+            raise SandboxFailed("no jail")
+
+    model = FakeModel([reply("working", [call("read_file", path="in.txt")]), reply("done")])
+    code, out, _ = invoke(
+        tmp_path, monkeypatch, model, sandbox=BrokenSandbox(), extra=("--json",)
+    )
+
+    assert code == 1
+    trace, _ = saved_trace(out)
+    assert trace.cause == "sandbox-unavailable"
+
+
+def test_the_output_destination_is_checked_before_any_model_call(tmp_path, monkeypatch, capsys):
+    blocker = tmp_path / "not-a-directory"
+    blocker.write_text("x")
+    model = FakeModel([reply("done")])
+    code = main(
+        ["check", str(write_skill(tmp_path)), *BASE, "--out", str(blocker)],
+        model=model,
+        sandbox=FakeSandbox(),
+    )
+
+    assert code == 2
+    assert model.calls == 0
+    assert "error:" in capsys.readouterr().err
+
+
+def test_the_model_and_cap_are_shown_on_stderr_before_the_run(tmp_path, monkeypatch, capsys):
+    model = FakeModel([reply("done")])
+    invoke(tmp_path, monkeypatch, model)
+    err = capsys.readouterr().err
+    assert "model: fake" in err
+    assert "max-cost: $1.00" in err
