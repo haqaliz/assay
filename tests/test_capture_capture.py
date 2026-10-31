@@ -32,7 +32,7 @@ def record(**over):
         truncated=False,
         denials=(),
         limit_exceeded=None,
-        config_hash="f" * 64,
+        config_hash="sha256:" + "f" * 64,
         run_root="/run",
         started_at="2026-10-29T00:00:00Z",
     )
@@ -149,7 +149,7 @@ def test_trace_carries_skill_task_and_run_metadata():
         ),
     )
 
-    assert trace.schema == 1
+    assert trace.schema == 2
     assert trace.skill_name == "demo"
     assert trace.skill_content_hash == "a" * 64
     assert trace.task_sha256 == hashlib.sha256(b"do it").hexdigest()
@@ -298,3 +298,34 @@ def test_a_missing_path_or_url_does_not_crash_capture():
         ),
     )
     assert [event.target for event in trace.events[:2]] == ["invalid-path", "invalid-url"]
+
+
+def test_capture_records_each_distinct_jail_config_once():
+    first = "sha256:" + "a" * 64
+    second = "sha256:" + "b" * 64
+    trace = capture(
+        skill(),
+        "task",
+        outcome(
+            [
+                action("read_file", path="a", record_=record(config_hash=first)),
+                action("http_get", url="https://example.com", record_=record(config_hash=second)),
+                action("read_file", path="b", record_=record(config_hash=second)),
+            ]
+        ),
+    )
+    assert trace.sandbox_config_hashes == (first, second)
+
+
+def test_capture_records_no_sandbox_hashes_when_no_action_entered_a_jail():
+    trace = capture(
+        skill(),
+        "task",
+        outcome(
+            [
+                action("read_file", path="a", ok=False, output="ENOENT"),
+                action("http_get", url="https://example.com", ok=False, output="refused"),
+            ]
+        ),
+    )
+    assert trace.sandbox_config_hashes == ()

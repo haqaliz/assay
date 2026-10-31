@@ -53,6 +53,7 @@ def trace(*events, cause=None):
         output_tokens=0,
         cost_usd=0.0,
         events=tuple(events),
+        sandbox_config_hashes=(),
     )
 
 

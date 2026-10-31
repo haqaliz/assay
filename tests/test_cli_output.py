@@ -55,6 +55,7 @@ def trace():
         output_tokens=2,
         cost_usd=0.001,
         events=(),
+        sandbox_config_hashes=(),
     )
 
 

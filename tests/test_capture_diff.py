@@ -46,6 +46,7 @@ def trace(*events):
         output_tokens=0,
         cost_usd=0.0,
         events=tuple(events),
+        sandbox_config_hashes=(),
     )
 
 
@@ -242,6 +243,7 @@ def test_a_trace_from_another_skill_is_refused():
         output_tokens=0,
         cost_usd=0.0,
         events=(event(EventKind.FILE_READ, "out/x"),),
+        sandbox_config_hashes=(),
     )
     with pytest.raises(CaptureError, match="trace belongs to skill"):
         diff(skill(Scope(files=())), other)

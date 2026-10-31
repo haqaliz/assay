@@ -36,6 +36,7 @@ def trace(**over):
         output_tokens=3,
         cost_usd=0.0012,
         events=(event(),),
+        sandbox_config_hashes=(),
     )
     base.update(over)
     return Trace(**base)
@@ -82,7 +83,7 @@ def test_event_rejects_invalid_values(over, field):
         ({"cost_usd": float("inf")}, "cost_usd"),
         ({"cost_usd": -0.1}, "cost_usd"),
         ({"cost_usd": True}, "cost_usd"),
-        ({"schema": 2}, "schema"),
+        ({"schema": 1}, "schema"),
         ({"events": ("not an event",)}, "events"),
     ],
 )
@@ -115,7 +116,7 @@ def test_capture_errors_are_named_value_errors():
 def test_golden_hash_pins_the_canonical_encoding():
     assert (
         trace().hash
-        == "d15f2fd77ec6118b991888348e0c330b29837991d6dd7fc941a0fabc656625f2"
+        == "4b47ea94dde0e048bed381d64028b39d4858b5d84e5bb957c1f1a1ac02ebbea8"
     )
 
 
@@ -160,11 +161,57 @@ def test_event_requires_typed_kind_outcome_and_string_target():
               content_sha256="a" * 64, content_bytes=0, excerpt=None)
 
 
-def test_trace_schema_must_be_the_int_one():
+def test_trace_schema_must_be_the_int_two():
     with pytest.raises(ValueError, match="schema"):
         Trace(skill_name="demo", skill_content_hash="a" * 64, task_sha256="b" * 64,
               cause=None, input_tokens=0, output_tokens=0, cost_usd=0.0,
-              events=(), schema=1.0)
+              events=(), schema=1.0, sandbox_config_hashes=())
+
+
+def test_trace_schema_2_requires_sandbox_config_hashes():
+    with pytest.raises(TypeError):
+        Trace(skill_name="demo", skill_content_hash="a" * 64, task_sha256="b" * 64,
+              cause=None, input_tokens=0, output_tokens=0, cost_usd=0.0, events=())
+    with pytest.raises(ValueError, match="schema"):
+        trace(schema=1)
+
+
+def test_sandbox_config_hashes_are_sorted_and_unique():
+    a = "sha256:" + "a" * 64
+    b = "sha256:" + "b" * 64
+    assert trace(sandbox_config_hashes=(b, a, b)).sandbox_config_hashes == (a, b)
+    assert trace(sandbox_config_hashes=[b, a]).sandbox_config_hashes == (a, b)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "a" * 64,
+        "md5:" + "a" * 64,
+        "sha256:" + "a" * 63,
+        "sha256:" + "A" * 64,
+        "sha256:" + "g" * 64,
+    ],
+)
+def test_sandbox_config_hash_must_be_prefixed_sha256(value):
+    with pytest.raises(ValueError, match="sandbox config hash"):
+        trace(sandbox_config_hashes=(value,))
+
+
+def test_trace_payload_carries_sandbox_config_hashes():
+    a = "sha256:" + "a" * 64
+    b = "sha256:" + "b" * 64
+    original = trace(sandbox_config_hashes=(b, a))
+    assert original.to_payload()["sandbox_config_hashes"] == [a, b]
+    assert trace().to_payload()["sandbox_config_hashes"] == []
+    assert Trace.from_json(original.to_json()).sandbox_config_hashes == (a, b)
+
+
+def test_schema_1_trace_json_is_refused_by_name():
+    payload = json.loads(trace().to_json())
+    payload["schema"] = 1
+    with pytest.raises(CaptureError, match="schema"):
+        Trace.from_json(json.dumps(payload))
 
 
 def test_from_json_rejects_a_null_target_as_a_capture_error():
@@ -220,6 +267,7 @@ def test_request_and_truncated_round_trip():
     )
     loaded = Trace.from_json(Trace(skill_name="demo", skill_content_hash="a" * 64,
                                    task_sha256="b" * 64, cause=None, input_tokens=0,
-                                   output_tokens=0, cost_usd=0.0, events=(event,)).to_json())
+                                   output_tokens=0, cost_usd=0.0, events=(event,),
+                                   sandbox_config_hashes=()).to_json())
     assert loaded.events[0].request == event.request
     assert loaded.events[0].truncated is True

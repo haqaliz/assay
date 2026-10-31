@@ -43,6 +43,7 @@ def trace(*events, cause=None):
         output_tokens=0,
         cost_usd=0.0,
         events=tuple(events),
+        sandbox_config_hashes=(),
     )
 
 
@@ -56,6 +57,7 @@ def test_a_trace_from_another_skill_is_refused_before_any_assessment():
         output_tokens=0,
         cost_usd=0.0,
         events=(event(EventKind.TOOL, "mystery"),),
+        sandbox_config_hashes=(),
     )
 
     with pytest.raises(CaptureError, match="trace belongs to skill"):
