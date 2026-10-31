@@ -83,8 +83,10 @@ uv run assay verify .assay/traces/<sha256>.bundle.json \
 exits `0` only when it wrote the file. `verify` exits `0` only when the record is canonical, every
 hash agrees, and the signature verifies against the public key you supply; `1` on any failure, `2`
 on a usage error. Both accept `--json`. The bundle embeds the trace, so a verifier needs only the
-bundle and the public key — never the private key, the model, or the sandbox. The signature proves
-the record is intact and who attested it; it does not prove the skill is safe, and the skill hash
+bundle and the public key — never the private key, the model, or the sandbox. A bundle embeds the
+trace's event excerpts, so read it before publishing. Pass the same `--strictness` you checked
+with (the default is `standard`); the bundle records the level it used. The signature proves the
+record is intact and who attested it; it does not prove the skill is safe, and the skill hash
 covers `SKILL.md` only, not the rest of the skill directory. `CLEAN` still means "matched declared
 scope in this run".
 
