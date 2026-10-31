@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Callable
 
 from assay.canonical import canonical
@@ -10,6 +11,8 @@ from assay.ingest import Skill
 from assay.verdict import Assessment, Strictness, StrictnessPolicy, assess
 
 from .records import BUNDLE_SCHEMA, Bundle, BundleError, HashList, Signature
+from .sign import sign as sign_payload
+from .sign import verify as verify_payload
 
 Signer = Callable[[bytes], Signature]
 Verifier = Callable[[bytes, Signature], None]
@@ -56,3 +59,21 @@ def create_bundle(
 
 def verify_bundle(bundle: Bundle, verifier: Verifier) -> None:
     verifier(bundle.unsigned_json().encode("utf-8"), bundle.signature)
+
+
+def build(
+    skill: Skill, trace: Trace, strictness: Strictness, private_key: Path
+) -> Bundle:
+    return create_bundle(
+        skill,
+        trace,
+        strictness,
+        lambda data: sign_payload(data, private_key),
+    )
+
+
+def verify(bundle: Bundle, public_key: Path) -> None:
+    verify_bundle(
+        bundle,
+        lambda data, signature: verify_payload(data, signature, public_key),
+    )
