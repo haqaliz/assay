@@ -89,6 +89,32 @@ class Finding:
         if self.class_ is FindingClass.INSTRUCTIONS and self.severity is not Severity.REVIEW:
             raise VerdictError("an INSTRUCTIONS finding is capped at REVIEW")
 
+    def to_payload(self) -> dict[str, object]:
+        return {
+            "class": self.class_.value,
+            "severity": self.severity.value,
+            "target": self.target,
+            "reason": self.reason,
+            "outcome": self.outcome.value,
+            "review_required": self.review_required,
+        }
+
+    @classmethod
+    def from_payload(cls, payload: dict[str, object]) -> Finding:
+        try:
+            return cls(
+                class_=FindingClass(payload["class"]),
+                severity=Severity(payload["severity"]),
+                target=payload["target"],
+                reason=payload["reason"],
+                outcome=EventOutcome(payload["outcome"]),
+                review_required=payload["review_required"],
+            )
+        except VerdictError:
+            raise
+        except (KeyError, TypeError, ValueError) as exc:
+            raise VerdictError(f"invalid finding payload: {exc}") from None
+
 
 @dataclass(frozen=True, slots=True)
 class Assessment:
@@ -127,6 +153,38 @@ class Assessment:
             raise VerdictError("MALICIOUS needs at least one HIGH finding")
         _hash64(self.skill_content_hash, "skill_content_hash")
         _hash64(self.trace_hash, "trace_hash")
+
+    def to_payload(self) -> dict[str, object]:
+        return {
+            "verdict": self.verdict.value,
+            "cause": self.cause.value if self.cause is not None else None,
+            "blocked": self.blocked,
+            "strictness": self.strictness.value,
+            "findings": [finding.to_payload() for finding in self.findings],
+            "skill_content_hash": self.skill_content_hash,
+            "trace_hash": self.trace_hash,
+        }
+
+    @classmethod
+    def from_payload(cls, payload: dict[str, object]) -> Assessment:
+        try:
+            findings = payload["findings"]
+            if not isinstance(findings, list):
+                raise VerdictError("findings must be a list")
+            cause = payload["cause"]
+            return cls(
+                verdict=Verdict(payload["verdict"]),
+                findings=tuple(Finding.from_payload(item) for item in findings),
+                cause=UnverifiedCause(cause) if cause is not None else None,
+                blocked=payload["blocked"],
+                strictness=Strictness(payload["strictness"]),
+                skill_content_hash=payload["skill_content_hash"],
+                trace_hash=payload["trace_hash"],
+            )
+        except VerdictError:
+            raise
+        except (KeyError, TypeError, ValueError) as exc:
+            raise VerdictError(f"invalid assessment payload: {exc}") from None
 
     @property
     def review_required(self) -> bool:

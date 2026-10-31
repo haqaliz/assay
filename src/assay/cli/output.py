@@ -2,18 +2,12 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
+from assay.canonical import canonical
 from assay.capture import Trace
 from assay.ingest import Skill
 from assay.verdict import Assessment
-
-
-def canonical(payload: dict[str, object]) -> str:
-    return (
-        json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n"
-    )
 
 
 def refusal(cause: str, detail: str, path: Path, as_json: bool) -> str:
@@ -84,17 +78,7 @@ def render_json(
             "cause": assessment.cause.value if assessment.cause is not None else None,
             "blocked": assessment.blocked,
             "strictness": assessment.strictness.value,
-            "findings": [
-                {
-                    "class": finding.class_.value,
-                    "severity": finding.severity.value,
-                    "target": finding.target,
-                    "reason": finding.reason,
-                    "outcome": finding.outcome.value,
-                    "review_required": finding.review_required,
-                }
-                for finding in assessment.findings
-            ],
+            "findings": [finding.to_payload() for finding in assessment.findings],
             "trace": _path_text(trace_path),
             "trace_hash": assessment.trace_hash,
             "usage": {
