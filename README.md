@@ -3,7 +3,7 @@
 **Execution-grounded security verifier for AI agent skills.** Runs a skill in a sandbox against a
 real agent, captures what it actually did, and checks that against what it claims to do.
 
-[![Status](https://img.shields.io/badge/status-A1--A5%20engine%20·%20offline-orange)](docs/ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-A1--A6%20engine%20·%20offline-orange)](docs/ROADMAP.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 [Vision](VISION.md) · [Roadmap](docs/ROADMAP.md) · [Architecture](docs/technical/ARCHITECTURE.md) · [Capabilities](docs/technical/CAPABILITY_ROADMAP.md)
@@ -12,7 +12,8 @@ real agent, captures what it actually did, and checks that against what it claim
 
 ## Status
 
-**A1–A5 exist; the engine has a verdict.** What is built and tested, all offline:
+**A1–A6 exist; the engine has a verdict and a portable record.** What is built and tested, all
+offline (the bundle tests run a local `ssh-keygen`; no network and no model call):
 
 - **Ingest** (`src/assay/ingest/`) — parses a Claude Code `SKILL.md` into a frozen `Skill` record
   with a tri-state declared scope (undeclared vs declared none) and a named refusal for malformed
@@ -29,10 +30,16 @@ real agent, captures what it actually did, and checks that against what it claim
   undecidable, and a `blocked` flag. The four-class severity floor cannot be lowered.
 - **CLI** (`src/assay/cli/`) — `assay check <skill>` composes A1–A5, saves the trace, prints a
   human or canonical JSON report, and exits `0` only on `CLEAN`.
+- **Signed bundle** (`src/assay/bundle/`) — turns a saved trace and its `SKILL.md` into one
+  canonical record with the skill hash, the observed trace, the sandbox config hashes and the
+  verdict, signed with `ssh-keygen`. `assay verify` checks the hashes and the signature offline.
+  The signature proves the record is intact and who attested it; it does not prove the skill is
+  safe. The bundle cannot re-derive the verdict from the trace alone, because the trace does not
+  carry the declared scope; that replay is the next capability.
 
-There is no bundle or corpus yet, the pattern lists are narrow and uncalibrated until A7, and
-the first real keyed run has not happened. Read `CLAUDE.md` before writing any code here; do not
-describe capability that is not in `git log`.
+There is no corpus yet, the pattern lists are narrow and uncalibrated until A7, and the first real
+Anthropic-keyed run has not happened (the Phase 0 gate used a local model). Read `CLAUDE.md` before
+writing any code here; do not describe capability that is not in `git log`.
 
 ## Usage
 
@@ -59,13 +66,35 @@ line for CI. Exit `0` only on `CLEAN`; `1` on `FLAGGED`, `MALICIOUS` or `UNVERIF
 sandbox that cannot start); `2` on a usage or config error. The suite injects a scripted model and
 fake sandbox; a real Anthropic-keyed run is still the maintainer's.
 
+### Attesting a run
+
+A bundle binds one saved trace to the `SKILL.md` that produced it. Use a dedicated, unencrypted
+attestation key:
+
+```sh
+ssh-keygen -t ed25519 -N '' -C assay-attest -f ~/.ssh/assay-attest
+uv run assay bundle .assay/traces/<sha256>.json \
+  --skill path/to/SKILL.md --key ~/.ssh/assay-attest
+uv run assay verify .assay/traces/<sha256>.bundle.json \
+  --public-key ~/.ssh/assay-attest.pub
+```
+
+`bundle` writes `<trace-stem>.bundle.json` next to the trace unless `--out` says otherwise, and
+exits `0` only when it wrote the file. `verify` exits `0` only when the record is canonical, every
+hash agrees, and the signature verifies against the public key you supply; `1` on any failure, `2`
+on a usage error. Both accept `--json`. The bundle embeds the trace, so a verifier needs only the
+bundle and the public key — never the private key, the model, or the sandbox. The signature proves
+the record is intact and who attested it; it does not prove the skill is safe, and the skill hash
+covers `SKILL.md` only, not the rest of the skill directory. `CLEAN` still means "matched declared
+scope in this run".
+
 ## What Assay is
 
 Point Assay at a skill — a Claude Code `SKILL.md` first, with other formats (OpenClaw/ClawHub,
 Cursor rules, MCP servers) to follow. It runs the skill in an isolated sandbox against a real
 agent, captures every file access, network call, shell command, and injected instruction it
 produced, and diffs that against what the skill declares about itself. The verdict is backed by
-a replayable record of the run.
+a captured record of the run, which can be signed into a bundle a third party verifies offline.
 
 ## What Assay is not
 
@@ -82,7 +111,7 @@ a replayable record of the run.
 | `CLEAN` | No findings, all three dimensions declared, and at least one captured behavior event |
 | `FLAGGED` | At least one finding, none of them `HIGH` |
 | `MALICIOUS` | At least one `HIGH` finding from a captured `OK`/`DENIED` action — never inferred from text alone |
-| `UNVERIFIED` | Could not decide; carries `NO_TRIGGER`, `NO_DECLARED_SCOPE`, `AGENT_FAILED` or `COST_CAPPED` |
+| `UNVERIFIED` | Could not decide; carries `NO_TRIGGER`, `NO_DECLARED_SCOPE`, `AGENT_FAILED`, `BUDGET_LIMIT` or `COST_CAPPED` |
 
 Strictness (`baseline`/`standard`/`strict`) decides only whether a run is `blocked`; it never
 changes the verdict. The severity floor for the four finding classes is fixed and cannot be

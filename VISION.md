@@ -68,7 +68,7 @@ sophisticated; a captured, reproduced behavior does not.
 ## The wedge → the company
 
 1. **OSS on-ramp:** a CLI that sandboxes any skill, runs it against a real (BYOK) agent, and
-   returns a verdict with a replayable record. Free, self-hostable. Earn credibility by
+   returns a verdict with a captured, signed record. Free, self-hostable. Earn credibility by
    publishing a real audit of widely-used public skills, with responsible disclosure.
 2. **Team / registry layer:** the findings corpus as a shared, queryable asset; a registry
    (ClawHub-style or your own) that checks a skill before letting it list, using the same engine.
