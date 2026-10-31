@@ -1,27 +1,34 @@
-# feat local-model — OpenAI-compatible model adapter for keyless local runs
+# feat signed-bundle — signed attestation bundle (A6)
 
 ## Brief
 
-> Add a second `Model` adapter for the OpenAI-compatible chat-completions protocol, and let the CLI
-> select it (`--provider openai-compatible --base-url URL`). It must work with a local Ollama server
-> (the dev machine has `qwen3-coder:30b` running at `127.0.0.1:11434`), so the Phase 0 gate can be
-> run with no API key, no spend and no consumer-subscription automation. The adapter maps messages,
-> tool calls, tool results and usage to the existing `Model`/`Message`/`ModelReply` seam; tests are
-> offline with an injected transport. Auth is optional only for a loopback base URL; a remote base
-> URL requires a key from `ASSAY_API_KEY`. Keep Anthropic as the default provider. No new dependency.
-> This partially covers the deferred "provider #2" nice-to-have and does not change any detection
-> logic.
+Build A6 per `docs/technical/CAPABILITY_ROADMAP.md`: a signed, hash-listed
+attestation bundle around an existing captured trace. `assay bundle <trace.json> --out DIR`
+writes one canonical JSON record (schema/version, skill content hash, sandbox-policy
+digest, trace file name + hash, the full assessment, signer key id) and signs it;
+`assay verify <bundle>` re-derives the trace hash from the trace bytes, checks it equals
+the assessment's `trace_hash` and that the skill hash matches, then verifies the
+signature, exiting 0 verified / 1 tampered / 2 usage. Caveat: no Ed25519 exists in the
+dependency set (`pyyaml` only, `cryptography` absent), so use `ssh-keygen -Y sign` /
+`-Y verify` as the platform primitive with a throwaway key in tests and a named refusal
+when the key is missing; the trace also carries no sandbox config today, so define a
+policy digest rather than hashing the ephemeral run root. Acceptance: identical inputs
+produce a byte-stable bundle; tampering with one trace byte, the verdict, or the
+signature makes verify fail with a named reason and no traceback; an UNVERIFIED run
+still bundles and verifies; `assay check`'s exit codes and JSON are unchanged. Docs must
+state that a signature proves the record is intact and who attested it — never that the
+skill is safe, and never more than "in this run" for CLEAN.
 
-Source: direct user need after `M1.4`; the subscription route is forbidden by `CLAUDE.md`/R6, and a
-local OpenAI-compatible server is the zero-key path.
+Source: A6 in `docs/technical/CAPABILITY_ROADMAP.md`; A5 shipped in `1724db3`, and this
+is the next capability whose dependency is met. Selected by `assay-next` on 2026-11-01.
 
 ## Context carried from the pick
 
-- `CLAUDE.md` BYOK rule and `docs/ROADMAP.md` R6: no consumer-subscription automation. This slice
-  does not touch that; it uses a local model server.
-- `docs/technical/CAPABILITY_ROADMAP.md` A3 lists provider #2 as deferred; the `Model` protocol in
-  `src/assay/agent/base.py` was designed for exactly this.
-- `src/assay/agent/anthropic.py` is the reference adapter (transport injection, key handling, error
-  mapping, 60 s timeout); `src/assay/cli/main.py` builds the model from `ANTHROPIC_API_KEY`.
-- Ollama on the dev machine: version 0.40.10, model `qwen3-coder:30b`, OpenAI-compatible base
-  `http://127.0.0.1:11434/v1`.
+- Phase 0 gate met 2026-10-31 with a local model; A1–A5 and `assay check` shipped
+  (549 offline tests, `c547` history). No GitHub issues exist; this card is the source.
+- `docs/ROADMAP.md` M2.1: "Hash-listed, signed record of a run; a third party can verify it".
+- `docs/technical/ARCHITECTURE.md`: bundle is `bundle/` (A6: hash list, signing, verify);
+  CLI surface is `assay check | bundle | corpus`. Determinism: the replayable unit is the
+  recorded trace, and the bundle carries the trace.
+- Constraints: execution decides; no over-claim (a bundle attests a run, not safety);
+  tests offline, no network, no real model call.
