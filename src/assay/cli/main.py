@@ -1,4 +1,4 @@
-"""`assay check`: parse, validate and (later) run one skill end to end."""
+"""The `assay` command line: check one skill, bundle a trace, verify a bundle."""
 
 from __future__ import annotations
 
@@ -21,17 +21,28 @@ from assay.agent import (
     drive,
     task_for,
 )
-from assay.capture import TraceStore, capture
+from assay.bundle import Bundle, BundleError, SigningError, build, verify
+from assay.capture import CaptureError, TraceStore, capture
 from assay.ingest import SkillParseError, parse_skill
 from assay.sandbox import SandboxUnavailable
 from assay.sandbox.base import Sandbox, select_sandbox
 from assay.verdict import Strictness, StrictnessPolicy, Verdict, assess
 
-from .output import refusal, render_human, render_json
+from .output import (
+    bundle_refusal,
+    refusal,
+    render_bundle,
+    render_human,
+    render_json,
+    render_verify,
+)
 
 
 class UsageError(Exception):
     """A setting the command needs is missing or invalid; never a verdict."""
+
+
+MAX_BUNDLE_BYTES = 64 * 1024 * 1024
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -57,6 +68,21 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("--out", type=Path, default=Path("./.assay/traces"), metavar="DIR")
     check.add_argument("--json", action="store_true")
     check.add_argument("--keep-run-root", action="store_true")
+    bundle = commands.add_parser("bundle", help="sign a saved trace into a bundle")
+    bundle.add_argument("trace", type=str)
+    bundle.add_argument("--skill", required=True, metavar="SKILL.md|DIR")
+    bundle.add_argument("--key", required=True, metavar="PRIVATE_KEY")
+    bundle.add_argument(
+        "--strictness", choices=[level.value for level in Strictness], default="standard"
+    )
+    bundle.add_argument("--out", type=Path, metavar="DIR")
+    bundle.add_argument("--json", action="store_true")
+    verify_command = commands.add_parser(
+        "verify", help="check a bundle's integrity and signature"
+    )
+    verify_command.add_argument("bundle", type=str)
+    verify_command.add_argument("--public-key", required=True, metavar="PUBLIC_KEY")
+    verify_command.add_argument("--json", action="store_true")
     return parser
 
 
@@ -68,8 +94,13 @@ def main(
 ) -> int:
     try:
         args = build_parser().parse_args(argv)
-        _validate(args)
-        return _check(args, model, sandbox)
+        if args.command == "check":
+            _validate(args)
+            return _check(args, model, sandbox)
+        if args.command == "bundle":
+            _validate_bundle(args)
+            return _bundle(args)
+        return _verify(args)
     except KeyboardInterrupt:
         return 130
     except UsageError as exc:
@@ -196,6 +227,101 @@ def _check(
     finally:
         if not args.keep_run_root:
             shutil.rmtree(run_root, ignore_errors=True)
+
+
+def _validate_bundle(args: argparse.Namespace) -> None:
+    args.strictness = Strictness(args.strictness)
+
+
+def _bundle(args: argparse.Namespace) -> int:
+    trace_path = Path(args.trace)
+    out = Path(args.out) if args.out is not None else trace_path.parent
+    target = (out / f"{trace_path.stem}.bundle.json").resolve()
+    if not trace_path.is_file():
+        return _bundle_failure(
+            "trace-unreadable", f"no trace file at {trace_path}", target, args.json
+        )
+    try:
+        trace = TraceStore(trace_path.parent).load(trace_path)
+    except CaptureError as exc:
+        return _bundle_failure("trace-invalid", str(exc), target, args.json)
+    skill_path = Path(args.skill)
+    if skill_path.is_dir():
+        skill_path = skill_path / "SKILL.md"
+    try:
+        skill = parse_skill(skill_path)
+    except SkillParseError as exc:
+        return _bundle_failure("skill-invalid", exc.detail, target, args.json)
+    try:
+        record = build(skill, trace, Strictness(args.strictness), Path(args.key))
+    except (BundleError, SigningError) as exc:
+        cause, detail = _cause_detail(exc)
+        return _bundle_failure(cause, detail, target, args.json)
+    try:
+        out.mkdir(parents=True, exist_ok=True)
+        _write_atomic(target, record.to_json())
+    except OSError as exc:
+        return _bundle_failure("bundle-write-failed", str(exc), target, args.json)
+    _emit(render_bundle(record, target, args.json), sys.stdout)
+    return 0
+
+
+def _verify(args: argparse.Namespace) -> int:
+    path = Path(args.bundle)
+    try:
+        size = path.stat().st_size
+    except OSError as exc:
+        return _bundle_failure("bundle-unreadable", str(exc), path, args.json)
+    if size > MAX_BUNDLE_BYTES:
+        return _bundle_failure(
+            "bundle-too-large",
+            f"bundle is {size} bytes; the limit is {MAX_BUNDLE_BYTES} bytes",
+            path,
+            args.json,
+        )
+    try:
+        data = path.read_bytes()
+    except OSError as exc:
+        return _bundle_failure("bundle-unreadable", str(exc), path, args.json)
+    try:
+        text = data.decode("utf-8")
+    except UnicodeError as exc:
+        return _bundle_failure("bundle-invalid", str(exc), path, args.json)
+    try:
+        record = Bundle.from_json(text)
+    except BundleError as exc:
+        cause, detail = _cause_detail(exc)
+        return _bundle_failure(cause, detail, path, args.json)
+    try:
+        verify(record, Path(args.public_key))
+    except SigningError as exc:
+        cause, detail = _cause_detail(exc)
+        return _bundle_failure(cause, detail, path, args.json)
+    _emit(render_verify(record, path, args.json), sys.stdout)
+    return 0
+
+
+def _bundle_failure(cause: str, detail: str, path: Path, as_json: bool) -> int:
+    _emit(bundle_refusal(cause, detail, path, as_json), sys.stdout)
+    return 1
+
+
+def _cause_detail(exc: Exception) -> tuple[str, str]:
+    cause, separator, detail = str(exc).partition(": ")
+    if not separator or not cause or not detail:
+        return "bundle-invalid", str(exc)
+    return cause, detail
+
+
+def _write_atomic(path: Path, text: str) -> None:
+    fd, tmp_name = tempfile.mkstemp(dir=path.parent, prefix=".bundle-", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "wb") as tmp:
+            tmp.write(text.encode("utf-8"))
+        os.replace(tmp_name, path)
+    except BaseException:
+        Path(tmp_name).unlink(missing_ok=True)
+        raise
 
 
 def _make_run_root() -> Path:

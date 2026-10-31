@@ -140,3 +140,40 @@ def test_bad_strictness_is_an_argparse_error():
     with pytest.raises(SystemExit) as caught:
         main(["check", "SKILL.md", *REQUIRED, "--strictness", "paranoid"])
     assert caught.value.code == 2
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["bundle", "trace.json"],
+        ["bundle", "trace.json", "--skill", "SKILL.md"],
+        ["bundle", "trace.json", "--key", "key"],
+    ],
+)
+def test_bundle_requires_skill_and_key(argv):
+    with pytest.raises(SystemExit) as caught:
+        main(argv)
+    assert caught.value.code == 2
+
+
+def test_verify_requires_a_public_key():
+    with pytest.raises(SystemExit) as caught:
+        main(["verify", "bundle.json"])
+    assert caught.value.code == 2
+
+
+@pytest.mark.parametrize("command", ["bundle", "verify"])
+def test_subcommand_help_exits_zero(capsys, command):
+    with pytest.raises(SystemExit) as caught:
+        main([command, "--help"])
+    assert caught.value.code == 0
+    assert command in capsys.readouterr().out
+
+
+def test_bundle_defaults_match_the_spec():
+    args = build_parser().parse_args(
+        ["bundle", "trace.json", "--skill", "SKILL.md", "--key", "key"]
+    )
+    assert args.strictness == "standard"
+    assert args.out is None
+    assert args.json is False
