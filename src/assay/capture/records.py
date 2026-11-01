@@ -16,6 +16,24 @@ def _hash64(value: object, name: str) -> None:
         raise ValueError(f"{name} must be 64 lowercase hex characters, got {value!r}")
 
 
+def _sandbox_config_hashes(values: object) -> tuple[str, ...]:
+    if isinstance(values, str):
+        raise ValueError(f"sandbox_config_hashes must be a collection, got {values!r}")
+    hashes = tuple(values)
+    for value in hashes:
+        if (
+            not isinstance(value, str)
+            or len(value) != 71
+            or not value.startswith("sha256:")
+            or any(c not in _HEX for c in value[7:])
+        ):
+            raise ValueError(
+                f"sandbox config hash must be prefixed 'sha256:' with 64 lowercase hex "
+                f"characters, got {value!r}"
+            )
+    return tuple(sorted(set(hashes)))
+
+
 def _non_negative_int(value: object, name: str) -> None:
     if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         raise ValueError(f"{name} must be a non-negative int, got {value!r}")
@@ -100,7 +118,8 @@ class Trace:
     output_tokens: int
     cost_usd: float
     events: tuple[Event, ...]
-    schema: int = 1
+    sandbox_config_hashes: tuple[str, ...]
+    schema: int = 2
 
     def __post_init__(self) -> None:
         if not isinstance(self.skill_name, str) or not self.skill_name:
@@ -112,12 +131,15 @@ class Trace:
         _non_negative_int(self.input_tokens, "input_tokens")
         _non_negative_int(self.output_tokens, "output_tokens")
         _non_negative_float(self.cost_usd, "cost_usd")
-        if isinstance(self.schema, bool) or not isinstance(self.schema, int) or self.schema != 1:
-            raise ValueError(f"schema must be the int 1, got {self.schema!r}")
+        if isinstance(self.schema, bool) or not isinstance(self.schema, int) or self.schema != 2:
+            raise ValueError(f"schema must be the int 2, got {self.schema!r}")
         events = tuple(self.events)
         if not all(isinstance(event, Event) for event in events):
             raise ValueError("events must be Event records")
         object.__setattr__(self, "events", events)
+        object.__setattr__(
+            self, "sandbox_config_hashes", _sandbox_config_hashes(self.sandbox_config_hashes)
+        )
         object.__setattr__(self, "cost_usd", float(self.cost_usd))
 
     def to_payload(self) -> dict[str, object]:
@@ -130,6 +152,7 @@ class Trace:
             "input_tokens": self.input_tokens,
             "output_tokens": self.output_tokens,
             "cost_usd": self.cost_usd,
+            "sandbox_config_hashes": list(self.sandbox_config_hashes),
             "events": [
                 {
                     "kind": event.kind.value,
@@ -196,6 +219,7 @@ class Trace:
                 output_tokens=payload["output_tokens"],
                 cost_usd=payload["cost_usd"],
                 events=tuple(events),
+                sandbox_config_hashes=payload["sandbox_config_hashes"],
             )
         except CaptureError:
             raise

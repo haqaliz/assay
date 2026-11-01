@@ -12,14 +12,14 @@ skill (a Claude Code `SKILL.md`, an OpenClaw/ClawHub skill, a Cursor rule, an MC
 similar), and Assay runs it in a sandbox against a real agent, captures exactly what it did
 (files touched, network calls made, shell commands run, instructions it tried to inject), and
 compares that observed behavior against what the skill *declares* it does. It returns a
-**per-skill verdict** backed by a replayable record of the run — never a guess from reading the
+**per-skill verdict** backed by a captured record of the run — never a guess from reading the
 markdown.
 
 The name: to *assay* a metal is to test its purity by actually putting it through a process, not
 by looking at it. Assay asks of a skill: *does it do only what it says it does, when you actually
 run it?*
 
-Status: **A1–A5 exist, nothing else.** Ingest (`src/assay/ingest/`) turns a Claude Code `SKILL.md`
+Status: **A1–A6 exist, nothing else.** Ingest (`src/assay/ingest/`) turns a Claude Code `SKILL.md`
 into a frozen `Skill` record with a tri-state declared `Scope` (undeclared vs declared none),
 refusing malformed input with a named cause. The sandbox (`src/assay/sandbox/`) runs a command
 under macOS Seatbelt with confined writes, port-scoped network, a scrubbed env and CPU/wall limits.
@@ -36,10 +36,15 @@ with severity and evidence, a named `UNVERIFIED` cause, and a `blocked` flag fro
 strictness. `MALICIOUS` needs a `HIGH` finding from a captured `OK`/`DENIED` action; an
 instruction-pattern match is capped at `REVIEW` and can never produce it. Strictness changes only
 what blocks; the four-class floor cannot be lowered. `assay check <skill>` (`src/assay/cli/`)
-composes A1–A5 into one command with a verdict-only exit code and a canonical JSON report. There
-is no bundle or corpus yet, and precision is unmeasured until A7. The suite is offline on synthetic
-outcomes; the first real keyed run (the Phase 0 gate) has not happened yet. Do not describe
-capability that isn't there.
+composes A1–A5 into one command with a verdict-only exit code and a canonical JSON report. The
+bundle layer (`src/assay/bundle/`) turns a saved trace plus its `SKILL.md` into one canonical,
+SSH-signed record — skill hash, trace, sandbox config hashes, assessment — and `assay verify`
+checks every hash and the signature offline against a caller-supplied public key. It attests that
+this run happened and was recorded as claimed; it does not prove the skill is safe and cannot
+re-derive the verdict, because the trace carries no declared scope or full skill body yet. There is
+no corpus, and precision is unmeasured until A7. The suite is offline on synthetic outcomes plus a
+local `ssh-keygen`; the Phase 0 gate ran a local model on 2026-10-31, and the first real
+Anthropic-keyed run has not happened. Do not describe capability that isn't there.
 
 Lineage: Assay is one of three siblings scaffolded together on 2026-10-22 (with Tenon and Pry),
 drawn from a market-demand research pass (`~/dev/at/ideas/market-demand-2026-10.md`) and sharing

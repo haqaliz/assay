@@ -23,8 +23,16 @@ on a model failure, 1 `FLAGGED`, and 1 false `MALICIOUS` (`plumb-report` writing
 Desktop). The false accusation was fixed the same day: an absolute write is `HIGH` only for a
 sensitive location or when a declared file scope was exceeded. Budget stops now report
 `UNVERIFIED/BUDGET_LIMIT` instead of `AGENT_FAILED`. No `CLEAN` is possible in this corpus because
-none of the skills declares file/network scope. Phase 2 (A6 bundle, A7 corpus) is next; A7 is what
-turns this judgment into measured precision.
+none of the skills declares file/network scope.
+
+**M2.1 signed bundle (2026-11-01).** A6 shipped: `assay bundle` turns a saved trace plus its
+`SKILL.md` into one canonical, SSH-signed record carrying the skill hash, the trace, the sandbox
+config hashes and the A5 assessment; `assay verify` checks every hash and the signature offline
+against a caller-supplied public key. Trace schema 2 records the per-action sandbox config hashes.
+642 offline tests, including a real `ssh-keygen` round trip on throwaway keys. The bundle proves
+integrity and provenance, not that the verdict follows from the trace alone; the trace carries no
+declared scope or full skill body yet, so replay is the first follow-on. A7 (corpus) is next and is
+what turns this judgment into measured precision.
 
 ---
 
@@ -51,7 +59,7 @@ turns this judgment into measured precision.
 
 | # | Milestone | Done when |
 |---|---|---|
-| M2.1 | Signed attestation bundle (A6) | Hash-listed, signed record of a run; a third party can verify it |
+| M2.1 | Signed attestation bundle (A6) — built | Hash-listed, signed record of a run; a third party can verify it with the signer's public key |
 | M2.2 | Labeled corpus + benchmark (A7) | Known-malicious samples plus clean ones; precision and recall reported with denominators |
 | M2.3 | Public audit of top N skills | Findings reviewed, authors/registries notified before publication (see R3) |
 | M2.4 | Adapters: OpenClaw/ClawHub, Cursor rules, MCP | One at a time, in that order, each behind its own test fixtures |

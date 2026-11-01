@@ -49,6 +49,7 @@ def trace(**over):
                 excerpt="",
             ),
         ),
+        sandbox_config_hashes=(),
     )
     base.update(over)
     return Trace(**base)

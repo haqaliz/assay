@@ -38,6 +38,13 @@ def capture(skill: Skill, task: str, outcome: RunOutcome) -> Trace:
             output_tokens=outcome.usage.output_tokens,
             cost_usd=outcome.cost_usd,
             events=events,
+            sandbox_config_hashes=tuple(
+                {
+                    action.result.record.config_hash
+                    for action in outcome.actions
+                    if action.result.record is not None
+                }
+            ),
         )
     except UnicodeError as exc:
         raise CaptureError(f"trace text is not valid unicode: {exc}") from None
