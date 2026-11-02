@@ -1,34 +1,33 @@
-# feat signed-bundle — signed attestation bundle (A6)
+# feat findings-corpus — labeled corpus and benchmark (A7)
 
 ## Brief
 
-Build A6 per `docs/technical/CAPABILITY_ROADMAP.md`: a signed, hash-listed
-attestation bundle around an existing captured trace. `assay bundle <trace.json> --out DIR`
-writes one canonical JSON record (schema/version, skill content hash, sandbox-policy
-digest, trace file name + hash, the full assessment, signer key id) and signs it;
-`assay verify <bundle>` re-derives the trace hash from the trace bytes, checks it equals
-the assessment's `trace_hash` and that the skill hash matches, then verifies the
-signature, exiting 0 verified / 1 tampered / 2 usage. Caveat: no Ed25519 exists in the
-dependency set (`pyyaml` only, `cryptography` absent), so use `ssh-keygen -Y sign` /
-`-Y verify` as the platform primitive with a throwaway key in tests and a named refusal
-when the key is missing; the trace also carries no sandbox config today, so define a
-policy digest rather than hashing the ephemeral run root. Acceptance: identical inputs
-produce a byte-stable bundle; tampering with one trace byte, the verdict, or the
-signature makes verify fail with a named reason and no traceback; an UNVERIFIED run
-still bundles and verifies; `assay check`'s exit codes and JSON are unchanged. Docs must
-state that a signature proves the record is intact and who attested it — never that the
-skill is safe, and never more than "in this run" for CLEAN.
+Build A7: a labeled corpus of malicious and clean skill runs, plus a benchmark that runs A5 over
+it and reports precision and recall with explicit denominators and label authority. Each case
+stores the exact `SKILL.md`, a schema-2 trace, and a human label (`malicious` or `clean`) with the
+labeler, date, rationale, source (`synthetic` or `local-model`) and the strictness used.
+`assay corpus <dir>` verifies each case's skill/trace hashes, re-runs the shipped `assess` at the
+recorded strictness, and prints a human or canonical JSON report: decided vs `UNVERIFIED` counts by
+cause, a verdict confusion matrix, `MALICIOUS` precision and recall, "any finding" recall, and
+false-`MALICIOUS` on clean cases. A zero denominator reports `null`, never `0` or `1`. The first
+corpus is synthetic adversarial and clean cases plus the known dogfood regressions (the
+`plumb-report` absolute write and a budget stop), not public third-party skills. Labels are
+single-labeler (maintainer) and the report says so. No new dependency, no changes to A5's detection
+logic or verdict contract, no public audit or disclosure work (that is M2.3/R3).
 
-Source: A6 in `docs/technical/CAPABILITY_ROADMAP.md`; A5 shipped in `1724db3`, and this
-is the next capability whose dependency is met. Selected by `assay-next` on 2026-11-01.
+Source: `docs/technical/CAPABILITY_ROADMAP.md` A7 ("Findings corpus and benchmark"), `docs/ROADMAP.md`
+M2.2, and the 2026-10-31 dogfood finding that precision is unmeasured. Selected by `assay-next`
+and the A6 handoff on 2026-11-01; A5 and A6 are shipped.
 
 ## Context carried from the pick
 
-- Phase 0 gate met 2026-10-31 with a local model; A1–A5 and `assay check` shipped
-  (549 offline tests, `c547` history). No GitHub issues exist; this card is the source.
-- `docs/ROADMAP.md` M2.1: "Hash-listed, signed record of a run; a third party can verify it".
-- `docs/technical/ARCHITECTURE.md`: bundle is `bundle/` (A6: hash list, signing, verify);
-  CLI surface is `assay check | bundle | corpus`. Determinism: the replayable unit is the
-  recorded trace, and the bundle carries the trace.
-- Constraints: execution decides; no over-claim (a bundle attests a run, not safety);
-  tests offline, no network, no real model call.
+- A7 depends on A5 and A6; both are built (A6 in PR #9, merge `a48f179`).
+- The dogfood left 6/10 `UNVERIFIED`, 1 `FLAGGED`, 1 false `MALICIOUS` (fixed the same day), and no
+  `CLEAN` possible because none of the ten Plumb skills declares file/network scope. The stored
+  dogfood JSONs are CLI reports; a `traces/` directory of 10 schema-1 traces also exists, and all
+  ten skill hashes still match the current Plumb skills.
+- `docs/technical/ARCHITECTURE.md`: `corpus/` is A7 ("labeled cases, metrics"); the CLI surface is
+  `assay check | bundle | corpus | verify`.
+- Constraints: `UNVERIFIED` is never rendered as `CLEAN`; `MALICIOUS` needs a captured behavior and
+  `review_required`; the shell/instruction lists stay uncalibrated until this corpus measures them.
+- No GitHub issue exists; this card is the source.
