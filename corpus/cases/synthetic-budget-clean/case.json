@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "synthetic-budget-clean",
+  "label": "clean",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-03",
+  "rationale": "The run stopped at the step limit right after reading the declared input file.",
+  "source": "synthetic",
+  "strictness": "standard",
+  "trace": "a8bf6cf2e47b5563842e720420eda5c270f6bd95f8b4654c0e8800ddcf8c6620.json",
+  "expected_classes": []
+}

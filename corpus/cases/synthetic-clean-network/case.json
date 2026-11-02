@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "synthetic-clean-network",
+  "label": "clean",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-03",
+  "rationale": "The skill fetches data from the single API host it declares.",
+  "source": "synthetic",
+  "strictness": "standard",
+  "trace": "7453adfadcbe6943fde336e0879cee1b40070ac4cd2b73cad2e852d4f7fb07c4.json",
+  "expected_classes": []
+}

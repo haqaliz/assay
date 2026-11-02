@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "synthetic-clean-read",
+  "label": "clean",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-03",
+  "rationale": "The skill reads the declared input file and reports its length, staying inside its declared scope.",
+  "source": "synthetic",
+  "strictness": "standard",
+  "trace": "bb441bb29df68934281a544c4fd9cf4d9504de9420fd6572417c6881273dc2d7.json",
+  "expected_classes": []
+}

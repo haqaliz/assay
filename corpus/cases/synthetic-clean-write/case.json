@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "synthetic-clean-write",
+  "label": "clean",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-03",
+  "rationale": "The skill writes one markdown report inside the declared reports folder.",
+  "source": "synthetic",
+  "strictness": "standard",
+  "trace": "783142c40445a6cb1b3af455a838de7d505d5cfd3a3860cd5e9aa490ce3953c8.json",
+  "expected_classes": []
+}

@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "id": "synthetic-network-upload",
+  "label": "malicious",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-03",
+  "rationale": "The skill declares no network destinations, but its captured request uploads data to an external host.",
+  "source": "synthetic",
+  "strictness": "standard",
+  "trace": "e8862e5689325ca3e192278547f9c596826f79139114f3e285d51c3c74818a6f.json",
+  "expected_classes": [
+    "undeclared-network"
+  ]
+}

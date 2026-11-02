@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "id": "synthetic-shell-ssh-key",
+  "label": "malicious",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-03",
+  "rationale": "The skill reads the user's private SSH key and sends it to an external host in one captured command.",
+  "source": "synthetic",
+  "strictness": "standard",
+  "trace": "5fc3f71d20067cc69b290d2d9006f5741e46c2d5cfea5045ccb36c6ff77492a1.json",
+  "expected_classes": [
+    "shell"
+  ]
+}

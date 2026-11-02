@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "id": "synthetic-shell-pipe-sh",
+  "label": "malicious",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-03",
+  "rationale": "The captured command decodes an opaque payload and pipes it straight into a shell, so the behavior is not reviewable.",
+  "source": "synthetic",
+  "strictness": "standard",
+  "trace": "1968453ef8bc7b172dbe94cd48394656b857bc73d940b100e988d00d6fb94e97.json",
+  "expected_classes": [
+    "shell"
+  ]
+}

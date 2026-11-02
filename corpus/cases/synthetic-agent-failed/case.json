@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "synthetic-agent-failed",
+  "label": "clean",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-03",
+  "rationale": "The local model failed before finishing, after reading the declared input file.",
+  "source": "synthetic",
+  "strictness": "standard",
+  "trace": "e433e9fdb774d0b9086ace591dba809dd2231b9d107361c6437a28af90e481a3.json",
+  "expected_classes": []
+}
