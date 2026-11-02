@@ -7,8 +7,9 @@ from pathlib import Path
 from assay.bundle import Bundle
 from assay.canonical import canonical
 from assay.capture import Trace
+from assay.corpus import Label, Metrics, Ratio, Source
 from assay.ingest import Skill
-from assay.verdict import Assessment
+from assay.verdict import Assessment, UnverifiedCause, Verdict
 
 
 def refusal(cause: str, detail: str, path: Path, as_json: bool) -> str:
@@ -48,6 +49,109 @@ def bundle_refusal(cause: str, detail: str, path: Path, as_json: bool) -> str:
         f"cause: {cause.upper().replace('-', '_')}\n"
         f"detail: {_one_line(detail)}\n"
         "exit: 1\n"
+    )
+
+
+def corpus_refusal(cause: str, detail: str, path: Path, as_json: bool) -> str:
+    """The CLI's envelope for a corpus that could not be loaded."""
+    if as_json:
+        return canonical(
+            {
+                "schema": 1,
+                "corpus": _path_text(path),
+                "cause": cause,
+                "detail": detail,
+            }
+        )
+    return (
+        f"corpus: {_screen(_path_text(path))}\n"
+        f"cause: {cause.upper().replace('-', '_')}\n"
+        f"detail: {_one_line(detail)}\n"
+        "exit: 1\n"
+    )
+
+
+def render_corpus(metrics: Metrics, path: Path, as_json: bool) -> str:
+    if as_json:
+        return canonical(
+            {"schema": 1, "corpus": _path_text(path), **metrics.to_payload()}
+        )
+    rows = (Verdict.MALICIOUS, Verdict.FLAGGED, Verdict.CLEAN)
+    decided_malicious = sum(metrics.confusion[row][Label.MALICIOUS] for row in rows)
+    decided_clean = sum(metrics.confusion[row][Label.CLEAN] for row in rows)
+    lines = [
+        f"corpus: {_screen(_path_text(path))}",
+        f"cases: {metrics.total} "
+        f"(malicious {metrics.by_label[Label.MALICIOUS]}, "
+        f"clean {metrics.by_label[Label.CLEAN]})",
+        f"decided: {metrics.decided} "
+        f"(malicious {decided_malicious}, clean {decided_clean}) | "
+        f"{_unverified(metrics)}",
+        f"{'verdict':<12}{'malicious':>9}{'clean':>7}",
+    ]
+    lines.extend(
+        f"{row.value:<12}"
+        f"{metrics.confusion[row][Label.MALICIOUS]:>9}"
+        f"{metrics.confusion[row][Label.CLEAN]:>7}"
+        for row in rows
+    )
+    lines.extend(
+        [
+            f"malicious precision: {_ratio(metrics.malicious_precision)}",
+            f"malicious recall: {_ratio(metrics.malicious_recall)}; "
+            f"detected with any finding: {_ratio(metrics.detection_recall)}",
+            f"clean false-malicious: {_ratio(metrics.clean_false_malicious)}",
+            f"clean review: {_ratio(metrics.clean_review)}",
+            f"coverage: {_ratio(metrics.coverage)}",
+            f"false malicious: {_ids(metrics.false_malicious_cases)}",
+            f"false negatives: {_ids(metrics.false_negative_cases)}",
+            f"labels: {_labels(metrics.labelers)}",
+            f"sources: {_sources(metrics.sources)}",
+            "exit: 0",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
+def _unverified(metrics: Metrics) -> str:
+    if metrics.unverified == 0:
+        return "unverified: 0"
+    causes = ", ".join(
+        f"{cause.value} {metrics.unverified_by_cause[cause]}"
+        for cause in UnverifiedCause
+        if metrics.unverified_by_cause[cause]
+    )
+    return f"unverified: {metrics.unverified} ({causes})"
+
+
+def _ratio(ratio: Ratio) -> str:
+    if ratio.value is None:
+        return "n/a (0/0)"
+    return f"{ratio.value:.2f} ({ratio.numerator}/{ratio.denominator})"
+
+
+def _ids(ids: tuple[str, ...]) -> str:
+    return ", ".join(ids) if ids else "none"
+
+
+def _labels(labelers: dict[str, int]) -> str:
+    return (
+        ", ".join(
+            f"{_screen(name)} ({count})" for name, count in sorted(labelers.items())
+        )
+        or "none"
+    )
+
+
+def _sources(sources: dict[Source, int]) -> str:
+    return (
+        ", ".join(
+            f"{source.value} {count}"
+            for source, count in sorted(
+                sources.items(), key=lambda item: item[0].value
+            )
+        )
+        or "none"
     )
 
 

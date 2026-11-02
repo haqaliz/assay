@@ -162,12 +162,24 @@ def test_verify_requires_a_public_key():
     assert caught.value.code == 2
 
 
-@pytest.mark.parametrize("command", ["bundle", "verify"])
+def test_corpus_requires_a_directory():
+    with pytest.raises(SystemExit) as caught:
+        main(["corpus"])
+    assert caught.value.code == 2
+
+
+@pytest.mark.parametrize("command", ["check", "bundle", "verify", "corpus"])
 def test_subcommand_help_exits_zero(capsys, command):
     with pytest.raises(SystemExit) as caught:
         main([command, "--help"])
     assert caught.value.code == 0
     assert command in capsys.readouterr().out
+
+
+def test_corpus_defaults_match_the_spec():
+    args = build_parser().parse_args(["corpus", "corpus/"])
+    assert args.corpus == "corpus/"
+    assert args.json is False
 
 
 def test_bundle_defaults_match_the_spec():

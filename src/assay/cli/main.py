@@ -23,6 +23,7 @@ from assay.agent import (
 )
 from assay.bundle import Bundle, BundleError, SigningError, build, verify
 from assay.capture import CaptureError, TraceStore, capture
+from assay.corpus import CaseError, evaluate, load_corpus
 from assay.ingest import SkillParseError, parse_skill
 from assay.sandbox import SandboxUnavailable
 from assay.sandbox.base import Sandbox, select_sandbox
@@ -30,8 +31,10 @@ from assay.verdict import Strictness, StrictnessPolicy, Verdict, assess
 
 from .output import (
     bundle_refusal,
+    corpus_refusal,
     refusal,
     render_bundle,
+    render_corpus,
     render_human,
     render_json,
     render_verify,
@@ -83,6 +86,11 @@ def build_parser() -> argparse.ArgumentParser:
     verify_command.add_argument("bundle", type=str)
     verify_command.add_argument("--public-key", required=True, metavar="PUBLIC_KEY")
     verify_command.add_argument("--json", action="store_true")
+    corpus = commands.add_parser(
+        "corpus", help="report verdicts against a labeled corpus"
+    )
+    corpus.add_argument("corpus", type=str)
+    corpus.add_argument("--json", action="store_true")
     return parser
 
 
@@ -100,6 +108,8 @@ def main(
         if args.command == "bundle":
             _validate_bundle(args)
             return _bundle(args)
+        if args.command == "corpus":
+            return _corpus(args)
         return _verify(args)
     except KeyboardInterrupt:
         return 130
@@ -301,15 +311,27 @@ def _verify(args: argparse.Namespace) -> int:
     return 0
 
 
+def _corpus(args: argparse.Namespace) -> int:
+    path = Path(args.corpus)
+    try:
+        cases = load_corpus(path)
+    except CaseError as exc:
+        cause, detail = _cause_detail(exc, default="corpus-invalid")
+        _emit(corpus_refusal(cause, detail, path, args.json), sys.stdout)
+        return 1
+    _emit(render_corpus(evaluate(cases), path, args.json), sys.stdout)
+    return 0
+
+
 def _bundle_failure(cause: str, detail: str, path: Path, as_json: bool) -> int:
     _emit(bundle_refusal(cause, detail, path, as_json), sys.stdout)
     return 1
 
 
-def _cause_detail(exc: Exception) -> tuple[str, str]:
+def _cause_detail(exc: Exception, default: str = "bundle-invalid") -> tuple[str, str]:
     cause, separator, detail = str(exc).partition(": ")
     if not separator or not cause or not detail:
-        return "bundle-invalid", str(exc)
+        return default, str(exc)
     return cause, detail
 
 
