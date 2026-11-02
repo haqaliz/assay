@@ -3,7 +3,7 @@
 **Execution-grounded security verifier for AI agent skills.** Runs a skill in a sandbox against a
 real agent, captures what it actually did, and checks that against what it claims to do.
 
-[![Status](https://img.shields.io/badge/status-A1--A6%20engine%20·%20offline-orange)](docs/ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-A1--A7%20engine%20·%20offline-orange)](docs/ROADMAP.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 [Vision](VISION.md) · [Roadmap](docs/ROADMAP.md) · [Architecture](docs/technical/ARCHITECTURE.md) · [Capabilities](docs/technical/CAPABILITY_ROADMAP.md)
@@ -12,8 +12,9 @@ real agent, captures what it actually did, and checks that against what it claim
 
 ## Status
 
-**A1–A6 exist; the engine has a verdict and a portable record.** What is built and tested, all
-offline (the bundle tests run a local `ssh-keygen`; no network and no model call):
+**A1–A7 exist; the engine has a verdict, a portable record and a measured benchmark.** What is built
+and tested, all offline (the bundle tests run a local `ssh-keygen`; the benchmark makes no model or
+network call):
 
 - **Ingest** (`src/assay/ingest/`) — parses a Claude Code `SKILL.md` into a frozen `Skill` record
   with a tri-state declared scope (undeclared vs declared none) and a named refusal for malformed
@@ -36,10 +37,15 @@ offline (the bundle tests run a local `ssh-keygen`; no network and no model call
   The signature proves the record is intact and who attested it; it does not prove the skill is
   safe. The bundle cannot re-derive the verdict from the trace alone, because the trace does not
   carry the declared scope; that replay is the next capability.
+- **Labeled corpus and benchmark** (`src/assay/corpus/`, `corpus/`) — 20 labeled cases (18 synthetic,
+  2 local-model) scored offline by `assay corpus`, with precision and recall, explicit denominators,
+  the ids of any false `MALICIOUS` on clean cases, and `UNVERIFIED` coverage by cause. Single labeler
+  and synthetic-dominated: a regression measurement, not a population estimate.
 
-There is no corpus yet, the pattern lists are narrow and uncalibrated until A7, and the first real
-Anthropic-keyed run has not happened (the Phase 0 gate used a local model). Read `CLAUDE.md` before
-writing any code here; do not describe capability that is not in `git log`.
+The pattern lists are now measured on that corpus; run `assay corpus corpus/` for the current
+numbers and read `corpus/README.md` for the limits. The first real Anthropic-keyed run has not
+happened (the Phase 0 gate used a local model). Read `CLAUDE.md` before writing any code here; do not
+describe capability that is not in `git log`.
 
 ## Usage
 
@@ -90,6 +96,21 @@ record is intact and who attested it; it does not prove the skill is safe, and t
 covers `SKILL.md` only, not the rest of the skill directory. `CLEAN` still means "matched declared
 scope in this run".
 
+### Measuring the verdict
+
+The repo ships a labeled corpus and an offline benchmark:
+
+```sh
+uv run assay corpus corpus/
+uv run assay corpus corpus/ --json
+```
+
+It verifies every case's skill and trace hash, re-runs the verdict layer, and prints precision and
+recall with explicit denominators, `UNVERIFIED` counts by cause, and the ids of any false
+`MALICIOUS` on clean cases. Exit `0` means the report was computed, not that the numbers passed a
+threshold. The corpus is small, single-labeled and synthetic-dominated; `corpus/README.md` states
+the limits, and the numbers are a regression signal, not a population estimate.
+
 ## What Assay is
 
 Point Assay at a skill — a Claude Code `SKILL.md` first, with other formats (OpenClaw/ClawHub,
@@ -118,8 +139,9 @@ a captured record of the run, which can be signed into a bundle a third party ve
 Strictness (`baseline`/`standard`/`strict`) decides only whether a run is `blocked`; it never
 changes the verdict. The severity floor for the four finding classes is fixed and cannot be
 lowered. An instruction-pattern match is a candidate capped at `REVIEW`: it can make a run
-`FLAGGED`, never `MALICIOUS`. The shell and instruction pattern lists are deliberately short, and
-their precision is unmeasured until the A7 corpus.
+`FLAGGED`, never `MALICIOUS`. The shell and instruction pattern lists are deliberately short; the
+A7 corpus measures their precision and recall on 20 labeled cases (18 synthetic, 2 local-model).
+Those numbers are a regression signal on that corpus, not a population estimate.
 
 A static scan or model may flag a candidate; the sandboxed, observed run assigns the verdict.
 
