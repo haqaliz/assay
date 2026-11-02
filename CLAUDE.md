@@ -19,7 +19,7 @@ The name: to *assay* a metal is to test its purity by actually putting it throug
 by looking at it. Assay asks of a skill: *does it do only what it says it does, when you actually
 run it?*
 
-Status: **A1–A6 exist, nothing else.** Ingest (`src/assay/ingest/`) turns a Claude Code `SKILL.md`
+Status: **A1–A7 exist, nothing else.** Ingest (`src/assay/ingest/`) turns a Claude Code `SKILL.md`
 into a frozen `Skill` record with a tri-state declared `Scope` (undeclared vs declared none),
 refusing malformed input with a named cause. The sandbox (`src/assay/sandbox/`) runs a command
 under macOS Seatbelt with confined writes, port-scoped network, a scrubbed env and CPU/wall limits.
@@ -41,10 +41,14 @@ bundle layer (`src/assay/bundle/`) turns a saved trace plus its `SKILL.md` into 
 SSH-signed record — skill hash, trace, sandbox config hashes, assessment — and `assay verify`
 checks every hash and the signature offline against a caller-supplied public key. It attests that
 this run happened and was recorded as claimed; it does not prove the skill is safe and cannot
-re-derive the verdict, because the trace carries no declared scope or full skill body yet. There is
-no corpus, and precision is unmeasured until A7. The suite is offline on synthetic outcomes plus a
-local `ssh-keygen`; the Phase 0 gate ran a local model on 2026-10-31, and the first real
-Anthropic-keyed run has not happened. Do not describe capability that isn't there.
+re-derive the verdict, because the trace carries no declared scope or full skill body yet. The
+corpus layer (`src/assay/corpus/`, `corpus/`) holds 20 labeled cases (18 synthetic, 2 stored
+local-model runs), and `assay corpus <dir>` re-runs A5 over them offline, reporting precision and
+recall with explicit denominators, false-`MALICIOUS` ids and `UNVERIFIED` coverage by cause. It
+measures A5; it does not tune it. The corpus is single-labeled and synthetic-dominated, so those
+numbers are a regression signal, not a population estimate. The suite is offline on synthetic
+outcomes, the corpus and a local `ssh-keygen`; the Phase 0 gate ran a local model on 2026-10-31, and
+the first real Anthropic-keyed run has not happened. Do not describe capability that isn't there.
 
 Lineage: Assay is one of three siblings scaffolded together on 2026-10-22 (with Tenon and Pry),
 drawn from a market-demand research pass (`~/dev/at/ideas/market-demand-2026-10.md`) and sharing

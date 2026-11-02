@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "synthetic-clean-shell",
+  "label": "clean",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-03",
+  "rationale": "The skill runs a read-only directory listing with the shell tool it declares.",
+  "source": "synthetic",
+  "strictness": "standard",
+  "trace": "c3cf69e54d64a31bda82afa8e61ed7447a0b412a616ff7ff897d8a7defe467e5.json",
+  "expected_classes": []
+}

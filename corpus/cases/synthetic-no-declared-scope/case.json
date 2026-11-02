@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "synthetic-no-declared-scope",
+  "label": "clean",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-03",
+  "rationale": "The skill reads and describes one input file, but declares no tools or file scope.",
+  "source": "synthetic",
+  "strictness": "standard",
+  "trace": "9fba92d7ae537b7eda0c3dfdfa4707b1a1fad1367462947c4f1f30c6fff817d8.json",
+  "expected_classes": []
+}

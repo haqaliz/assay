@@ -2,11 +2,11 @@
 
 Design intent, not a description of built behavior. **A1 (`src/assay/ingest/`), A2
 (`src/assay/sandbox/`), A3 (`src/assay/agent/`), A4 (`src/assay/capture/`), A5
-(`src/assay/verdict/`) and A6 (`src/assay/bundle/`) are implemented**; everything else below is
-still intent — verify against the code and `git log`. A4 records and diffs observed behavior; A5
-turns that diff into one assessment; A6 signs the trace, the assessment and the sandbox config
-hashes into a portable record. The manual Anthropic-keyed gate run is still unperformed; the Phase 0
-gate ran a local model.
+(`src/assay/verdict/`), A6 (`src/assay/bundle/`) and A7 (`src/assay/corpus/`) are implemented**;
+everything else below is still intent — verify against the code and `git log`. A4 records and diffs
+observed behavior; A5 turns that diff into one assessment; A6 signs the trace, the assessment and
+the sandbox config hashes into a portable record; A7 scores A5 against a labeled corpus. The manual
+Anthropic-keyed gate run is still unperformed; the Phase 0 gate ran a local model.
 
 ## Pipeline
 
@@ -46,8 +46,8 @@ src/assay/
   capture/    A4: event recorder, trace store, diff   ← built (canonical traces, scope diff)
   verdict/    A5: findings, strictness, floor   ← built (assessment, pattern lists)
   bundle/     A6: hash list, signing, verify   ← built (SSH-signed canonical record)
-  corpus/     A7: labeled cases, metrics
-  cli/        assay check | bundle | verify
+  corpus/     A7: labeled cases, metrics   ← built (offline benchmark)
+  cli/        assay check | bundle | verify | corpus
 tests/        offline; recorded traces; no network, no model calls
 ```
 
@@ -105,6 +105,7 @@ scripted model and fake sandbox.
 assay bundle <trace.json> --skill <SKILL.md|dir> --key <private-key>
              [--strictness baseline|standard|strict] [--out DIR] [--json]
 assay verify <bundle.json> --public-key <pub> [--json]
+assay corpus <dir> [--json]
 ```
 
 `bundle` re-parses the skill (refusing unless its hash equals the trace's), re-runs `assess` at the
@@ -142,6 +143,26 @@ One canonical JSON line:
   skill directory is unchanged, or that the verdict follows from the trace alone. `CLEAN` still
   means "matched declared scope in this run".
 
+## Corpus and benchmark (A7)
+
+`corpus/` is repo data, not packaged: `cases/<id>/` holds `case.json`, the exact `SKILL.md`, and a
+schema-2 trace named after its hash. `case.json` records the human label (`malicious`/`clean`),
+labeler, date, rationale, source (`synthetic`/`local-model`), strictness and the expected finding
+classes. `load_corpus` descends into `cases/` (a flat directory also works), verifies the trace's
+canonical form and content address plus the skill hash, and refuses a broken case by name.
+
+`assay corpus <dir>` re-runs `assess` over every case and reports the 3×2 decided confusion
+(`MALICIOUS`/`FLAGGED`/`CLEAN` × malicious/clean), malicious precision and recall, detection recall
+(any finding), clean false-`MALICIOUS`, clean review, coverage, `UNVERIFIED` counts by cause, and the
+ids of false-`MALICIOUS` and false-negative cases. Every ratio carries its numerator and denominator;
+a zero denominator is `null`/`n/a`, never 0. Exit `0` means the report was computed, not that a
+threshold passed.
+
+The first corpus is 18 synthetic cases plus two stored local-model runs; it is single-labeled and
+synthetic-dominated. It measures the patterns and known regressions, not the skill population.
+`corpus/README.md` is the labeling and limits reference. No A5 logic lives in the corpus, and the
+benchmark signs nothing; any case trace can be bundled with A6 for publication.
+
 ## Open questions
 
 - ~~Sandbox technology on macOS and Linux (Seatbelt, containers, or both)~~ **Decided:** Seatbelt
@@ -153,5 +174,8 @@ One canonical JSON line:
   slice either carries both in the trace (schema 3) and re-runs `assess` at verify time, or accepts
   that a bundle attests a reported verdict only. A readable sandbox policy record is a smaller
   follow-on.
+- **Real-world corpus.** The A7 corpus is synthetic-dominated and single-labeled. Public third-party
+  cases need the M2.3 disclosure process (R3) before they can be added, and a second labeler before
+  any independent precision claim.
 - How to generate synthetic tasks that exercise a skill without an LLM judging the outcome.
 - Distribution name on PyPI: `assay` is taken; `assayhq` was free when checked.

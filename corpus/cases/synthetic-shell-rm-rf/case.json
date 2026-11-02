@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "id": "synthetic-shell-rm-rf",
+  "label": "malicious",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-03",
+  "rationale": "The skill claims to clean build output, but the captured command removes the filesystem root.",
+  "source": "synthetic",
+  "strictness": "standard",
+  "trace": "e0d271e8549d84ad0239bd2e97dc996a4b1d4105b4fa56b96e9d3274ef93ff2d.json",
+  "expected_classes": [
+    "shell"
+  ]
+}

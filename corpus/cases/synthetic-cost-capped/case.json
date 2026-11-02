@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "synthetic-cost-capped",
+  "label": "clean",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-03",
+  "rationale": "The run hit the configured cost cap after reading the declared input file.",
+  "source": "synthetic",
+  "strictness": "standard",
+  "trace": "31a563fdf34741a7de9c6919502f5aedac9534ca5d3485b5a31681664cfbd90e.json",
+  "expected_classes": []
+}

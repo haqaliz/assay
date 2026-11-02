@@ -15,7 +15,8 @@ M1.1 (A3), M1.2 (A4), M1.3 (A5) and M1.4 (the `assay check` CLI): 549 offline te
 `~/dev/at/plumb/.claude/skills/plumb-next` against `qwen3-coder:30b` on Ollama (no API key, no spend)
 and observed two shell commands the skill never declared. Verdict `FLAGGED`, exit 1, trace saved
 (`assay-gate-2026-10-31.json` on the maintainer's Desktop). The gate's letter is met; this was not a
-Claude run. M0.3 is complete below. The A5 pattern lists remain narrow and uncalibrated until A7.
+Claude run. M0.3 is complete below. The A5 pattern lists remain deliberately narrow; A7 later
+measured them on a small synthetic corpus without tuning them.
 
 **M0.3 dogfood (2026-10-31).** All 10 Plumb skills were run against the local model with no key
 (`~/Desktop/assay-dogfood-2026-10-31/`). Results: 6 `UNVERIFIED` on a budget stop, 2 `UNVERIFIED`
@@ -31,8 +32,18 @@ config hashes and the A5 assessment; `assay verify` checks every hash and the si
 against a caller-supplied public key. Trace schema 2 records the per-action sandbox config hashes.
 642 offline tests, including a real `ssh-keygen` round trip on throwaway keys. The bundle proves
 integrity and provenance, not that the verdict follows from the trace alone; the trace carries no
-declared scope or full skill body yet, so replay is the first follow-on. A7 (corpus) is next and is
-what turns this judgment into measured precision.
+declared scope or full skill body yet, so replay is the first follow-on.
+
+**M2.2 labeled corpus and benchmark (2026-11-03).** A7 shipped: `corpus/` holds 20 labeled cases
+(9 malicious, 11 clean; 18 synthetic, 2 stored local-model runs) and `assay corpus corpus/` scores
+A5 against them offline, with explicit numerators and denominators. Result on this corpus: malicious
+precision 1.00 (5/5), malicious recall 0.71 (5/7), detection recall 1.00 (7/7), clean
+false-`MALICIOUS` 0.00 (0/6), clean review 0.33 (2/6), coverage 0.65 (13/20); all five `UNVERIFIED`
+causes appear. The `plumb-report` regression is `FLAGGED`, not `MALICIOUS`; the `plumb-begin-fast`
+re-run produced no tool actions and is `UNVERIFIED/NO_TRIGGER`. 742 offline tests. A5 is unchanged:
+this slice measures, it does not tune. The corpus is single-labeled and synthetic-dominated, so the
+numbers are a regression signal, not a population estimate. Next: the M2.3 public audit (after
+`ETHICS.md`, R3) or the first A8 adapter.
 
 ---
 
@@ -60,7 +71,7 @@ what turns this judgment into measured precision.
 | # | Milestone | Done when |
 |---|---|---|
 | M2.1 | Signed attestation bundle (A6) — built | Hash-listed, signed record of a run; a third party can verify it with the signer's public key |
-| M2.2 | Labeled corpus + benchmark (A7) | Known-malicious samples plus clean ones; precision and recall reported with denominators |
+| M2.2 | Labeled corpus + benchmark (A7) — built | Known-malicious samples plus clean ones; precision and recall reported with denominators and label authority |
 | M2.3 | Public audit of top N skills | Findings reviewed, authors/registries notified before publication (see R3) |
 | M2.4 | Adapters: OpenClaw/ClawHub, Cursor rules, MCP | One at a time, in that order, each behind its own test fixtures |
 
