@@ -348,6 +348,17 @@ def test_load_corpus_returns_a_tuple_sorted_by_id_and_skips_files(tmp_path):
     assert [case.id for case in cases] == ["a-case", "m-case", "z-case"]
 
 
+def test_load_corpus_descends_into_a_cases_container(tmp_path):
+    container = tmp_path / "cases"
+    container.mkdir()
+    make_case(container, directory_name="inside")
+    (tmp_path / "README.md").write_text("corpus notes", encoding="utf-8")
+
+    cases = load_corpus(tmp_path)
+
+    assert [case.id for case in cases] == ["inside"]
+
+
 def test_load_corpus_refuses_an_empty_directory(tmp_path):
     (tmp_path / "notes.txt").write_text("not a case", encoding="utf-8")
 

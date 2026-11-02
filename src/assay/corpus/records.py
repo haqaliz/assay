@@ -114,8 +114,11 @@ def load_case(directory: Path) -> Case:
 
 def load_corpus(root: Path) -> tuple[Case, ...]:
     root = Path(root)
+    # A repo corpus keeps cases under cases/; a flat directory is also accepted.
+    container = root / "cases"
+    scan = container if container.is_dir() else root
     try:
-        entries = sorted(root.iterdir(), key=lambda entry: entry.name)
+        entries = sorted(scan.iterdir(), key=lambda entry: entry.name)
     except OSError as exc:
         raise CaseError(f"corpus-unreadable: {root}: {exc}") from None
     directories = [entry for entry in entries if entry.is_dir()]
