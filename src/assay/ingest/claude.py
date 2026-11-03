@@ -207,7 +207,28 @@ def _read_bytes(path: Path) -> bytes:
 class ClaudeSkillParser:
     def parse(self, path: Path) -> Skill:
         path = Path(path)
-        raw = _read_bytes(path)
+        return self._parse(_read_bytes(path), path)
+
+    def parse_text(self, text: str, path: Path = Path("SKILL.md")) -> Skill:
+        path = Path(path)
+        if not isinstance(text, str):
+            raise SkillParseError(ParseCause.INVALID_UTF8, "skill source must be text", path)
+        try:
+            raw = text.encode("utf-8")
+        except UnicodeEncodeError as exc:
+            raise SkillParseError(
+                ParseCause.INVALID_UTF8, f"skill source is not valid UTF-8: {exc}", path
+            ) from None
+        if len(raw) > MAX_SKILL_BYTES:
+            raise SkillParseError(
+                ParseCause.TOO_LARGE,
+                f"file is {len(raw)} bytes; the limit is {MAX_SKILL_BYTES}",
+                path,
+            )
+        return self._parse(raw, path)
+
+    def _parse(self, raw: bytes, path: Path) -> Skill:
+        path = Path(path)
         mapping, body = _parse_frontmatter(raw, path)
         return Skill(
             name=_required_text(mapping, "name", ParseCause.MISSING_NAME, path),
@@ -223,3 +244,7 @@ class ClaudeSkillParser:
 
 def parse_skill(path: Path) -> Skill:
     return ClaudeSkillParser().parse(path)
+
+
+def parse_skill_text(text: str, path: Path = Path("SKILL.md")) -> Skill:
+    return ClaudeSkillParser().parse_text(text, path)
