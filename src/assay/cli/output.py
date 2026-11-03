@@ -235,6 +235,7 @@ def render_verify(bundle: Bundle, path: Path, as_json: bool) -> str:
     if as_json:
         payload = _bundle_report(bundle, path)
         payload["verified"] = True
+        payload["replay"] = True
         return canonical(payload)
     lines = [f"bundle: {_path_text(path)}"]
     lines.extend(
@@ -248,6 +249,7 @@ def render_verify(bundle: Bundle, path: Path, as_json: bool) -> str:
     )
     lines.append(f"signer: {bundle.signature.signer}")
     lines.append("signature: verified")
+    lines.append("replay: verified")
     lines.append("exit: 0")
     return "\n".join(lines) + "\n"
 

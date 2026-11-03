@@ -1,3 +1,4 @@
+import hashlib
 import json
 
 import pytest
@@ -9,10 +10,26 @@ from assay.bundle import (
     BundleError,
     HashList,
     Signature,
+    SkillSource,
 )
 from assay.canonical import canonical
 from assay.capture import Event, EventKind, EventOutcome, Trace
+from assay.ingest import MAX_SKILL_BYTES, parse_skill_text
 from assay.verdict import Assessment, Finding, FindingClass, Severity, Strictness, Verdict
+
+SOURCE = (
+    "---\n"
+    "name: demo\n"
+    "description: reads one declared file\n"
+    "allowed-tools: Read\n"
+    "metadata:\n"
+    "  assay:\n"
+    '    files: ["in.txt"]\n'
+    "    network: []\n"
+    "---\n"
+    "Read in.txt.\n"
+)
+SKILL = parse_skill_text(SOURCE)
 
 
 def signature(**over):
@@ -31,7 +48,7 @@ def signature(**over):
 def trace(**over):
     base = dict(
         skill_name="demo",
-        skill_content_hash="a" * 64,
+        skill_content_hash=SKILL.content_hash,
         task_sha256="b" * 64,
         cause=None,
         input_tokens=12,
@@ -75,9 +92,20 @@ def hash_list_for(trace_, **over):
     return HashList(**base)
 
 
+def skill_source(trace_=None, **over):
+    trace_ = trace() if trace_ is None else trace_
+    base = dict(
+        content_hash="sha256:" + trace_.skill_content_hash,
+        source=SOURCE,
+    )
+    base.update(over)
+    return SkillSource(**base)
+
+
 def make_bundle(trace_=None, **over):
     trace_ = trace() if trace_ is None else trace_
     values = dict(
+        skill=skill_source(trace_),
         hash_list=hash_list_for(trace_),
         trace=trace_,
         assessment=clean_assessment(trace_),
@@ -95,12 +123,23 @@ def test_valid_bundle_has_the_exact_canonical_payload():
 
     payload = record.to_payload()
 
-    assert set(payload) == {"schema", "hash_list", "trace", "assessment", "signature"}
-    assert payload["schema"] == BUNDLE_SCHEMA == 1
+    assert set(payload) == {
+        "schema",
+        "hash_list",
+        "skill",
+        "trace",
+        "assessment",
+        "signature",
+    }
+    assert payload["schema"] == BUNDLE_SCHEMA == 2
     assert payload["hash_list"] == {
         "skill": "sha256:" + trace_.skill_content_hash,
         "trace": trace_.hash,
         "sandbox": [first, second],
+    }
+    assert payload["skill"] == {
+        "content_hash": "sha256:" + trace_.skill_content_hash,
+        "source": SOURCE,
     }
     assert payload["trace"] == trace_.to_payload()
     assert payload["assessment"] == clean_assessment(trace_).to_payload()
@@ -130,6 +169,13 @@ def test_hash_list_disagreement_is_refused(field, value):
         make_bundle(trace_, hash_list=hash_list_for(trace_, **{field: value}))
 
 
+def test_bundle_refuses_a_skill_source_that_is_not_the_traced_skill():
+    other = SkillSource("sha256:" + hashlib.sha256(b"other").hexdigest(), "other")
+
+    with pytest.raises(BundleError, match="^hash-mismatch:"):
+        make_bundle(skill=other)
+
+
 def test_non_canonical_bundle_is_refused():
     text = make_bundle().to_json()
     pretty = json.dumps(json.loads(text), indent=2) + "\n"
@@ -149,6 +195,11 @@ def test_non_canonical_bundle_is_refused():
     with pytest.raises(BundleError, match="bundle-invalid"):
         Bundle.from_json(canonical(extra_hash))
 
+    extra_skill = json.loads(text)
+    extra_skill["skill"]["note"] = "unsigned"
+    with pytest.raises(BundleError, match="bundle-invalid"):
+        Bundle.from_json(canonical(extra_skill))
+
 
 @pytest.mark.parametrize("text", ["", "null", "[]", "{"])
 def test_malformed_bundle_json_is_a_bundle_error(text):
@@ -163,14 +214,50 @@ def test_bundle_round_trips_through_json():
     assert Bundle.from_json(record.to_json()) == record
 
 
-@pytest.mark.parametrize("schema", [2, True, "1", 1.0])
-def test_bundle_schema_must_be_the_int_one(schema):
+def test_bundle_skill_source_errors_are_bundle_invalid():
+    text = make_bundle().to_json()
+
+    missing = json.loads(text)
+    del missing["skill"]
+    with pytest.raises(BundleError, match="bundle-invalid"):
+        Bundle.from_json(canonical(missing))
+
+    not_an_object = json.loads(text)
+    not_an_object["skill"] = "source"
+    with pytest.raises(BundleError, match="bundle-invalid"):
+        Bundle.from_json(canonical(not_an_object))
+
+    changed_source = json.loads(text)
+    changed_source["skill"]["source"] = SOURCE + "changed"
+    with pytest.raises(BundleError, match="bundle-invalid"):
+        Bundle.from_json(canonical(changed_source))
+
+    changed_hash = json.loads(text)
+    changed_hash["skill"]["content_hash"] = "sha256:" + "d" * 64
+    with pytest.raises(BundleError, match="bundle-invalid"):
+        Bundle.from_json(canonical(changed_hash))
+
+
+@pytest.mark.parametrize("schema", [1, True, "2", 2.0, 3])
+def test_bundle_schema_must_be_the_int_two(schema):
     with pytest.raises(BundleError, match="schema"):
         make_bundle(schema=schema)
 
     payload = json.loads(make_bundle().to_json())
     payload["schema"] = schema
     with pytest.raises(BundleError, match="bundle-invalid"):
+        Bundle.from_json(canonical(payload))
+
+
+def test_schema_one_bundle_is_refused_as_not_replayable():
+    payload = json.loads(make_bundle().to_json())
+    payload["schema"] = 1
+
+    with pytest.raises(BundleError, match="schema 1 is not replayable"):
+        Bundle.from_json(canonical(payload))
+
+    del payload["skill"]
+    with pytest.raises(BundleError, match="schema 1 is not replayable"):
         Bundle.from_json(canonical(payload))
 
 
@@ -224,6 +311,37 @@ def test_hash_list_format_is_validated_and_normalised():
     ]:
         with pytest.raises(BundleError, match=match):
             HashList(**{**base, **over})
+
+
+def test_skill_source_format_is_validated():
+    source = skill_source()
+    assert source.content_hash == "sha256:" + SKILL.content_hash
+    assert source.source == SOURCE
+
+    for content_hash in ("a" * 64, "sha256:" + "A" * 64, "sha256:" + "a" * 63):
+        with pytest.raises(BundleError, match="content_hash"):
+            SkillSource(content_hash, SOURCE)
+
+    with pytest.raises(BundleError, match="^hash-mismatch:"):
+        SkillSource("sha256:" + "a" * 64, SOURCE)
+
+
+def test_skill_source_refuses_a_non_string_or_empty_source():
+    for source in ("", None, b"---\n"):
+        with pytest.raises(BundleError, match="non-empty string"):
+            SkillSource("sha256:" + SKILL.content_hash, source)
+
+
+def test_skill_source_refuses_unencodable_text():
+    with pytest.raises(BundleError, match="UTF-8"):
+        SkillSource("sha256:" + "a" * 64, "---\nname: \ud800\n---\n")
+
+
+def test_skill_source_refuses_an_oversized_source():
+    oversized = "x" * (MAX_SKILL_BYTES + 1)
+
+    with pytest.raises(BundleError, match=f"limit is {MAX_SKILL_BYTES}"):
+        SkillSource("sha256:" + hashlib.sha256(oversized.encode("utf-8")).hexdigest(), oversized)
 
 
 def test_invalid_embedded_trace_or_assessment_is_a_bundle_error():

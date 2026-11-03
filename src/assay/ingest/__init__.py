@@ -1,7 +1,7 @@
 """Assay skill ingest: a skill is data, never executed at parse time."""
 
 from .base import Parser
-from .claude import MAX_SKILL_BYTES, ClaudeSkillParser, parse_skill
+from .claude import MAX_SKILL_BYTES, ClaudeSkillParser, parse_skill, parse_skill_text
 from .records import ParseCause, Scope, Skill, SkillParseError
 
 __all__ = [
@@ -13,4 +13,5 @@ __all__ = [
     "Skill",
     "SkillParseError",
     "parse_skill",
+    "parse_skill_text",
 ]

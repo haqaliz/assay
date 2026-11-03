@@ -38,10 +38,11 @@ instruction-pattern match is capped at `REVIEW` and can never produce it. Strict
 what blocks; the four-class floor cannot be lowered. `assay check <skill>` (`src/assay/cli/`)
 composes A1–A5 into one command with a verdict-only exit code and a canonical JSON report. The
 bundle layer (`src/assay/bundle/`) turns a saved trace plus its `SKILL.md` into one canonical,
-SSH-signed record — skill hash, trace, sandbox config hashes, assessment — and `assay verify`
-checks every hash and the signature offline against a caller-supplied public key. It attests that
-this run happened and was recorded as claimed; it does not prove the skill is safe and cannot
-re-derive the verdict, because the trace carries no declared scope or full skill body yet. The
+SSH-signed record — exact skill source, skill hash, trace, sandbox config hashes, assessment — and
+`assay verify` checks every hash and the signature offline, re-parses the embedded source and re-runs
+the shipped `assess`, refusing a signed assessment that does not follow (`replay: verified`). It
+attests that the record is intact, who signed it, and that the verdict follows from the recorded
+inputs; it does not prove the run was captured honestly or that the skill is safe. The
 corpus layer (`src/assay/corpus/`, `corpus/`) holds 20 labeled cases (18 synthetic, 2 stored
 local-model runs), and `assay corpus <dir>` re-runs A5 over them offline, reporting precision and
 recall with explicit denominators, false-`MALICIOUS` ids and `UNVERIFIED` coverage by cause. It
