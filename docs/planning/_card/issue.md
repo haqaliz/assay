@@ -1,33 +1,25 @@
-# feat findings-corpus — labeled corpus and benchmark (A7)
+# feat bundle-replay — self-proving signed bundles (A6 follow-on)
 
 ## Brief
 
-Build A7: a labeled corpus of malicious and clean skill runs, plus a benchmark that runs A5 over
-it and reports precision and recall with explicit denominators and label authority. Each case
-stores the exact `SKILL.md`, a schema-2 trace, and a human label (`malicious` or `clean`) with the
-labeler, date, rationale, source (`synthetic` or `local-model`) and the strictness used.
-`assay corpus <dir>` verifies each case's skill/trace hashes, re-runs the shipped `assess` at the
-recorded strictness, and prints a human or canonical JSON report: decided vs `UNVERIFIED` counts by
-cause, a verdict confusion matrix, `MALICIOUS` precision and recall, "any finding" recall, and
-false-`MALICIOUS` on clean cases. A zero denominator reports `null`, never `0` or `1`. The first
-corpus is synthetic adversarial and clean cases plus the known dogfood regressions (the
-`plumb-report` absolute write and a budget stop), not public third-party skills. Labels are
-single-labeler (maintainer) and the report says so. No new dependency, no changes to A5's detection
-logic or verdict contract, no public audit or disclosure work (that is M2.3/R3).
+Close the A6 replay gap. A bundle schema 2 carries the exact `SKILL.md` source alongside the trace
+and assessment. `assay verify` re-parses that source, re-runs the shipped `assess` at the recorded
+strictness, and refuses unless the re-derived assessment equals the stored one. A valid signature
+over a false verdict now fails with `replay-mismatch`; the signature proves who attested the record,
+and the replay proves the verdict follows from the recorded inputs. The trace stays schema 2 and the
+corpus is unaffected. `assay bundle` embeds the source (capped by `MAX_SKILL_BYTES`); schema-1
+bundles are refused by name; no new dependency and no A5 changes.
 
-Source: `docs/technical/CAPABILITY_ROADMAP.md` A7 ("Findings corpus and benchmark"), `docs/ROADMAP.md`
-M2.2, and the 2026-10-31 dogfood finding that precision is unmeasured. Selected by `assay-next`
-and the A6 handoff on 2026-11-01; A5 and A6 are shipped.
+Source: the A6 PRD's O1 and `docs/technical/ARCHITECTURE.md` "Verdict replay" open question, both of
+which name this as the first follow-on. A6 and A7 shipped (PRs #9 and #10). Selected 2026-11-03.
 
 ## Context carried from the pick
 
-- A7 depends on A5 and A6; both are built (A6 in PR #9, merge `a48f179`).
-- The dogfood left 6/10 `UNVERIFIED`, 1 `FLAGGED`, 1 false `MALICIOUS` (fixed the same day), and no
-  `CLEAN` possible because none of the ten Plumb skills declares file/network scope. The stored
-  dogfood JSONs are CLI reports; a `traces/` directory of 10 schema-1 traces also exists, and all
-  ten skill hashes still match the current Plumb skills.
-- `docs/technical/ARCHITECTURE.md`: `corpus/` is A7 ("labeled cases, metrics"); the CLI surface is
-  `assay check | bundle | corpus | verify`.
-- Constraints: `UNVERIFIED` is never rendered as `CLEAN`; `MALICIOUS` needs a captured behavior and
-  `review_required`; the shell/instruction lists stay uncalibrated until this corpus measures them.
-- No GitHub issue exists; this card is the source.
+- `src/assay/bundle/` holds the canonical record and the `ssh-keygen` adapter; `verify` today checks
+  the signature and the hash list only (`src/assay/bundle/build.py`).
+- `src/assay/ingest/claude.py` parses `SKILL.md` from a path and hashes the raw bytes; there is no
+  text entry point yet.
+- `assess(skill, trace, policy)` needs the declared `Scope`, the body/description for instruction
+  findings, and the skill hash; the trace carries none of those.
+- The corpus (`corpus/`) has 20 schema-2 traces; this slice must not require regenerating them.
+- Constraints: no execution of the embedded source; no A5 changes; no over-claim beyond `SKILL.md`.
