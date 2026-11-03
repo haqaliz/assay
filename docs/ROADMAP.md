@@ -32,7 +32,14 @@ config hashes and the A5 assessment; `assay verify` checks every hash and the si
 against a caller-supplied public key. Trace schema 2 records the per-action sandbox config hashes.
 642 offline tests, including a real `ssh-keygen` round trip on throwaway keys. The bundle proves
 integrity and provenance, not that the verdict follows from the trace alone; the trace carries no
-declared scope or full skill body yet, so replay is the first follow-on.
+declared scope or full skill body yet; the replay follow-on is below.
+
+**A6 replay (2026-11-03).** Bundle schema 2 carries the exact `SKILL.md` source alongside the trace
+and assessment. `assay verify` re-parses it, re-runs the shipped `assess` at the recorded strictness,
+and refuses a signed assessment that does not follow (`replay-mismatch`); a good bundle prints
+`signature: verified` and `replay: verified`. 767 offline tests. Schema-1 bundles are refused as not
+replayable. Replay proves the verdict follows from the recorded inputs, not that the run was captured
+honestly; a bare trace still does not carry the scope/body and does not replay.
 
 **M2.2 labeled corpus and benchmark (2026-11-03).** A7 shipped: `corpus/` holds 20 labeled cases
 (9 malicious, 11 clean; 18 synthetic, 2 stored local-model runs) and `assay corpus corpus/` scores

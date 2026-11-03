@@ -5,8 +5,9 @@ Design intent, not a description of built behavior. **A1 (`src/assay/ingest/`), 
 (`src/assay/verdict/`), A6 (`src/assay/bundle/`) and A7 (`src/assay/corpus/`) are implemented**;
 everything else below is still intent — verify against the code and `git log`. A4 records and diffs
 observed behavior; A5 turns that diff into one assessment; A6 signs the trace, the assessment and
-the sandbox config hashes into a portable record; A7 scores A5 against a labeled corpus. The manual
-Anthropic-keyed gate run is still unperformed; the Phase 0 gate ran a local model.
+the sandbox config hashes and the exact `SKILL.md` source into a portable record that `verify`
+replays; A7 scores A5 against a labeled corpus. The manual Anthropic-keyed gate run is still
+unperformed; the Phase 0 gate ran a local model.
 
 ## Pipeline
 
@@ -62,11 +63,11 @@ tests/        offline; recorded traces; no network, no model calls
   four classes; any policy that tries to change it is rejected at construction. An instruction
   match is capped at `REVIEW`, so it can never become `MALICIOUS`.
 - **Determinism.** The agent is non-deterministic, so the recorded unit is the *trace*, not a
-  re-run. The bundle carries the trace and embeds the assessment A5 produced at build time.
-  `assay verify` checks the record's hashes and signature; it does **not** re-derive the verdict,
-  because the trace does not yet carry the declared scope or the full skill body. That replay is
-  the first follow-on (see Open questions). The bundle therefore attests what was run and what
-  verdict was reached, not that the verdict follows from the trace alone.
+  re-run. The bundle carries the trace, the exact `SKILL.md` source, and the assessment A5 produced
+  at build time. `assay verify` checks the hashes and signature, re-parses the source, and re-runs
+  `assess`; a signed assessment that does not follow is refused. The bundle replays; a bare trace
+  still does not carry the declared scope or body, so it does not. The bundle schema is the replay
+  contract: bump it when the replay semantics change.
 - **Tests run offline.** The agent driver sits behind an injectable seam; CI uses recorded traces.
   No model call and no network in any test.
 - **BYOK.** Keys live in the environment of the user, are never committed, and are never defaults.
@@ -121,8 +122,9 @@ a named failure, `2` on a usage error, `130` on Ctrl-C; failures use a `bundle` 
 One canonical JSON line:
 
 ```json
-{"schema":1,
+{"schema":2,
  "hash_list":{"skill":"sha256:<hex>","trace":"<hex>","sandbox":["sha256:<hex>"]},
+ "skill":{"content_hash":"sha256:<hex>","source":"<exact SKILL.md text>"},
  "trace":{...},
  "assessment":{"verdict":"…","cause":…,"blocked":…,"strictness":"…","findings":[…],
                "skill_content_hash":"<hex>","trace_hash":"<hex>"},
@@ -132,16 +134,23 @@ One canonical JSON line:
 - The signature covers `canonical(payload without "signature")`; the file itself is the canonical
   encoding of the whole payload. Any reformatting or extra key is refused before the signature is
   checked.
-- The trace is embedded, so a verifier needs only the bundle and the signer's public key.
+- The trace and the exact `SKILL.md` source are embedded, so a verifier needs only the bundle and the
+  signer's public key. The source hash must equal the trace's `skill_content_hash`, which is also
+  signed.
 - `verify` requires an explicit `--public-key`. A bundle never supplies its own trust anchor; the
   signer fingerprint is informational and is checked against the supplied key.
+- `verify` replays: it re-parses the embedded source with the shipped parser, re-runs `assess` at the
+  recorded strictness, and requires exact equality with the stored assessment. A valid signature over
+  a verdict that does not follow is refused with `replay-mismatch`; a good bundle prints
+  `signature: verified` and `replay: verified`. Schema-1 bundles are refused as not replayable.
 - `Trace` schema 2 records `sandbox_config_hashes`: the sorted, de-duplicated
   `JailConfig.config_hash` values of the actions that entered a jail. They identify this run's
   configs (including its private staging path) and are not a portable policy version.
-- What is attested: the `SKILL.md` hash, the captured trace, the sandbox config hashes, and the A5
-  assessment at the recorded strictness. Not attested: that the skill is safe, that the rest of the
-  skill directory is unchanged, or that the verdict follows from the trace alone. `CLEAN` still
-  means "matched declared scope in this run".
+- What is attested: the exact `SKILL.md` bytes, the captured trace, the sandbox config hashes, the A5
+  assessment, and that the verdict follows from those inputs. Not attested: that the run happened or
+  was captured honestly (the signature attests the capture), that the skill is safe, that the rest of
+  the skill directory is unchanged, or that a bare trace replays. `CLEAN` still means "matched
+  declared scope in this run".
 
 ## Corpus and benchmark (A7)
 
@@ -161,7 +170,7 @@ threshold passed.
 The first corpus is 18 synthetic cases plus two stored local-model runs; it is single-labeled and
 synthetic-dominated. It measures the patterns and known regressions, not the skill population.
 `corpus/README.md` is the labeling and limits reference. No A5 logic lives in the corpus, and the
-benchmark signs nothing; any case trace can be bundled with A6 for publication.
+benchmark signs nothing; any case can be bundled and replayed with the shipped A6 command.
 
 ## Open questions
 
@@ -169,10 +178,10 @@ benchmark signs nothing; any case trace can be bundled with A6 for publication.
   only, behind a `Sandbox` seam (A2). Docker was rejected as a daemon dependency with no A2
   benefit; the probe evidence and the Linux consequence are in
   `docs/planning/sandbox-jail/prd.md`. A Linux backend is a follow-on slice.
-- **Verdict replay.** `verify` cannot re-derive the verdict from the bundle: the trace carries
-  neither the declared `Scope` nor the full skill body that A5's instruction scan uses. The next
-  slice either carries both in the trace (schema 3) and re-runs `assess` at verify time, or accepts
-  that a bundle attests a reported verdict only. A readable sandbox policy record is a smaller
+- ~~Verdict replay~~ **Decided (bundle schema 2):** the bundle carries the exact `SKILL.md` source and
+  `verify` re-derives the verdict with the shipped `assess`; a signed assessment that does not follow
+  is refused. A bare trace still cannot replay because it carries no scope or body; trace schema 3 is
+  deferred unless traces are published without bundles. A readable sandbox policy record is a smaller
   follow-on.
 - **Real-world corpus.** The A7 corpus is synthetic-dominated and single-labeled. Public third-party
   cases need the M2.3 disclosure process (R3) before they can be added, and a second labeler before

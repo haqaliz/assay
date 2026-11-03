@@ -32,11 +32,12 @@ network call):
 - **CLI** (`src/assay/cli/`) — `assay check <skill>` composes A1–A5, saves the trace, prints a
   human or canonical JSON report, and exits `0` only on `CLEAN`.
 - **Signed bundle** (`src/assay/bundle/`) — turns a saved trace and its `SKILL.md` into one
-  canonical record with the skill hash, the observed trace, the sandbox config hashes and the
-  verdict, signed with `ssh-keygen`. `assay verify` checks the hashes and the signature offline.
-  The signature proves the record is intact and who attested it; it does not prove the skill is
-  safe. The bundle cannot re-derive the verdict from the trace alone, because the trace does not
-  carry the declared scope; that replay is the next capability.
+  canonical record with the exact skill source, the observed trace, the sandbox config hashes and
+  the verdict, signed with `ssh-keygen`. `assay verify` checks the hashes and the signature offline,
+  re-parses the embedded source and re-runs the shipped verdict layer; a signed assessment that does
+  not follow from the record is refused. The bundle proves the record is intact, who attested it,
+  and that the verdict follows from the recorded inputs. It does not prove the run happened or that
+  the skill is safe.
 - **Labeled corpus and benchmark** (`src/assay/corpus/`, `corpus/`) — 20 labeled cases (18 synthetic,
   2 local-model) scored offline by `assay corpus`, with precision and recall, explicit denominators,
   the ids of any false `MALICIOUS` on clean cases, and `UNVERIFIED` coverage by cause. Single labeler
@@ -91,10 +92,13 @@ hash agrees, and the signature verifies against the public key you supply; `1` o
 on a usage error. Both accept `--json`. The bundle embeds the trace, so a verifier needs only the
 bundle and the public key — never the private key, the model, or the sandbox. A bundle embeds the
 trace's event excerpts, so read it before publishing. Pass the same `--strictness` you checked
-with (the default is `standard`); the bundle records the level it used. The signature proves the
-record is intact and who attested it; it does not prove the skill is safe, and the skill hash
-covers `SKILL.md` only, not the rest of the skill directory. `CLEAN` still means "matched declared
-scope in this run".
+with (the default is `standard`); the bundle records the level it used. `verify` checks the
+signature and then replays the verdict: it re-parses the embedded `SKILL.md`, re-runs the shipped
+verdict layer at the recorded strictness, and refuses unless the result matches (`replay: verified`).
+A valid signature over a false verdict therefore fails with `replay-mismatch`. Replay proves the
+verdict follows from the recorded inputs, not that the run was captured honestly or that the skill
+is safe; the skill hash covers `SKILL.md` only, not the rest of the skill directory. `CLEAN` still
+means "matched declared scope in this run".
 
 ### Measuring the verdict
 
