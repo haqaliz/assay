@@ -260,10 +260,15 @@ def _bundle(args: argparse.Namespace) -> int:
         skill_path = skill_path / "SKILL.md"
     try:
         skill = parse_skill(skill_path)
+        source = skill_path.read_bytes().decode("utf-8")
     except SkillParseError as exc:
         return _bundle_failure("skill-invalid", exc.detail, target, args.json)
+    except (OSError, UnicodeError) as exc:
+        return _bundle_failure("skill-invalid", str(exc), target, args.json)
     try:
-        record = build(skill, trace, Strictness(args.strictness), Path(args.key))
+        record = build(
+            skill, source, trace, Strictness(args.strictness), Path(args.key)
+        )
     except (BundleError, SigningError) as exc:
         cause, detail = _cause_detail(exc)
         return _bundle_failure(cause, detail, target, args.json)
@@ -304,7 +309,7 @@ def _verify(args: argparse.Namespace) -> int:
         return _bundle_failure(cause, detail, path, args.json)
     try:
         verify(record, Path(args.public_key))
-    except SigningError as exc:
+    except (BundleError, SigningError) as exc:
         cause, detail = _cause_detail(exc)
         return _bundle_failure(cause, detail, path, args.json)
     _emit(render_verify(record, path, args.json), sys.stdout)

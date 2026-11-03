@@ -3,24 +3,40 @@ from __future__ import annotations
 import importlib
 import shutil
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 from assay.bundle import (
+    BundleError,
     SigningError,
     build,
     fingerprint,
+    replay,
     sign,
     verify,
 )
 from assay.bundle.sign import verify as verify_signature
 from assay.capture import Event, EventKind, EventOutcome, Trace
-from assay.ingest import Scope, Skill
+from assay.ingest import Skill, parse_skill_text
 from assay.verdict import Strictness, Verdict
 
 requires_ssh_keygen = pytest.mark.skipif(
     shutil.which("ssh-keygen") is None, reason="ssh-keygen not installed"
+)
+
+SOURCE = (
+    "---\n"
+    "name: demo\n"
+    "description: reads one declared file\n"
+    "allowed-tools: Read\n"
+    "metadata:\n"
+    "  assay:\n"
+    '    files: ["in.txt"]\n'
+    "    network: []\n"
+    "---\n"
+    "Read in.txt.\n"
 )
 
 
@@ -51,20 +67,13 @@ def keypair(tmp_path_factory) -> tuple[Path, Path]:
 
 
 def skill() -> Skill:
-    return Skill(
-        name="demo",
-        description="reads one declared file",
-        scope=Scope(tools=frozenset({"Read"}), files=("in.txt",), network=()),
-        body="Read in.txt and summarise it.",
-        source_path=Path("SKILL.md"),
-        content_hash="a" * 64,
-    )
+    return parse_skill_text(SOURCE)
 
 
-def trace() -> Trace:
+def trace(*, undeclared: bool = False) -> Trace:
     return Trace(
         skill_name="demo",
-        skill_content_hash="a" * 64,
+        skill_content_hash=skill().content_hash,
         task_sha256="b" * 64,
         cause=None,
         input_tokens=12,
@@ -74,7 +83,7 @@ def trace() -> Trace:
             Event(
                 kind=EventKind.FILE_READ,
                 outcome=EventOutcome.OK,
-                target="in.txt",
+                target="secret.txt" if undeclared else "in.txt",
                 content_sha256="c" * 64,
                 content_bytes=5,
                 excerpt="hello",
@@ -164,9 +173,10 @@ def test_build_and_verify_convenience_functions(keypair):
     private_key, public_key = keypair
     skill_record, trace_record = skill(), trace()
 
-    bundle = build(skill_record, trace_record, Strictness.STANDARD, private_key)
+    bundle = build(skill_record, SOURCE, trace_record, Strictness.STANDARD, private_key)
 
     assert verify(bundle, public_key) is None
+    assert replay(bundle) == bundle.assessment
     assert bundle.assessment.verdict is Verdict.CLEAN
     payload = bundle.to_payload()
     assert payload["signature"]["signer"] == fingerprint(public_key)
@@ -175,6 +185,35 @@ def test_build_and_verify_convenience_functions(keypair):
         "trace": trace_record.hash,
         "sandbox": [],
     }
+    assert payload["skill"] == {
+        "content_hash": "sha256:" + skill_record.content_hash,
+        "source": SOURCE,
+    }
+
+
+@requires_ssh_keygen
+def test_verify_refuses_a_signed_false_assessment(keypair):
+    private_key, public_key = keypair
+    bundle = build(skill(), SOURCE, trace(undeclared=True), Strictness.STANDARD, private_key)
+    assert bundle.assessment.verdict is Verdict.FLAGGED
+
+    false = replace(
+        bundle.assessment,
+        verdict=Verdict.CLEAN,
+        findings=(),
+        cause=None,
+        blocked=False,
+    )
+    unsigned = replace(bundle, assessment=false)
+    falsified = replace(
+        unsigned,
+        signature=sign(unsigned.unsigned_json().encode("utf-8"), private_key),
+    )
+
+    with pytest.raises(BundleError, match="^replay-mismatch:"):
+        replay(falsified)
+    with pytest.raises(BundleError, match="^replay-mismatch:"):
+        verify(falsified, public_key)
 
 
 def test_public_key_that_is_not_a_key_is_refused(tmp_path):

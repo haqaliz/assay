@@ -5,6 +5,7 @@ from .build import (
     bundle_payload,
     create_bundle,
     hash_list_for,
+    replay,
     verify,
     verify_bundle,
 )
@@ -15,6 +16,7 @@ from .records import (
     BundleError,
     HashList,
     Signature,
+    SkillSource,
 )
 from .sign import SigningError, fingerprint, sign
 
@@ -26,11 +28,13 @@ __all__ = [
     "HashList",
     "Signature",
     "SigningError",
+    "SkillSource",
     "build",
     "bundle_payload",
     "create_bundle",
     "fingerprint",
     "hash_list_for",
+    "replay",
     "sign",
     "verify",
     "verify_bundle",

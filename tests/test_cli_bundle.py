@@ -87,23 +87,23 @@ class FakeSandbox:
         )
 
 
-def write_skill(tmp_path):
+def write_skill(tmp_path, newline="\n"):
     path = tmp_path / "SKILL.md"
-    path.write_text(
+    text = (
         "---\nname: demo\ndescription: Does a demo.\n"
         "metadata:\n  assay:\n    files: [in.txt]\n    network: []\n"
-        "allowed-tools: Read\n---\nBODY\n",
-        encoding="utf-8",
-    )
+        "allowed-tools: Read\n---\nBODY\n"
+    ).replace("\n", newline)
+    path.write_bytes(text.encode("utf-8"))
     return path
 
 
-def check_run(tmp_path, monkeypatch):
+def check_run(tmp_path, monkeypatch, newline="\n"):
     root = tmp_path / "run"
     root.mkdir(exist_ok=True)
     monkeypatch.setattr(cli_main, "_make_run_root", lambda: root)
     out = tmp_path / "traces"
-    skill_path = write_skill(tmp_path)
+    skill_path = write_skill(tmp_path, newline)
     model = FakeModel([reply("working", [call("read_file", path="in.txt")]), reply("done")])
     main(
         ["check", str(skill_path), *BASE, "--out", str(out)],
@@ -121,7 +121,7 @@ def bundle_path_for(trace_path):
 def test_bundle_writes_the_canonical_file_next_to_the_trace(
     tmp_path, monkeypatch, keypair, capsys
 ):
-    private_key, _ = keypair
+    private_key, public_key = keypair
     skill_path, trace_path = check_run(tmp_path, monkeypatch)
     capsys.readouterr()
 
@@ -134,15 +134,52 @@ def test_bundle_writes_the_canonical_file_next_to_the_trace(
     text = bundle_path.read_text(encoding="utf-8")
     assert text.count("\n") == 1
     payload = json.loads(text)
-    assert payload["schema"] == 1
+    trace = TraceStore(trace_path.parent).load(trace_path)
+    assert payload["schema"] == 2
     assert payload["hash_list"]["trace"] == trace_path.stem
     assert set(payload["hash_list"]) == {"skill", "trace", "sandbox"}
+    assert set(payload["skill"]) == {"content_hash", "source"}
+    assert payload["skill"]["content_hash"] == "sha256:" + trace.skill_content_hash
+    assert payload["skill"]["source"] == skill_path.read_bytes().decode("utf-8")
     assert payload["signature"]["namespace"] == "assay"
     assert payload["signature"]["value"].startswith("-----BEGIN SSH SIGNATURE-----")
     report = capsys.readouterr().out
     assert f"bundle: {bundle_path.resolve()}\n" in report
     assert "signer: SHA256:" in report
     assert "exit: 0\n" in report
+
+    code = main(["verify", str(bundle_path), "--public-key", str(public_key)])
+
+    report = capsys.readouterr().out
+    assert code == 0
+    assert "signature: verified\n" in report
+    assert "replay: verified\n" in report
+
+
+@requires_ssh_keygen
+def test_bundle_embeds_the_exact_crlf_source(tmp_path, monkeypatch, keypair, capsys):
+    private_key, public_key = keypair
+    skill_path, trace_path = check_run(tmp_path, monkeypatch, newline="\r\n")
+    capsys.readouterr()
+
+    code = main(
+        ["bundle", str(trace_path), "--skill", str(skill_path), "--key", str(private_key)]
+    )
+
+    assert code == 0
+    capsys.readouterr()
+    raw = skill_path.read_bytes().decode("utf-8")
+    assert "\r\n" in raw
+    bundle_path = bundle_path_for(trace_path)
+    payload = json.loads(bundle_path.read_text(encoding="utf-8"))
+    trace = TraceStore(trace_path.parent).load(trace_path)
+    assert payload["skill"]["source"] == raw
+    assert payload["skill"]["content_hash"] == "sha256:" + trace.skill_content_hash
+
+    code = main(["verify", str(bundle_path), "--public-key", str(public_key)])
+
+    assert code == 0
+    assert "replay: verified\n" in capsys.readouterr().out
 
 
 @requires_ssh_keygen

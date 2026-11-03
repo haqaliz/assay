@@ -7,6 +7,7 @@ import pytest
 
 from assay.agent import ModelPrice, ToolCall, Usage
 from assay.agent.base import ModelReply
+from assay.bundle import sign
 from assay.canonical import canonical
 from assay.cli import main
 from assay.sandbox import RunRecord
@@ -148,6 +149,7 @@ def test_verify_succeeds_on_a_fresh_bundle(tmp_path, monkeypatch, keypair, capsy
     assert "sandbox: sha256:" in report
     assert "signer: SHA256:" in report
     assert "signature: verified\n" in report
+    assert "signature: verified\nreplay: verified\n" in report
     assert "exit: 0\n" in report
 
 
@@ -176,10 +178,63 @@ def test_verify_json_reports_verified_true(tmp_path, monkeypatch, keypair, capsy
         "sandbox",
         "signer",
         "verified",
+        "replay",
     }
     assert payload["verified"] is True
+    assert payload["replay"] is True
     assert payload["trace_hash"] == trace_path.stem
     assert payload["bundle"] == str(bundle_path)
+
+
+@requires_ssh_keygen
+def test_verify_refuses_a_signed_false_assessment(tmp_path, monkeypatch, keypair, capsys):
+    private_key, public_key = keypair
+    skill_path, trace_path = check_run(tmp_path, monkeypatch, undeclared=True)
+    capsys.readouterr()
+    assert make_bundle(trace_path, skill_path, private_key) == 0
+    capsys.readouterr()
+    bundle_path = bundle_path_for(trace_path)
+    payload = json.loads(bundle_path.read_text(encoding="utf-8"))
+    assert payload["assessment"]["verdict"] == "flagged"
+
+    payload["assessment"]["verdict"] = "clean"
+    payload["assessment"]["findings"] = []
+    payload["assessment"]["blocked"] = False
+    payload["assessment"]["cause"] = None
+    unsigned = {key: value for key, value in payload.items() if key != "signature"}
+    payload["signature"] = sign(
+        canonical(unsigned).encode("utf-8"), private_key
+    ).to_payload()
+    rewrite(bundle_path, payload)
+
+    code = main(["verify", str(bundle_path), "--public-key", str(public_key)])
+
+    captured = capsys.readouterr()
+    assert code == 1
+    assert "cause: REPLAY_MISMATCH\n" in captured.out
+    assert "signature: verified" not in captured.out
+    assert "Traceback" not in captured.out + captured.err
+
+
+@requires_ssh_keygen
+def test_verify_refuses_a_schema_one_bundle(tmp_path, monkeypatch, keypair, capsys):
+    private_key, public_key = keypair
+    skill_path, trace_path = check_run(tmp_path, monkeypatch)
+    capsys.readouterr()
+    assert make_bundle(trace_path, skill_path, private_key) == 0
+    capsys.readouterr()
+    bundle_path = bundle_path_for(trace_path)
+    payload = json.loads(bundle_path.read_text(encoding="utf-8"))
+    payload["schema"] = 1
+    rewrite(bundle_path, payload)
+
+    code = main(["verify", str(bundle_path), "--public-key", str(public_key)])
+
+    captured = capsys.readouterr()
+    assert code == 1
+    assert "cause: BUNDLE_INVALID\n" in captured.out
+    assert "not replayable" in captured.out
+    assert "Traceback" not in captured.out + captured.err
 
 
 @requires_ssh_keygen
