@@ -1,4 +1,8 @@
-"""The signed attestation bundle: one canonical record of one assessed run."""
+"""The signed attestation bundle: one canonical record of one assessed run.
+
+Schema 2 carries an additive `skill.format` hint. It is emitted only when the source is not
+self-describing (Cursor rules), so Claude/OpenClaw bundle bytes are unchanged.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +13,7 @@ from dataclasses import dataclass
 
 from assay.canonical import canonical
 from assay.capture import CaptureError, Trace
-from assay.ingest import MAX_SKILL_BYTES
+from assay.ingest import MAX_SKILL_BYTES, Format
 from assay.verdict import Assessment, VerdictError
 
 BUNDLE_SCHEMA = 2
@@ -25,6 +29,7 @@ _TOP_LEVEL = frozenset(
 )
 _HASH_LIST = frozenset({"skill", "trace", "sandbox"})
 _SKILL_SOURCE = frozenset({"content_hash", "source"})
+_SKILL_SOURCE_FORMAT = _SKILL_SOURCE | {"format"}
 _SIGNATURE = frozenset({"namespace", "signer", "value"})
 
 
@@ -38,10 +43,17 @@ def _matches(pattern: re.Pattern[str], value: object) -> bool:
 
 @dataclass(frozen=True, slots=True)
 class SkillSource:
+    """The exact skill bytes, plus the parser hint needed to replay a Cursor rule."""
+
     content_hash: str
     source: str
+    format: Format | None = None
 
     def __post_init__(self) -> None:
+        if self.format is not None and not isinstance(self.format, Format):
+            raise BundleError(
+                f"format must be a Format or None, got {self.format!r}"
+            )
         if not _matches(_SKILL_HASH, self.content_hash):
             raise BundleError(
                 "content_hash must be 'sha256:' with 64 lowercase hex characters, "
@@ -65,7 +77,13 @@ class SkillSource:
             raise BundleError("hash-mismatch: source does not match content_hash")
 
     def to_payload(self) -> dict[str, object]:
-        return {"content_hash": self.content_hash, "source": self.source}
+        payload: dict[str, object] = {
+            "content_hash": self.content_hash,
+            "source": self.source,
+        }
+        if self.format is not None:
+            payload["format"] = self.format.value
+        return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -243,11 +261,24 @@ class Bundle:
                 f"got {sorted(hash_list) if isinstance(hash_list, dict) else hash_list!r}"
             )
         skill_source = payload["skill"]
-        if not isinstance(skill_source, dict) or set(skill_source) != _SKILL_SOURCE:
+        if not isinstance(skill_source, dict) or set(skill_source) not in (
+            _SKILL_SOURCE,
+            _SKILL_SOURCE_FORMAT,
+        ):
             raise BundleError(
-                f"bundle-invalid: skill keys must be {sorted(_SKILL_SOURCE)}, "
+                f"bundle-invalid: skill keys must be {sorted(_SKILL_SOURCE)} "
+                f"or {sorted(_SKILL_SOURCE_FORMAT)}, "
                 f"got {sorted(skill_source) if isinstance(skill_source, dict) else skill_source!r}"
             )
+        skill_format = None
+        if "format" in skill_source:
+            try:
+                skill_format = Format(skill_source["format"])
+            except (TypeError, ValueError):
+                raise BundleError(
+                    "bundle-invalid: skill.format must be one of "
+                    f"{[item.value for item in Format]}, got {skill_source['format']!r}"
+                ) from None
         signature = payload["signature"]
         if not isinstance(signature, dict) or set(signature) != _SIGNATURE:
             raise BundleError(
@@ -266,6 +297,7 @@ class Bundle:
             skill = SkillSource(
                 content_hash=skill_source["content_hash"],
                 source=skill_source["source"],
+                format=skill_format,
             )
             hashes = HashList(
                 skill=hash_list["skill"],

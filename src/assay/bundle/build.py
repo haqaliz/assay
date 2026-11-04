@@ -8,7 +8,7 @@ from typing import Callable
 
 from assay.canonical import canonical
 from assay.capture import CaptureError, Trace
-from assay.ingest import Skill, SkillParseError, parse_skill_text
+from assay.ingest import Format, Skill, SkillParseError, parse_skill_text
 from assay.verdict import (
     Assessment,
     Strictness,
@@ -86,7 +86,8 @@ def _skill_source(skill: Skill, source: str) -> SkillSource:
         raise BundleError(f"skill-mismatch: source is not valid UTF-8: {exc}") from None
     if digest != skill.content_hash:
         raise BundleError("skill-mismatch: source does not match the parsed skill")
-    return SkillSource("sha256:" + digest, source)
+    hint = skill.format if skill.format is Format.CURSOR else None
+    return SkillSource("sha256:" + digest, source, hint)
 
 
 def verify_bundle(bundle: Bundle, verifier: Verifier) -> None:
@@ -106,8 +107,14 @@ def build(
 
 
 def replay(bundle: Bundle) -> Assessment:
+    skill_format = bundle.skill.format
+    path = (
+        Path(f"{bundle.trace.skill_name}.mdc")
+        if skill_format is Format.CURSOR
+        else Path("SKILL.md")
+    )
     try:
-        skill = parse_skill_text(bundle.skill.source, Path("SKILL.md"))
+        skill = parse_skill_text(bundle.skill.source, path, format=skill_format)
     except SkillParseError as exc:
         raise BundleError(
             f"replay-mismatch: stored skill does not parse: {exc.detail}"
