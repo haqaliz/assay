@@ -1,25 +1,25 @@
-# feat bundle-replay — self-proving signed bundles (A6 follow-on)
+# feat audit-ethics — M2.3 gate: ethics, disclosure and audit protocol
 
 ## Brief
 
-Close the A6 replay gap. A bundle schema 2 carries the exact `SKILL.md` source alongside the trace
-and assessment. `assay verify` re-parses that source, re-runs the shipped `assess` at the recorded
-strictness, and refuses unless the re-derived assessment equals the stored one. A valid signature
-over a false verdict now fails with `replay-mismatch`; the signature proves who attested the record,
-and the replay proves the verdict follows from the recorded inputs. The trace stays schema 2 and the
-corpus is unaffected. `assay bundle` embeds the source (capped by `MAX_SKILL_BYTES`); schema-1
-bundles are refused by name; no new dependency and no A5 changes.
+Write the gate for any third-party skill audit: `ETHICS.md` at the repo root plus
+`docs/audit/PROTOCOL.md` and `docs/audit/finding-template.md`. The protocol covers selection and
+terms, private sandboxed runs with a minimum of three runs per skill, signed bundles, two-person
+review, reproduction of any HIGH finding, a disclosure window with the author and registry,
+publication limits, corrections/retractions, records and retention. No third-party skill is run,
+contacted or published in this unit; the gate is the deliverable. Sync README, CLAUDE.md and the
+ROADMAP (M2.3 protocol-ready, audit not run). Docs-only: no code, no test changes.
 
-Source: the A6 PRD's O1 and `docs/technical/ARCHITECTURE.md` "Verdict replay" open question, both of
-which name this as the first follow-on. A6 and A7 shipped (PRs #9 and #10). Selected 2026-11-03.
+Source: `docs/ROADMAP.md` M2.3 and R3 ("Disclosure process before any publication; ETHICS.md before
+the first public audit"), `CLAUDE.md` constraint 6, and the M2.3 recommendation accepted on
+2026-11-05. A6/A7 and replay are shipped.
 
 ## Context carried from the pick
 
-- `src/assay/bundle/` holds the canonical record and the `ssh-keygen` adapter; `verify` today checks
-  the signature and the hash list only (`src/assay/bundle/build.py`).
-- `src/assay/ingest/claude.py` parses `SKILL.md` from a path and hashes the raw bytes; there is no
-  text entry point yet.
-- `assess(skill, trace, policy)` needs the declared `Scope`, the body/description for instruction
-  findings, and the skill hash; the trace carries none of those.
-- The corpus (`corpus/`) has 20 schema-2 traces; this slice must not require regenerating them.
-- Constraints: no execution of the embedded source; no A5 changes; no over-claim beyond `SKILL.md`.
+- The 20-case corpus and the self-proving bundle are shipped; the next credibility step is a
+  real-world audit, but publication about a real author is the R3 risk.
+- `README.md` has no ethics/disclosure document; `docs/` has no audit directory; M2.3 is unstarted.
+- The maintainer is the only reviewer today. The protocol must block public findings until a second
+  reviewer exists.
+- Constraints: no real secrets or user data in the sandbox; execution decides; `UNVERIFIED` is not a
+  pass; no consumer-subscription automation; no pay-for-verdict.
