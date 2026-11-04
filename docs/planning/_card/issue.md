@@ -1,28 +1,29 @@
-# feat openclaw-adapter — A8 first format adapter
+# feat cursor-adapter — A8 second format adapter
 
 ## Brief
 
-Add OpenClaw/ClawHub `SKILL.md` support to ingest. Detect `metadata.openclaw`, record the skill as
-`Format.OPENCLAW`, and parse its declared requirements (`metadata.openclaw.requires.bins`,
-`anyBins`, `env`, `config`, and `os`) into a tuple on the `Skill`. `assay check` refuses with
-`UNVERIFIED/REQUIREMENTS_UNMET` before any model or sandbox call when the jail cannot satisfy a
-declared requirement (`env`, `config`, a mismatched `os`, or a required binary absent from the jail
-PATH); a satisfiable skill runs normally. The check report adds `format` and `requirements` to the
-human and JSON output. Claude Code behavior is unchanged, the trace/bundle/corpus remain schema 2,
-and there is no new dependency or A5 change.
+Add Cursor project-rule support: `.cursor/rules/*.mdc` files with YAML frontmatter (`description`,
+`globs`, `alwaysApply`). Parse the rule into a `Skill` with `Format.CURSOR`, the body as
+instructions, and `scope.files` from `alwaysApply` (`("*",)`) or `globs` (comma-separated string or
+list); `tools`/`network` stay undeclared. `assay check`, `bundle` and `verify` accept a `.mdc` file;
+the report shows `format: cursor`. Because a `.mdc` is not a `SKILL.md`, the bundle carries an
+optional `skill.format` so replay uses the Cursor parser even when the source has no marker keys.
+A rule that writes outside its globs is `FLAGGED`; a rule with no findings stays
+`UNVERIFIED/NO_DECLARED_SCOPE` because it declares no tools/network. No A5, trace or corpus change;
+no new dependency.
 
-Source: `docs/technical/CAPABILITY_ROADMAP.md` A8 and `docs/ROADMAP.md` M2.4, first adapter in the
-documented order. OpenClaw format grounded in `https://docs.openclaw.ai/tools/skills` and
-`https://docs.openclaw.ai/clawhub` (2026-11-05): a `SKILL.md` with YAML frontmatter, optional
-`metadata.openclaw` gating, and no file/network/tool scope.
+Source: `docs/technical/CAPABILITY_ROADMAP.md` A8 / `docs/ROADMAP.md` M2.4 (Cursor rules next after
+OpenClaw). Format grounded in `https://cursor.com/docs/context/rules` (2026-11-05): `.mdc` in
+`.cursor/rules`, frontmatter `description`/`globs`/`alwaysApply`, globs comma-separated; `alwaysApply`
+true ignores globs/description; `.md` is ignored; `AGENTS.md` and user/team rules are not project
+rules.
 
 ## Context carried from the pick
 
-- `src/assay/ingest/claude.py` parses the common `SKILL.md` shape and ignores `metadata.openclaw`.
-- `Skill` has no format or requirements field; the CLI cannot tell whether an OpenClaw skill can run
-  in the jail.
-- The jail env is `{"PATH": "/usr/bin:/bin:/usr/sbin:/sbin", **config.env}` and `config.env={}` in
-  the agent toolbox; an OpenClaw skill declaring `requires.env` can never get that secret.
-- The sandbox is macOS Seatbelt only; `os` requirements other than `darwin` cannot run.
-- Constraints: no real secrets; execution decides; `UNVERIFIED` is not a pass; no consumer
-  subscription; no new dependency.
+- OpenClaw/ClawHub shipped (PR #13); Cursor is the next adapter in the documented order.
+- `Skill` has `format` and `requirements`; the parser dispatch is content/extension based.
+- The bundle stores `skill.source` and replays it; a `.mdc` source needs a parser hint because it is
+  not a `SKILL.md`.
+- The jail/agent driver runs the rule as instructions; file events are captured and diffed against
+  the globs. Tools/network are not declared by the format.
+- Constraints: no A5/trace/corpus change; `UNVERIFIED` is not a pass; no new dependency.
