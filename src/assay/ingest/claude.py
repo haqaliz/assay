@@ -313,8 +313,26 @@ class ClaudeSkillParser:
 
 
 def parse_skill(path: Path) -> Skill:
+    path = Path(path)
+    if path.suffix.lower() == ".mdc":
+        from .cursor import parse_cursor_rule
+
+        return parse_cursor_rule(path)
     return ClaudeSkillParser().parse(path)
 
 
-def parse_skill_text(text: str, path: Path = Path("SKILL.md")) -> Skill:
+def parse_skill_text(
+    text: str, path: Path = Path("SKILL.md"), *, format: Format | None = None
+) -> Skill:
+    if format is not None and not isinstance(format, Format):
+        raise TypeError(f"format must be a Format or None, got {format!r}")
+    if format is Format.CURSOR:
+        from .cursor import parse_cursor_text
+
+        return parse_cursor_text(text, path)
+    if format is None:
+        from .cursor import looks_like_cursor, parse_cursor_text
+
+        if looks_like_cursor(text):
+            return parse_cursor_text(text, path)
     return ClaudeSkillParser().parse_text(text, path)

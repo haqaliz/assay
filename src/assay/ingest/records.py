@@ -12,6 +12,7 @@ _REQUIREMENT_PREFIXES = frozenset({"bin", "any-bin", "env", "config", "os"})
 class Format(StrEnum):
     CLAUDE_CODE = "claude-code"
     OPENCLAW = "openclaw"
+    CURSOR = "cursor"
 
 
 class ParseCause(StrEnum):
