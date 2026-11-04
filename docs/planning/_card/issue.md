@@ -1,25 +1,28 @@
-# feat audit-ethics — M2.3 gate: ethics, disclosure and audit protocol
+# feat openclaw-adapter — A8 first format adapter
 
 ## Brief
 
-Write the gate for any third-party skill audit: `ETHICS.md` at the repo root plus
-`docs/audit/PROTOCOL.md` and `docs/audit/finding-template.md`. The protocol covers selection and
-terms, private sandboxed runs with a minimum of three runs per skill, signed bundles, two-person
-review, reproduction of any HIGH finding, a disclosure window with the author and registry,
-publication limits, corrections/retractions, records and retention. No third-party skill is run,
-contacted or published in this unit; the gate is the deliverable. Sync README, CLAUDE.md and the
-ROADMAP (M2.3 protocol-ready, audit not run). Docs-only: no code, no test changes.
+Add OpenClaw/ClawHub `SKILL.md` support to ingest. Detect `metadata.openclaw`, record the skill as
+`Format.OPENCLAW`, and parse its declared requirements (`metadata.openclaw.requires.bins`,
+`anyBins`, `env`, `config`, and `os`) into a tuple on the `Skill`. `assay check` refuses with
+`UNVERIFIED/REQUIREMENTS_UNMET` before any model or sandbox call when the jail cannot satisfy a
+declared requirement (`env`, `config`, a mismatched `os`, or a required binary absent from the jail
+PATH); a satisfiable skill runs normally. The check report adds `format` and `requirements` to the
+human and JSON output. Claude Code behavior is unchanged, the trace/bundle/corpus remain schema 2,
+and there is no new dependency or A5 change.
 
-Source: `docs/ROADMAP.md` M2.3 and R3 ("Disclosure process before any publication; ETHICS.md before
-the first public audit"), `CLAUDE.md` constraint 6, and the M2.3 recommendation accepted on
-2026-11-05. A6/A7 and replay are shipped.
+Source: `docs/technical/CAPABILITY_ROADMAP.md` A8 and `docs/ROADMAP.md` M2.4, first adapter in the
+documented order. OpenClaw format grounded in `https://docs.openclaw.ai/tools/skills` and
+`https://docs.openclaw.ai/clawhub` (2026-11-05): a `SKILL.md` with YAML frontmatter, optional
+`metadata.openclaw` gating, and no file/network/tool scope.
 
 ## Context carried from the pick
 
-- The 20-case corpus and the self-proving bundle are shipped; the next credibility step is a
-  real-world audit, but publication about a real author is the R3 risk.
-- `README.md` has no ethics/disclosure document; `docs/` has no audit directory; M2.3 is unstarted.
-- The maintainer is the only reviewer today. The protocol must block public findings until a second
-  reviewer exists.
-- Constraints: no real secrets or user data in the sandbox; execution decides; `UNVERIFIED` is not a
-  pass; no consumer-subscription automation; no pay-for-verdict.
+- `src/assay/ingest/claude.py` parses the common `SKILL.md` shape and ignores `metadata.openclaw`.
+- `Skill` has no format or requirements field; the CLI cannot tell whether an OpenClaw skill can run
+  in the jail.
+- The jail env is `{"PATH": "/usr/bin:/bin:/usr/sbin:/sbin", **config.env}` and `config.env={}` in
+  the agent toolbox; an OpenClaw skill declaring `requires.env` can never get that secret.
+- The sandbox is macOS Seatbelt only; `os` requirements other than `darwin` cannot run.
+- Constraints: no real secrets; execution decides; `UNVERIFIED` is not a pass; no consumer
+  subscription; no new dependency.
