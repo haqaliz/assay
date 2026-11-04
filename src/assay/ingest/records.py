@@ -6,6 +6,13 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
+_REQUIREMENT_PREFIXES = frozenset({"bin", "any-bin", "env", "config", "os"})
+
+
+class Format(StrEnum):
+    CLAUDE_CODE = "claude-code"
+    OPENCLAW = "openclaw"
+
 
 class ParseCause(StrEnum):
     NOT_A_FILE = "not-a-file"
@@ -69,3 +76,26 @@ class Skill:
     body: str
     source_path: Path
     content_hash: str
+    format: Format = Format.CLAUDE_CODE
+    requirements: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.format, Format):
+            raise TypeError(f"Skill.format must be a Format, got {self.format!r}")
+        if isinstance(self.requirements, str) or not isinstance(
+            self.requirements, (list, tuple)
+        ):
+            raise TypeError(
+                f"Skill.requirements must be a collection of strings, got {self.requirements!r}"
+            )
+        requirements = tuple(self.requirements)
+        for requirement in requirements:
+            if not isinstance(requirement, str):
+                raise TypeError(
+                    f"Skill.requirements members must be strings, got {requirement!r}"
+                )
+            prefix, separator, value = requirement.partition(":")
+            entries = value.split(",") if prefix in {"any-bin", "os"} else [value]
+            if not separator or prefix not in _REQUIREMENT_PREFIXES or not all(entries):
+                raise ValueError(f"Skill.requirement is not valid: {requirement!r}")
+        object.__setattr__(self, "requirements", requirements)

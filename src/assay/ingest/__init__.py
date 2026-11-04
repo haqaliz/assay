@@ -2,11 +2,12 @@
 
 from .base import Parser
 from .claude import MAX_SKILL_BYTES, ClaudeSkillParser, parse_skill, parse_skill_text
-from .records import ParseCause, Scope, Skill, SkillParseError
+from .records import Format, ParseCause, Scope, Skill, SkillParseError
 
 __all__ = [
     "MAX_SKILL_BYTES",
     "ClaudeSkillParser",
+    "Format",
     "ParseCause",
     "Parser",
     "Scope",

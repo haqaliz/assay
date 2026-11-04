@@ -8,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-from .records import ParseCause, Scope, Skill, SkillParseError
+from .records import Format, ParseCause, Scope, Skill, SkillParseError
 
 MAX_SKILL_BYTES = 1_000_000
 
@@ -147,6 +147,72 @@ def _scope_list(assay: dict, key: str, path: Path) -> tuple[str, ...] | None:
     return tuple(item.strip() for item in value)
 
 
+def _openclaw_strings(mapping: dict, key: str, field: str, path: Path) -> list[str]:
+    if key not in mapping:
+        return []
+    value = mapping[key]
+    if not isinstance(value, list) or not all(
+        isinstance(item, str) and item.strip() for item in value
+    ):
+        raise SkillParseError(
+            ParseCause.INVALID_SCOPE,
+            f"{field} must be a list of non-empty strings",
+            path,
+        )
+    return sorted(item.strip() for item in value)
+
+
+def _format_and_requirements(mapping: dict, path: Path) -> tuple[Format, tuple[str, ...]]:
+    metadata = mapping.get("metadata")
+    if not isinstance(metadata, dict) or "openclaw" not in metadata:
+        return Format.CLAUDE_CODE, ()
+    openclaw = metadata["openclaw"]
+    if not isinstance(openclaw, dict):
+        raise SkillParseError(
+            ParseCause.INVALID_SCOPE, "metadata.openclaw must be a mapping", path
+        )
+    requirements: list[str] = []
+    if "requires" in openclaw:
+        requires = openclaw["requires"]
+        if not isinstance(requires, dict):
+            raise SkillParseError(
+                ParseCause.INVALID_SCOPE, "metadata.openclaw.requires must be a mapping", path
+            )
+        requirements.extend(
+            f"bin:{name}"
+            for name in _openclaw_strings(
+                requires, "bins", "metadata.openclaw.requires.bins", path
+            )
+        )
+        any_bins = _openclaw_strings(
+            requires, "anyBins", "metadata.openclaw.requires.anyBins", path
+        )
+        if any_bins:
+            requirements.append("any-bin:" + ",".join(any_bins))
+        requirements.extend(
+            f"env:{name}"
+            for name in _openclaw_strings(
+                requires, "env", "metadata.openclaw.requires.env", path
+            )
+        )
+        requirements.extend(
+            f"config:{name}"
+            for name in _openclaw_strings(
+                requires, "config", "metadata.openclaw.requires.config", path
+            )
+        )
+    if "os" in openclaw:
+        os_names = _openclaw_strings(openclaw, "os", "metadata.openclaw.os", path)
+        if not os_names:
+            raise SkillParseError(
+                ParseCause.INVALID_SCOPE,
+                "metadata.openclaw.os must be a non-empty list of non-empty strings",
+                path,
+            )
+        requirements.append("os:" + ",".join(os_names))
+    return Format.OPENCLAW, tuple(requirements)
+
+
 def _load_yaml(frontmatter: str, path: Path) -> dict:
     try:
         return _load_yaml_once(frontmatter, path)
@@ -230,15 +296,19 @@ class ClaudeSkillParser:
     def _parse(self, raw: bytes, path: Path) -> Skill:
         path = Path(path)
         mapping, body = _parse_frontmatter(raw, path)
+        scope = _scope(mapping, path)
+        skill_format, requirements = _format_and_requirements(mapping, path)
         return Skill(
             name=_required_text(mapping, "name", ParseCause.MISSING_NAME, path),
             description=_required_text(
                 mapping, "description", ParseCause.MISSING_DESCRIPTION, path
             ),
-            scope=_scope(mapping, path),
+            scope=scope,
             body=body,
             source_path=path,
             content_hash=hashlib.sha256(raw).hexdigest(),
+            format=skill_format,
+            requirements=requirements,
         )
 
 
