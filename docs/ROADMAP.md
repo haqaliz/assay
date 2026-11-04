@@ -64,9 +64,18 @@ only after disclosure.
 `SKILL.md`, records its `format` and `metadata.openclaw` requirements, and refuses a skill the jail
 cannot satisfy (`requires.env`, `requires.config`, a mismatched `os`, or a required binary absent
 from the jail PATH) before any model or sandbox call, with `UNVERIFIED/REQUIREMENTS_UNMET`. A
-satisfiable skill runs normally. 828 offline tests. Cursor rules and MCP are not built. Most OpenClaw
-skills declare no file/network/tool scope, so a run stays `UNVERIFIED/NO_DECLARED_SCOPE` unless
-`metadata.assay` adds one; the bundle covers `SKILL.md` only, not the rest of the directory.
+satisfiable skill runs normally. 828 offline tests. Cursor rules followed on 2026-11-05; MCP is not
+built. Most OpenClaw skills declare no file/network/tool scope, so a run stays
+`UNVERIFIED/NO_DECLARED_SCOPE` unless `metadata.assay` adds one; the bundle covers `SKILL.md` only,
+not the rest of the directory.
+
+**M2.4 second adapter — Cursor rules (2026-11-05).** `assay check` accepts a Cursor project rule
+(`.cursor/rules/*.mdc`), maps `alwaysApply`/`globs` to the file scope, and records `format: cursor`.
+A write outside the globs is `FLAGGED`; a rule with no findings stays
+`UNVERIFIED/NO_DECLARED_SCOPE` because the format declares no tools/network. A Cursor bundle carries
+an optional `skill.format` hint so `verify` replays a `.mdc` source, including a description-only
+rule; `SKILL.md` bundle bytes are unchanged. 863 offline tests. `AGENTS.md`, `.cursorrules`, and
+Cursor user/team rules are out of scope; MCP is next.
 
 ---
 
@@ -96,7 +105,7 @@ skills declare no file/network/tool scope, so a run stays `UNVERIFIED/NO_DECLARE
 | M2.1 | Signed attestation bundle (A6) — built | Hash-listed, signed record of a run; a third party can verify it with the signer's public key |
 | M2.2 | Labeled corpus + benchmark (A7) — built | Known-malicious samples plus clean ones; precision and recall reported with denominators and label authority |
 | M2.3 | Public audit of top N skills — protocol ready; audit not run | Findings reviewed, authors/registries notified before publication (see R3) |
-| M2.4 | Adapters: OpenClaw/ClawHub — built; Cursor rules and MCP next | One at a time, in that order, each behind its own test fixtures |
+| M2.4 | Adapters: OpenClaw/ClawHub and Cursor rules — built; MCP next | One at a time, in that order, each behind its own test fixtures |
 
 ## Phase 3: Hosted/registry layer (after the 3-month window)
 
@@ -116,5 +125,5 @@ Not scheduled; depends on Phase 2 results.
 | R5 | Cost: real-agent runs spend the user's tokens | High/Med | Per-run and per-session caps, scripted-harness mode as a cheap fallback, cost shown before the run |
 | R6 | Consumer-subscription automation violates provider terms | Med/High | Default to BYOK API keys only; subscription route stays an open question until terms are checked |
 | R7 | SkillSpector or a registry ships overlapping behavioral checks | Med/Med | Differentiate on observed behavior and signed replay; treat static tools as complements |
-| R8 | Scope sprawl across formats | High/Med | One adapter at a time; Claude Code and OpenClaw/ClawHub `SKILL.md` shipped, Cursor/MCP next |
+| R8 | Scope sprawl across formats | High/Med | One adapter at a time; Claude Code, OpenClaw/ClawHub and Cursor shipped, MCP next |
 | R9 | Slow adoption | Med/Med | Public audit as the credibility play; GitHub Action for skill authors |

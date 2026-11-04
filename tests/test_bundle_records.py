@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 
 import pytest
 
@@ -14,7 +15,7 @@ from assay.bundle import (
 )
 from assay.canonical import canonical
 from assay.capture import Event, EventKind, EventOutcome, Trace
-from assay.ingest import MAX_SKILL_BYTES, parse_skill_text
+from assay.ingest import MAX_SKILL_BYTES, Format, parse_skill_text
 from assay.verdict import Assessment, Finding, FindingClass, Severity, Strictness, Verdict
 
 SOURCE = (
@@ -30,6 +31,17 @@ SOURCE = (
     "Read in.txt.\n"
 )
 SKILL = parse_skill_text(SOURCE)
+
+CURSOR_SOURCE = (
+    "---\n"
+    "description: Writes one report.\n"
+    'globs: ["reports/*.md"]\n'
+    "---\n"
+    "Write reports/out.md.\n"
+)
+CURSOR_SKILL = parse_skill_text(
+    CURSOR_SOURCE, Path("reports.mdc"), format=Format.CURSOR
+)
 
 
 def signature(**over):
@@ -115,6 +127,20 @@ def make_bundle(trace_=None, **over):
     return Bundle(**values)
 
 
+def cursor_bundle():
+    trace_ = trace(
+        skill_name=CURSOR_SKILL.name,
+        skill_content_hash=CURSOR_SKILL.content_hash,
+    )
+    return Bundle(
+        skill=skill_source(trace_, source=CURSOR_SOURCE, format=Format.CURSOR),
+        hash_list=hash_list_for(trace_),
+        trace=trace_,
+        assessment=clean_assessment(trace_),
+        signature=signature(),
+    )
+
+
 def test_valid_bundle_has_the_exact_canonical_payload():
     first = "sha256:" + "a" * 64
     second = "sha256:" + "b" * 64
@@ -141,6 +167,7 @@ def test_valid_bundle_has_the_exact_canonical_payload():
         "content_hash": "sha256:" + trace_.skill_content_hash,
         "source": SOURCE,
     }
+    assert "format" not in payload["skill"]
     assert payload["trace"] == trace_.to_payload()
     assert payload["assessment"] == clean_assessment(trace_).to_payload()
     assert payload["signature"] == {
@@ -212,6 +239,43 @@ def test_bundle_round_trips_through_json():
     record = make_bundle(trace_)
 
     assert Bundle.from_json(record.to_json()) == record
+
+
+def test_cursor_bundle_payload_carries_the_format_and_round_trips():
+    record = cursor_bundle()
+
+    assert record.to_payload()["skill"] == {
+        "content_hash": "sha256:" + CURSOR_SKILL.content_hash,
+        "source": CURSOR_SOURCE,
+        "format": "cursor",
+    }
+    loaded = Bundle.from_json(record.to_json())
+    assert loaded == record
+    assert loaded.skill.format is Format.CURSOR
+
+
+def test_a_schema_two_skill_without_format_still_loads():
+    text = make_bundle().to_json()
+    assert "format" not in json.loads(text)["skill"]
+
+    loaded = Bundle.from_json(text)
+
+    assert loaded.skill.format is None
+    assert "format" not in loaded.to_payload()["skill"]
+
+
+@pytest.mark.parametrize("skill_format", ["gemini", "Cursor", 3, None])
+def test_bundle_skill_source_format_must_be_a_known_format(skill_format):
+    payload = json.loads(cursor_bundle().to_json())
+    payload["skill"]["format"] = skill_format
+
+    with pytest.raises(BundleError, match="bundle-invalid"):
+        Bundle.from_json(canonical(payload))
+
+
+def test_skill_source_refuses_a_non_format_hint():
+    with pytest.raises(BundleError, match="format"):
+        SkillSource("sha256:" + SKILL.content_hash, SOURCE, format="cursor")
 
 
 def test_bundle_skill_source_errors_are_bundle_invalid():

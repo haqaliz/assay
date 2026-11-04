@@ -3,7 +3,7 @@
 **Execution-grounded security verifier for AI agent skills.** Runs a skill in a sandbox against a
 real agent, captures what it actually did, and checks that against what it claims to do.
 
-[![Status](https://img.shields.io/badge/status-A1--A7%20+%20A8%2FOpenClaw%20·%20offline-orange)](docs/ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-A1--A7%20+%20A8%2FOpenClaw%2BCursor%20·%20offline-orange)](docs/ROADMAP.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 [Vision](VISION.md) · [Roadmap](docs/ROADMAP.md) · [Architecture](docs/technical/ARCHITECTURE.md) · [Capabilities](docs/technical/CAPABILITY_ROADMAP.md)
@@ -12,15 +12,16 @@ real agent, captures what it actually did, and checks that against what it claim
 
 ## Status
 
-**A1–A7 exist, plus the first A8 adapter (OpenClaw/ClawHub); the engine has a verdict, a portable
-record and a measured benchmark.** What is built and tested, all offline (the bundle tests run a
-local `ssh-keygen`; the benchmark makes no model or network call):
+**A1–A7 exist, plus two A8 adapters (OpenClaw/ClawHub and Cursor rules); the engine has a verdict, a
+portable record and a measured benchmark.** What is built and tested, all offline (the bundle tests
+run a local `ssh-keygen`; the benchmark makes no model or network call):
 
-- **Ingest** (`src/assay/ingest/`) — parses a Claude Code `SKILL.md`, and an OpenClaw/ClawHub
-  `SKILL.md` (format plus `metadata.openclaw` requirements), into a frozen `Skill` record with a
-  tri-state declared scope (undeclared vs declared none) and a named refusal for malformed input.
-  A declared `env`/`config`/`os` requirement the jail cannot satisfy, or a missing required binary,
-  is refused before a run with `UNVERIFIED/REQUIREMENTS_UNMET`.
+- **Ingest** (`src/assay/ingest/`) — parses a Claude Code `SKILL.md`, an OpenClaw/ClawHub
+  `SKILL.md` (format plus `metadata.openclaw` requirements), and a Cursor project rule (`.mdc`,
+  `globs`/`alwaysApply` as file scope) into a frozen `Skill` record with a tri-state declared scope
+  (undeclared vs declared none) and a named refusal for malformed input. A declared
+  `env`/`config`/`os` requirement the jail cannot satisfy, or a missing required binary, is refused
+  before a run with `UNVERIFIED/REQUIREMENTS_UNMET`.
 - **Sandbox** (`src/assay/sandbox/`) — runs a command under a macOS Seatbelt jail: writes confined
   to a run root, network deny-by-default with a port-scoped allowlist, a scrubbed environment,
   CPU/wall limits, and a capture channel the child cannot rewrite.
@@ -81,12 +82,18 @@ sandbox that cannot start, or a declared requirement the jail cannot satisfy); `
 config error. The suite injects a scripted model and fake sandbox; a real Anthropic-keyed run is
 still the maintainer's.
 
-Claude Code and OpenClaw/ClawHub `SKILL.md` files are both accepted; the report's `format` and
-`requirements` fields say which and what it declares. An OpenClaw skill whose requirements cannot be
-met in the jail (`requires.env`, `requires.config`, a mismatched `os`, or a required binary absent
-from the jail PATH) is refused before any run with `UNVERIFIED/REQUIREMENTS_UNMET` and the exact
-missing item. A satisfiable skill runs normally. Most OpenClaw skills declare no file/network/tool
-scope, so the run stays `UNVERIFIED/NO_DECLARED_SCOPE` unless `metadata.assay` adds one.
+Claude Code, OpenClaw/ClawHub `SKILL.md` files, and Cursor project rules (`.mdc`) are accepted; the
+report's `format` and `requirements` fields say which and what it declares. An OpenClaw skill whose
+requirements cannot be met in the jail (`requires.env`, `requires.config`, a mismatched `os`, or a
+required binary absent from the jail PATH) is refused before any run with
+`UNVERIFIED/REQUIREMENTS_UNMET` and the exact missing item. A satisfiable skill runs normally. Most
+OpenClaw skills declare no file/network/tool scope, so the run stays
+`UNVERIFIED/NO_DECLARED_SCOPE` unless `metadata.assay` adds one.
+
+A Cursor rule's `globs` (or `alwaysApply: true`) becomes its file scope; the format declares no
+tools or network, so a run with no findings stays `UNVERIFIED/NO_DECLARED_SCOPE`, and a write outside
+the globs is `FLAGGED`. Pass the `.mdc` file itself, not its directory. `AGENTS.md`, `.cursorrules`,
+and Cursor user/team rules are not project-rule files and are out of scope.
 
 ### Attesting a run
 
@@ -132,8 +139,8 @@ the limits, and the numbers are a regression signal, not a population estimate.
 
 ## What Assay is
 
-Point Assay at a skill — a Claude Code or OpenClaw/ClawHub `SKILL.md` today, with Cursor rules and
-MCP servers to follow. It runs the skill in an isolated sandbox against a real
+Point Assay at a skill — a Claude Code or OpenClaw/ClawHub `SKILL.md`, or a Cursor project rule
+today; MCP servers follow. It runs the skill in an isolated sandbox against a real
 agent, captures every file access, network call, shell command, and injected instruction it
 produced, and diffs that against what the skill declares about itself. The verdict is backed by
 a captured record of the run, which can be signed into a bundle a third party verifies offline.

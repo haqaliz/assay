@@ -19,10 +19,11 @@ The name: to *assay* a metal is to test its purity by actually putting it throug
 by looking at it. Assay asks of a skill: *does it do only what it says it does, when you actually
 run it?*
 
-Status: **A1–A7 exist, plus the first A8 adapter (OpenClaw/ClawHub); nothing else.** Ingest
-(`src/assay/ingest/`) turns a Claude Code or OpenClaw/ClawHub `SKILL.md` into a frozen `Skill` record
-with a tri-state declared `Scope` (undeclared vs declared none), a `format`, and declared
-`requirements` (OpenClaw `metadata.openclaw`), refusing malformed input with a named cause. The sandbox (`src/assay/sandbox/`) runs a command
+Status: **A1–A7 exist, plus two A8 adapters (OpenClaw/ClawHub and Cursor rules); nothing else.**
+Ingest (`src/assay/ingest/`) turns a Claude Code or OpenClaw/ClawHub `SKILL.md`, or a Cursor `.mdc`
+project rule, into a frozen `Skill` record with a tri-state declared `Scope` (undeclared vs declared
+none), a `format`, and declared `requirements`/file scope (OpenClaw `metadata.openclaw`; Cursor
+`globs`/`alwaysApply`), refusing malformed input with a named cause. The sandbox (`src/assay/sandbox/`) runs a command
 under macOS Seatbelt with confined writes, port-scoped network, a scrubbed env and CPU/wall limits.
 The agent driver (`src/assay/agent/`) runs a bounded model loop: the model runs outside the jail,
 every tool call runs through the sandbox, and the result is actions, usage and cost with a named
@@ -142,9 +143,9 @@ A static scan or model may flag a candidate; **the sandboxed, observed run** ass
   a subscription this way. Do not build toward it without re-confirming it's permitted; default
   to BYOK API keys only.
 - Format coverage starts with Claude Code `SKILL.md` (narrowest, best understood); the
-  OpenClaw/ClawHub `SKILL.md` adapter is built, and Cursor rules, MCP server manifests and others
-  follow as they prove worth supporting — see `docs/technical/CAPABILITY_ROADMAP.md` for the build
-  order.
+  OpenClaw/ClawHub `SKILL.md` and Cursor rules adapters are built, and MCP server manifests and
+  others follow as they prove worth supporting — see `docs/technical/CAPABILITY_ROADMAP.md` for the
+  build order.
 - Pinned versions, deterministic sandbox setup, content-addressed captured traces, and a signed
   attestation bundle are core requirements, not nice-to-haves.
 - Capture every (skill, observed behavior, verdict) into a findings corpus wherever feasible —

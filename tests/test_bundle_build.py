@@ -1,5 +1,6 @@
 import hashlib
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
@@ -14,9 +15,10 @@ from assay.bundle import (
     verify_bundle,
 )
 from assay.capture import Event, EventKind, EventOutcome, Trace
-from assay.ingest import parse_skill_text
+from assay.ingest import Format, looks_like_cursor, parse_skill_text
 from assay.verdict import (
     Assessment,
+    FindingClass,
     Strictness,
     StrictnessPolicy,
     UnverifiedCause,
@@ -37,6 +39,24 @@ SOURCE = (
     "Read in.txt.\n"
 )
 SKILL = parse_skill_text(SOURCE)
+
+CURSOR_SOURCE = (
+    "---\n"
+    "description: Writes one report.\n"
+    'globs: ["reports/*.md"]\n'
+    "---\n"
+    "Write reports/out.md.\n"
+)
+CURSOR_SKILL = parse_skill_text(
+    CURSOR_SOURCE, Path("reports.mdc"), format=Format.CURSOR
+)
+
+DESCRIPTION_ONLY_SOURCE = (
+    "---\n"
+    "description: Keep the house style.\n"
+    "---\n"
+    "Be terse.\n"
+)
 
 
 def signature(**over):
@@ -83,6 +103,27 @@ def recording_signer(seen):
         return signature()
 
     return sign
+
+
+def cursor_trace(**over):
+    base = dict(
+        skill_name=CURSOR_SKILL.name,
+        skill_content_hash=CURSOR_SKILL.content_hash,
+        events=(),
+    )
+    base.update(over)
+    return trace(**base)
+
+
+def write_event(target):
+    return Event(
+        kind=EventKind.FILE_WRITE,
+        outcome=EventOutcome.OK,
+        target=target,
+        content_sha256="c" * 64,
+        content_bytes=5,
+        excerpt="hello",
+    )
 
 
 def test_create_bundle_uses_assess_and_signs_the_unsigned_payload_including_the_skill():
@@ -157,6 +198,85 @@ def test_empty_sandbox_hashes_and_unverified_traces_still_bundle():
 def test_replay_rederives_and_returns_the_stored_assessment():
     bundle = create_bundle(SKILL, SOURCE, trace(), Strictness.STANDARD, recording_signer([]))
 
+    assert replay(bundle) == bundle.assessment
+
+
+def test_create_bundle_stores_the_format_only_for_a_cursor_skill():
+    claude = create_bundle(
+        SKILL, SOURCE, trace(), Strictness.STANDARD, recording_signer([])
+    )
+    cursor = create_bundle(
+        CURSOR_SKILL,
+        CURSOR_SOURCE,
+        cursor_trace(),
+        Strictness.STANDARD,
+        recording_signer([]),
+    )
+
+    assert claude.skill.format is None
+    assert "format" not in claude.to_payload()["skill"]
+    assert cursor.skill.format is Format.CURSOR
+    assert cursor.to_payload()["skill"]["format"] == "cursor"
+    assert replay(cursor) == cursor.assessment
+
+
+def test_a_description_only_cursor_rule_bundles_and_replays():
+    assert not looks_like_cursor(DESCRIPTION_ONLY_SOURCE)
+    skill = parse_skill_text(
+        DESCRIPTION_ONLY_SOURCE, Path("house-style.mdc"), format=Format.CURSOR
+    )
+    trace_ = trace(
+        skill_name=skill.name,
+        skill_content_hash=skill.content_hash,
+        events=(),
+    )
+
+    bundle = create_bundle(
+        skill,
+        DESCRIPTION_ONLY_SOURCE,
+        trace_,
+        Strictness.STANDARD,
+        recording_signer([]),
+    )
+
+    assert bundle.skill.format is Format.CURSOR
+    assert bundle.assessment.verdict is Verdict.UNVERIFIED
+    assert bundle.assessment.cause is UnverifiedCause.NO_TRIGGER
+    assert replay(bundle) == bundle.assessment
+
+
+def test_a_write_inside_the_cursor_globs_is_not_a_finding():
+    trace_ = cursor_trace(events=(write_event("reports/out.md"),))
+
+    bundle = create_bundle(
+        CURSOR_SKILL,
+        CURSOR_SOURCE,
+        trace_,
+        Strictness.STANDARD,
+        recording_signer([]),
+    )
+
+    assert bundle.assessment.findings == ()
+    assert bundle.assessment.verdict is Verdict.UNVERIFIED
+    assert bundle.assessment.cause is UnverifiedCause.NO_DECLARED_SCOPE
+    assert replay(bundle) == bundle.assessment
+
+
+def test_a_write_outside_the_cursor_globs_is_flagged():
+    trace_ = cursor_trace(events=(write_event("secret.txt"),))
+
+    bundle = create_bundle(
+        CURSOR_SKILL,
+        CURSOR_SOURCE,
+        trace_,
+        Strictness.STANDARD,
+        recording_signer([]),
+    )
+
+    assert bundle.assessment.verdict is Verdict.FLAGGED
+    assert [finding.class_ for finding in bundle.assessment.findings] == [
+        FindingClass.UNDECLARED_FILE
+    ]
     assert replay(bundle) == bundle.assessment
 
 
