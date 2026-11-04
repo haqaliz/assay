@@ -3,9 +3,10 @@
 Design intent, not a description of built behavior. **A1 (`src/assay/ingest/`), A2
 (`src/assay/sandbox/`), A3 (`src/assay/agent/`), A4 (`src/assay/capture/`), A5
 (`src/assay/verdict/`), A6 (`src/assay/bundle/`) and A7 (`src/assay/corpus/`) are implemented**,
-as is the first A8 adapter (OpenClaw/ClawHub `SKILL.md`); everything else below is still intent —
-verify against the code and `git log`. A1 parses Claude Code and OpenClaw/ClawHub `SKILL.md`, carrying
-the format and declared requirements; A4 records and diffs observed behavior; A5 turns that diff into
+as are the first two A8 adapters (OpenClaw/ClawHub `SKILL.md` and Cursor project rules); everything
+else below is still intent — verify against the code and `git log`. A1 parses Claude Code and
+OpenClaw/ClawHub `SKILL.md` and Cursor `.mdc` rules, carrying the format, declared requirements and
+file scope; A4 records and diffs observed behavior; A5 turns that diff into
 one assessment; A6 signs the trace, the assessment, the sandbox config hashes and the exact
 `SKILL.md` source into a portable record that `verify` replays; A7 scores A5 against a labeled corpus.
 The manual Anthropic-keyed gate run is still unperformed; the Phase 0 gate ran a local model.
@@ -13,7 +14,7 @@ The manual Anthropic-keyed gate run is still unperformed; the Phase 0 gate ran a
 ## Pipeline
 
 ```
-skill (Claude Code or OpenClaw/ClawHub SKILL.md | Cursor rule | MCP manifest)
+skill (Claude Code / OpenClaw SKILL.md | Cursor rule | MCP manifest)
         |
         v
   A1 ingest  ---->  Skill record (format, requirements, declared scope)
@@ -42,7 +43,7 @@ skill (Claude Code or OpenClaw/ClawHub SKILL.md | Cursor rule | MCP manifest)
 
 ```
 src/assay/
-  ingest/     A1: parsers per format, Skill record   ← built (Claude Code, OpenClaw/ClawHub)
+  ingest/     A1: parsers per format, Skill record   ← built (Claude Code, OpenClaw, Cursor)
   sandbox/    A2: jail setup, limits, teardown   ← built (macOS Seatbelt)
   agent/      A3: driver, task generation, cost caps   ← built (Anthropic + OpenAI-compatible)
   capture/    A4: event recorder, trace store, diff   ← built (canonical traces, scope diff)
@@ -59,13 +60,16 @@ tests/        offline; recorded traces; no network, no model calls
   the most heavily tested; escape attempts are test cases.
 - **Observation over inference.** Verdicts above `UNVERIFIED` need a captured event. Static
   signals only order the work.
-- **One `SKILL.md` parser, two formats.** Claude Code and OpenClaw/ClawHub share the frontmatter and
-  body shape; `metadata.openclaw` marks the format and declares gating requirements. The jail PATH is
-  the single source for binary checks; `requires.env` and `requires.config` are always unmet because
-  the jail has no secrets or OpenClaw gateway config. A skill the jail cannot satisfy is refused
-  before a model call (`UNVERIFIED/REQUIREMENTS_UNMET`). Most OpenClaw skills declare no
-  file/network/tool scope, so a run stays `UNVERIFIED/NO_DECLARED_SCOPE` unless `metadata.assay`
-  adds one.
+- **Format adapters, one `Skill` record.** Claude Code and OpenClaw/ClawHub share the frontmatter and
+  body shape; `metadata.openclaw` marks the format and declares gating requirements. Cursor project
+  rules use a `.mdc` parser and map `globs`/`alwaysApply` to `Scope.files`. The jail PATH is the
+  single source for binary checks; `requires.env` and `requires.config` are always unmet because the
+  jail has no secrets or OpenClaw gateway config. A skill the jail cannot satisfy is refused before a
+  model call (`UNVERIFIED/REQUIREMENTS_UNMET`). Most OpenClaw and all Cursor rules declare no
+  tools/network scope, so a no-finding run stays `UNVERIFIED/NO_DECLARED_SCOPE`; a Cursor write
+  outside its globs is `FLAGGED`. A `.mdc` source carries an optional `skill.format` hint in the
+  bundle so replay uses the Cursor parser; `SKILL.md` sources are self-describing and their bundle
+  bytes are unchanged.
 - **Strictness model.** Levels (for example `baseline`, `standard`, `strict`) change which
   findings block, never the verdict they produce. A hard floor defines minimum severities for the
   four classes; any policy that tries to change it is rejected at construction. An instruction
@@ -144,9 +148,10 @@ One canonical JSON line:
 - The signature covers `canonical(payload without "signature")`; the file itself is the canonical
   encoding of the whole payload. Any reformatting or extra key is refused before the signature is
   checked.
-- The trace and the exact `SKILL.md` source are embedded, so a verifier needs only the bundle and the
+- The trace and the exact skill source are embedded, so a verifier needs only the bundle and the
   signer's public key. The source hash must equal the trace's `skill_content_hash`, which is also
-  signed.
+  signed. A Cursor rule's `skill` object adds `format: "cursor"` so replay uses the `.mdc` parser;
+  the field is omitted for `SKILL.md` sources, so their canonical bytes are unchanged.
 - `verify` requires an explicit `--public-key`. A bundle never supplies its own trust anchor; the
   signer fingerprint is informational and is checked against the supplied key.
 - `verify` replays: it re-parses the embedded source with the shipped parser, re-runs `assess` at the
@@ -196,8 +201,8 @@ benchmark signs nothing; any case can be bundled and replayed with the shipped A
 - **Real-world corpus.** The A7 corpus is synthetic-dominated and single-labeled. Public third-party
   cases need the M2.3 disclosure process (R3) before they can be added, and a second labeler before
   any independent precision claim.
-- **OpenClaw coverage.** The adapter supports the documented YAML-flow metadata; JSON5-only
-  frontmatter and the rest of the skill directory (scripts/assets) are not covered. Cursor rules and
-  MCP are the next adapters.
+- **Format coverage.** OpenClaw supports the documented YAML-flow metadata (JSON5-only frontmatter
+  is not covered); Cursor supports project `.mdc` rules (`AGENTS.md`, `.cursorrules`, user/team rules
+  are out). The rest of a skill directory (scripts/assets) is not attested. MCP is next.
 - How to generate synthetic tasks that exercise a skill without an LLM judging the outcome.
 - Distribution name on PyPI: `assay` is taken; `assayhq` was free when checked.
