@@ -42,6 +42,11 @@ network call):
   2 local-model) scored offline by `assay corpus`, with precision and recall, explicit denominators,
   the ids of any false `MALICIOUS` on clean cases, and `UNVERIFIED` coverage by cause. Single labeler
   and synthetic-dominated: a regression measurement, not a population estimate.
+- **Audit gate** ([`ETHICS.md`](ETHICS.md), [`docs/audit/`](docs/audit/)) — the rules and protocol
+  for third-party audits: evidence, three private runs, two-person review, a disclosure window,
+  publication limits and corrections. **No third-party audit has been run or published.** The
+  maintainer is the only reviewer today; a public finding waits for a second reviewer and the
+  disclosure steps.
 
 The pattern lists are now measured on that corpus; run `assay corpus corpus/` for the current
 numbers and read `corpus/README.md` for the limits. The first real Anthropic-keyed run has not
@@ -153,6 +158,8 @@ A static scan or model may flag a candidate; the sandboxed, observed run assigns
 
 - [`VISION.md`](VISION.md) — the thesis, the moat, non-goals.
 - [`CLAUDE.md`](CLAUDE.md) — guardrails and the verdict contract.
+- [`ETHICS.md`](ETHICS.md) — the audit ethics, disclosure and correction policy.
+- [`docs/audit/PROTOCOL.md`](docs/audit/PROTOCOL.md) — the audit protocol and checklist.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — phased plan and risk register.
 - [`docs/technical/CAPABILITY_ROADMAP.md`](docs/technical/CAPABILITY_ROADMAP.md) — A1..A10 capabilities in build order.
 - [`docs/technical/ARCHITECTURE.md`](docs/technical/ARCHITECTURE.md) — the design.

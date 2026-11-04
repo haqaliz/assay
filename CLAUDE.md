@@ -47,9 +47,11 @@ corpus layer (`src/assay/corpus/`, `corpus/`) holds 20 labeled cases (18 synthet
 local-model runs), and `assay corpus <dir>` re-runs A5 over them offline, reporting precision and
 recall with explicit denominators, false-`MALICIOUS` ids and `UNVERIFIED` coverage by cause. It
 measures A5; it does not tune it. The corpus is single-labeled and synthetic-dominated, so those
-numbers are a regression signal, not a population estimate. The suite is offline on synthetic
-outcomes, the corpus and a local `ssh-keygen`; the Phase 0 gate ran a local model on 2026-10-31, and
-the first real Anthropic-keyed run has not happened. Do not describe capability that isn't there.
+numbers are a regression signal, not a population estimate. The audit gate (`ETHICS.md`,
+`docs/audit/`) is in place; no third-party audit has run or been published, and a public finding
+needs a second reviewer and the disclosure window. The suite is offline on synthetic outcomes, the
+corpus and a local `ssh-keygen`; the Phase 0 gate ran a local model on 2026-10-31, and the first real
+Anthropic-keyed run has not happened. Do not describe capability that isn't there.
 
 Lineage: Assay is one of three siblings scaffolded together on 2026-10-22 (with Tenon and Pry),
 drawn from a market-demand research pass (`~/dev/at/ideas/market-demand-2026-10.md`) and sharing
@@ -100,9 +102,12 @@ skill *did*, not what its text *looks like* it might do.
 5. **Build the part that gets BETTER as foundation models improve.** A stronger base model, used
    as the sandboxed agent, surfaces a skill's real behavior more completely — making Assay
    sharper, never making the observed-behavior verdict redundant.
-6. **Responsible disclosure before publication.** A `MALICIOUS` finding on a real public skill is
-   reviewed before it's published, and the registry/author gets a chance to respond, mirroring
-   Plumb's `DIVERGED` review discipline (see `docs/ROADMAP.md` R2).
+6. **Responsible disclosure before publication.** Any third-party audit follows `ETHICS.md` and
+   `docs/audit/PROTOCOL.md`: captured evidence, three private runs, a reviewer who did not run the
+   skill, a 30-day disclosure window (7 days for active exploitation), and a correction path. A
+   `MALICIOUS` finding on a real public skill is reviewed before publication, and the
+   author/registry gets a chance to respond (R2/R3). Until a second reviewer is named, audits stay
+   private and nothing is published.
 7. **Test-first.** Every capability lands with its failing test written first.
 
 ---
@@ -156,11 +161,13 @@ relationships — the moat is engineering (sandbox + observed-behavior diffing),
 README.md                          # Repo front door
 VISION.md                          # Narrative thesis, moat, non-goals
 CLAUDE.md                          # This file
+ETHICS.md                          # Audit ethics, disclosure and corrections
 LICENSE                            # Apache-2.0
 docs/
   ROADMAP.md                       # Phased plan + risk register
   technical/CAPABILITY_ROADMAP.md  # A1..A10 engine capabilities in build order
   technical/ARCHITECTURE.md        # Design: ingest → sandbox run → capture → diff → verdict → bundle
+  audit/                           # Protocol, finding template and gate status
   planning/{slug}/                 # In-flight PRDs, specs, and plans (per unit of work)
 ```
 
