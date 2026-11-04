@@ -49,8 +49,16 @@ false-`MALICIOUS` 0.00 (0/6), clean review 0.33 (2/6), coverage 0.65 (13/20); al
 causes appear. The `plumb-report` regression is `FLAGGED`, not `MALICIOUS`; the `plumb-begin-fast`
 re-run produced no tool actions and is `UNVERIFIED/NO_TRIGGER`. 742 offline tests. A5 is unchanged:
 this slice measures, it does not tune. The corpus is single-labeled and synthetic-dominated, so the
-numbers are a regression signal, not a population estimate. Next: the M2.3 public audit (after
-`ETHICS.md`, R3) or the first A8 adapter.
+numbers are a regression signal, not a population estimate. Next: the M2.3 audit gate (below) or the
+first A8 adapter.
+
+**M2.3 audit gate (2026-11-05).** `ETHICS.md` and `docs/audit/` (protocol, finding template, index)
+are in place: captured evidence, at least three private runs, a reviewer who did not run the skill, a
+30-day disclosure window (7 days for active exploitation), publication limits, corrections and
+records. **No third-party audit has been run or published.** The maintainer is the only reviewer, so
+a public finding waits for a second reviewer and the disclosure steps. Docs-only; 767 tests unchanged.
+Next: a private audit of the maintainer's own or explicitly permitted skills, then a public finding
+only after disclosure.
 
 ---
 
@@ -79,7 +87,7 @@ numbers are a regression signal, not a population estimate. Next: the M2.3 publi
 |---|---|---|
 | M2.1 | Signed attestation bundle (A6) — built | Hash-listed, signed record of a run; a third party can verify it with the signer's public key |
 | M2.2 | Labeled corpus + benchmark (A7) — built | Known-malicious samples plus clean ones; precision and recall reported with denominators and label authority |
-| M2.3 | Public audit of top N skills | Findings reviewed, authors/registries notified before publication (see R3) |
+| M2.3 | Public audit of top N skills — protocol ready; audit not run | Findings reviewed, authors/registries notified before publication (see R3) |
 | M2.4 | Adapters: OpenClaw/ClawHub, Cursor rules, MCP | One at a time, in that order, each behind its own test fixtures |
 
 ## Phase 3: Hosted/registry layer (after the 3-month window)
