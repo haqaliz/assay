@@ -183,6 +183,10 @@ def render_human(
     exit_code: int,
 ) -> str:
     lines = _summary_lines(skill.name, skill.content_hash, assessment)
+    lines[1:1] = [
+        f"format: {skill.format.value}",
+        f"requirements: {', '.join(skill.requirements) or 'none'}",
+    ]
     lines.append(f"trace: {_path_text(trace_path)}")
     lines.append(
         f"cost: ${trace.cost_usd:.4f} "
@@ -202,6 +206,8 @@ def render_json(
                 "name": skill.name,
                 "content_hash": skill.content_hash,
                 "path": _path_text(skill.source_path),
+                "format": skill.format.value,
+                "requirements": list(skill.requirements),
             },
             "verdict": assessment.verdict.value,
             "cause": assessment.cause.value if assessment.cause is not None else None,

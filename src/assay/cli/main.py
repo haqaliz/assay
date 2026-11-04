@@ -39,6 +39,7 @@ from .output import (
     render_json,
     render_verify,
 )
+from .requirements import unmet_requirements
 
 
 class UsageError(Exception):
@@ -188,6 +189,18 @@ def _check(
         skill = parse_skill(path)
     except SkillParseError as exc:
         _emit(refusal("wont-parse", exc.detail, exc.path, args.json), sys.stdout)
+        return 1
+    unmet = unmet_requirements(skill)
+    if unmet:
+        _emit(
+            refusal(
+                "requirements-unmet",
+                "the sandbox cannot satisfy: " + ", ".join(unmet),
+                path,
+                args.json,
+            ),
+            sys.stdout,
+        )
         return 1
     if model is None:
         price = ModelPrice(args.input_price, args.output_price)
