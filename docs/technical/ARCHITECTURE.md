@@ -2,20 +2,21 @@
 
 Design intent, not a description of built behavior. **A1 (`src/assay/ingest/`), A2
 (`src/assay/sandbox/`), A3 (`src/assay/agent/`), A4 (`src/assay/capture/`), A5
-(`src/assay/verdict/`), A6 (`src/assay/bundle/`) and A7 (`src/assay/corpus/`) are implemented**;
-everything else below is still intent — verify against the code and `git log`. A4 records and diffs
-observed behavior; A5 turns that diff into one assessment; A6 signs the trace, the assessment and
-the sandbox config hashes and the exact `SKILL.md` source into a portable record that `verify`
-replays; A7 scores A5 against a labeled corpus. The manual Anthropic-keyed gate run is still
-unperformed; the Phase 0 gate ran a local model.
+(`src/assay/verdict/`), A6 (`src/assay/bundle/`) and A7 (`src/assay/corpus/`) are implemented**,
+as is the first A8 adapter (OpenClaw/ClawHub `SKILL.md`); everything else below is still intent —
+verify against the code and `git log`. A1 parses Claude Code and OpenClaw/ClawHub `SKILL.md`, carrying
+the format and declared requirements; A4 records and diffs observed behavior; A5 turns that diff into
+one assessment; A6 signs the trace, the assessment, the sandbox config hashes and the exact
+`SKILL.md` source into a portable record that `verify` replays; A7 scores A5 against a labeled corpus.
+The manual Anthropic-keyed gate run is still unperformed; the Phase 0 gate ran a local model.
 
 ## Pipeline
 
 ```
-skill (SKILL.md | ClawHub | Cursor rule | MCP manifest)
+skill (Claude Code or OpenClaw/ClawHub SKILL.md | Cursor rule | MCP manifest)
         |
         v
-  A1 ingest  ---->  Skill record (declared scope)
+  A1 ingest  ---->  Skill record (format, requirements, declared scope)
         |
         v
   A2 sandbox  <----  jail config (fs, network, env, limits)
@@ -41,7 +42,7 @@ skill (SKILL.md | ClawHub | Cursor rule | MCP manifest)
 
 ```
 src/assay/
-  ingest/     A1: parsers per format, Skill record   ← built (Claude Code SKILL.md)
+  ingest/     A1: parsers per format, Skill record   ← built (Claude Code, OpenClaw/ClawHub)
   sandbox/    A2: jail setup, limits, teardown   ← built (macOS Seatbelt)
   agent/      A3: driver, task generation, cost caps   ← built (Anthropic + OpenAI-compatible)
   capture/    A4: event recorder, trace store, diff   ← built (canonical traces, scope diff)
@@ -58,6 +59,13 @@ tests/        offline; recorded traces; no network, no model calls
   the most heavily tested; escape attempts are test cases.
 - **Observation over inference.** Verdicts above `UNVERIFIED` need a captured event. Static
   signals only order the work.
+- **One `SKILL.md` parser, two formats.** Claude Code and OpenClaw/ClawHub share the frontmatter and
+  body shape; `metadata.openclaw` marks the format and declares gating requirements. The jail PATH is
+  the single source for binary checks; `requires.env` and `requires.config` are always unmet because
+  the jail has no secrets or OpenClaw gateway config. A skill the jail cannot satisfy is refused
+  before a model call (`UNVERIFIED/REQUIREMENTS_UNMET`). Most OpenClaw skills declare no
+  file/network/tool scope, so a run stays `UNVERIFIED/NO_DECLARED_SCOPE` unless `metadata.assay`
+  adds one.
 - **Strictness model.** Levels (for example `baseline`, `standard`, `strict`) change which
   findings block, never the verdict they produce. A hard floor defines minimum severities for the
   four classes; any policy that tries to change it is rejected at construction. An instruction
@@ -77,9 +85,11 @@ tests/        offline; recorded traces; no network, no model calls
 
 ## CLI
 
-`assay check <skill>` composes A1–A5: parse, model (`AnthropicModel.from_env`), sandbox
+`assay check <skill>` composes A1–A5: parse, an OpenClaw requirement gate (`unmet_requirements`:
+refuse a skill the jail cannot satisfy before any spend), model (`AnthropicModel.from_env`), sandbox
 (`select_sandbox`), a private run root, `task_for`, `drive`, `capture`, `TraceStore(out).save`,
-`assess`, then a human or JSON report. It adds no detection logic.
+`assess`, then a human or JSON report. The report carries the skill `format` and `requirements`. It
+adds no detection logic.
 
 ```
 assay check <skill> [--strictness baseline|standard|strict]
@@ -97,8 +107,8 @@ runs produce identical bytes.
 
 Exit is verdict-only: `0` on `CLEAN`, `1` on `FLAGGED/MALICIOUS/UNVERIFIED`, `2` on a usage or
 config error, `130` on Ctrl-C. `blocked` is reported but never changes the code.
-Parse and sandbox refusals use a `UNVERIFIED` envelope and exit `1`; no other failure prints a
-traceback. The API key is read from `ANTHROPIC_API_KEY` and never reaches stdout, the JSON, the
+Parse, requirement and sandbox refusals use a `UNVERIFIED` envelope and exit `1`; the requirement
+cause is `REQUIREMENTS_UNMET` with the exact unmet items. No other failure prints a traceback. The API key is read from `ANTHROPIC_API_KEY` and never reaches stdout, the JSON, the
 trace or `JailConfig.env`. The first real keyed run is still the maintainer's; the suite injects a
 scripted model and fake sandbox.
 
@@ -186,5 +196,8 @@ benchmark signs nothing; any case can be bundled and replayed with the shipped A
 - **Real-world corpus.** The A7 corpus is synthetic-dominated and single-labeled. Public third-party
   cases need the M2.3 disclosure process (R3) before they can be added, and a second labeler before
   any independent precision claim.
+- **OpenClaw coverage.** The adapter supports the documented YAML-flow metadata; JSON5-only
+  frontmatter and the rest of the skill directory (scripts/assets) are not covered. Cursor rules and
+  MCP are the next adapters.
 - How to generate synthetic tasks that exercise a skill without an LLM judging the outcome.
 - Distribution name on PyPI: `assay` is taken; `assayhq` was free when checked.

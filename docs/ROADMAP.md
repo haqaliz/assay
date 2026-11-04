@@ -49,8 +49,8 @@ false-`MALICIOUS` 0.00 (0/6), clean review 0.33 (2/6), coverage 0.65 (13/20); al
 causes appear. The `plumb-report` regression is `FLAGGED`, not `MALICIOUS`; the `plumb-begin-fast`
 re-run produced no tool actions and is `UNVERIFIED/NO_TRIGGER`. 742 offline tests. A5 is unchanged:
 this slice measures, it does not tune. The corpus is single-labeled and synthetic-dominated, so the
-numbers are a regression signal, not a population estimate. Next: the M2.3 audit gate (below) or the
-first A8 adapter.
+numbers are a regression signal, not a population estimate. The M2.3 audit gate and the first A8
+adapter followed.
 
 **M2.3 audit gate (2026-11-05).** `ETHICS.md` and `docs/audit/` (protocol, finding template, index)
 are in place: captured evidence, at least three private runs, a reviewer who did not run the skill, a
@@ -59,6 +59,14 @@ records. **No third-party audit has been run or published.** The maintainer is t
 a public finding waits for a second reviewer and the disclosure steps. Docs-only; 767 tests unchanged.
 Next: a private audit of the maintainer's own or explicitly permitted skills, then a public finding
 only after disclosure.
+
+**M2.4 first adapter — OpenClaw/ClawHub (2026-11-05).** `assay check` accepts an OpenClaw/ClawHub
+`SKILL.md`, records its `format` and `metadata.openclaw` requirements, and refuses a skill the jail
+cannot satisfy (`requires.env`, `requires.config`, a mismatched `os`, or a required binary absent
+from the jail PATH) before any model or sandbox call, with `UNVERIFIED/REQUIREMENTS_UNMET`. A
+satisfiable skill runs normally. 828 offline tests. Cursor rules and MCP are not built. Most OpenClaw
+skills declare no file/network/tool scope, so a run stays `UNVERIFIED/NO_DECLARED_SCOPE` unless
+`metadata.assay` adds one; the bundle covers `SKILL.md` only, not the rest of the directory.
 
 ---
 
@@ -88,7 +96,7 @@ only after disclosure.
 | M2.1 | Signed attestation bundle (A6) — built | Hash-listed, signed record of a run; a third party can verify it with the signer's public key |
 | M2.2 | Labeled corpus + benchmark (A7) — built | Known-malicious samples plus clean ones; precision and recall reported with denominators and label authority |
 | M2.3 | Public audit of top N skills — protocol ready; audit not run | Findings reviewed, authors/registries notified before publication (see R3) |
-| M2.4 | Adapters: OpenClaw/ClawHub, Cursor rules, MCP | One at a time, in that order, each behind its own test fixtures |
+| M2.4 | Adapters: OpenClaw/ClawHub — built; Cursor rules and MCP next | One at a time, in that order, each behind its own test fixtures |
 
 ## Phase 3: Hosted/registry layer (after the 3-month window)
 
@@ -108,5 +116,5 @@ Not scheduled; depends on Phase 2 results.
 | R5 | Cost: real-agent runs spend the user's tokens | High/Med | Per-run and per-session caps, scripted-harness mode as a cheap fallback, cost shown before the run |
 | R6 | Consumer-subscription automation violates provider terms | Med/High | Default to BYOK API keys only; subscription route stays an open question until terms are checked |
 | R7 | SkillSpector or a registry ships overlapping behavioral checks | Med/Med | Differentiate on observed behavior and signed replay; treat static tools as complements |
-| R8 | Scope sprawl across formats | High/Med | One adapter at a time; Claude Code `SKILL.md` ships first |
+| R8 | Scope sprawl across formats | High/Med | One adapter at a time; Claude Code and OpenClaw/ClawHub `SKILL.md` shipped, Cursor/MCP next |
 | R9 | Slow adoption | Med/Med | Public audit as the credibility play; GitHub Action for skill authors |

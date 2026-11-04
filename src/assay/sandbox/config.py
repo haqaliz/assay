@@ -10,6 +10,8 @@ from typing import Literal, Mapping
 
 OUTPUT_CAP_BYTES = 1024 * 1024
 
+DEFAULT_PATH = "/usr/bin:/bin:/usr/sbin:/sbin"
+
 
 def _check_path(path: object, name: str) -> Path:
     if not isinstance(path, (str, Path)):

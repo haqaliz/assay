@@ -19,9 +19,10 @@ The name: to *assay* a metal is to test its purity by actually putting it throug
 by looking at it. Assay asks of a skill: *does it do only what it says it does, when you actually
 run it?*
 
-Status: **A1–A7 exist, nothing else.** Ingest (`src/assay/ingest/`) turns a Claude Code `SKILL.md`
-into a frozen `Skill` record with a tri-state declared `Scope` (undeclared vs declared none),
-refusing malformed input with a named cause. The sandbox (`src/assay/sandbox/`) runs a command
+Status: **A1–A7 exist, plus the first A8 adapter (OpenClaw/ClawHub); nothing else.** Ingest
+(`src/assay/ingest/`) turns a Claude Code or OpenClaw/ClawHub `SKILL.md` into a frozen `Skill` record
+with a tri-state declared `Scope` (undeclared vs declared none), a `format`, and declared
+`requirements` (OpenClaw `metadata.openclaw`), refusing malformed input with a named cause. The sandbox (`src/assay/sandbox/`) runs a command
 under macOS Seatbelt with confined writes, port-scoped network, a scrubbed env and CPU/wall limits.
 The agent driver (`src/assay/agent/`) runs a bounded model loop: the model runs outside the jail,
 every tool call runs through the sandbox, and the result is actions, usage and cost with a named
@@ -36,7 +37,9 @@ with severity and evidence, a named `UNVERIFIED` cause, and a `blocked` flag fro
 strictness. `MALICIOUS` needs a `HIGH` finding from a captured `OK`/`DENIED` action; an
 instruction-pattern match is capped at `REVIEW` and can never produce it. Strictness changes only
 what blocks; the four-class floor cannot be lowered. `assay check <skill>` (`src/assay/cli/`)
-composes A1–A5 into one command with a verdict-only exit code and a canonical JSON report. The
+composes A1–A5 into one command with a verdict-only exit code and a canonical JSON report; before any
+spend it refuses an OpenClaw skill the jail cannot satisfy (`UNVERIFIED/REQUIREMENTS_UNMET`), and the
+report carries the skill `format` and `requirements`. The
 bundle layer (`src/assay/bundle/`) turns a saved trace plus its `SKILL.md` into one canonical,
 SSH-signed record — exact skill source, skill hash, trace, sandbox config hashes, assessment — and
 `assay verify` checks every hash and the signature offline, re-parses the embedded source and re-runs
@@ -138,9 +141,10 @@ A static scan or model may flag a candidate; **the sandboxed, observed run** ass
   **open question, not a design assumption** — most providers' consumer terms prohibit automating
   a subscription this way. Do not build toward it without re-confirming it's permitted; default
   to BYOK API keys only.
-- Format coverage starts with Claude Code `SKILL.md` (narrowest, best understood) and expands by
-  adapter: OpenClaw/ClawHub, Cursor rules, MCP server manifests, and others as they prove worth
-  supporting — see `docs/technical/CAPABILITY_ROADMAP.md` for the build order.
+- Format coverage starts with Claude Code `SKILL.md` (narrowest, best understood); the
+  OpenClaw/ClawHub `SKILL.md` adapter is built, and Cursor rules, MCP server manifests and others
+  follow as they prove worth supporting — see `docs/technical/CAPABILITY_ROADMAP.md` for the build
+  order.
 - Pinned versions, deterministic sandbox setup, content-addressed captured traces, and a signed
   attestation bundle are core requirements, not nice-to-haves.
 - Capture every (skill, observed behavior, verdict) into a findings corpus wherever feasible —

@@ -9,7 +9,7 @@ from assay.agent.base import ModelReply
 from assay.capture import EventOutcome, Trace
 from assay.cli import main
 from assay.cli.output import render_human, render_json
-from assay.ingest import Scope, Skill
+from assay.ingest import Format, Scope, Skill
 from assay.sandbox import RunRecord
 from assay.verdict import (
     Assessment,
@@ -34,7 +34,7 @@ def clean_env(monkeypatch):
         monkeypatch.delenv(name, raising=False)
 
 
-def skill():
+def skill(**overrides):
     return Skill(
         name="demo",
         description="Does a demo.",
@@ -42,6 +42,7 @@ def skill():
         body="BODY\n",
         source_path=Path("demo/SKILL.md"),
         content_hash="a" * 64,
+        **overrides,
     )
 
 
@@ -88,6 +89,8 @@ def test_human_report_has_one_line_per_field_and_finding():
     )
     assert report == (
         "skill: demo aaaaaaaaaaaa\n"
+        "format: claude-code\n"
+        "requirements: none\n"
         "verdict: FLAGGED\n"
         "cause: -\n"
         "strictness: standard (blocked: yes)\n"
@@ -116,11 +119,38 @@ def test_json_report_is_one_canonical_line_with_the_exact_field_set():
     report = render_json(skill(), assessment(), TRACE_PATH, trace())
     assert report == (
         '{"blocked":false,"cause":null,"cost_usd":0.001,"findings":[],"schema":1,'
-        '"skill":{"content_hash":"' + "a" * 64 + '","name":"demo","path":"demo/SKILL.md"},'
+        '"skill":{"content_hash":"' + "a" * 64 + '","format":"claude-code",'
+        '"name":"demo","path":"demo/SKILL.md","requirements":[]},'
         '"strictness":"standard","trace":"/abs/traces/abc.json",'
         '"trace_hash":"' + "b" * 64 + '",'
         '"usage":{"input_tokens":10,"output_tokens":2},"verdict":"clean"}\n'
     )
+
+
+def test_reports_render_an_openclaw_skills_format_and_requirements():
+    openclaw = skill(format=Format.OPENCLAW, requirements=("bin:ls", "env:X"))
+    assessed = assessment(Verdict.UNVERIFIED, cause=UnverifiedCause.NO_DECLARED_SCOPE, blocked=True)
+
+    assert render_human(openclaw, assessed, TRACE_PATH, trace(), 1) == (
+        "skill: demo aaaaaaaaaaaa\n"
+        "format: openclaw\n"
+        "requirements: bin:ls, env:X\n"
+        "verdict: UNVERIFIED\n"
+        "cause: NO_DECLARED_SCOPE\n"
+        "strictness: standard (blocked: yes)\n"
+        "findings: none\n"
+        f"trace: {TRACE_PATH}\n"
+        "cost: $0.0010 (10 input, 2 output tokens)\n"
+        "exit: 1\n"
+    )
+    payload = json.loads(render_json(openclaw, assessed, TRACE_PATH, trace()))
+    assert payload["skill"] == {
+        "name": "demo",
+        "content_hash": "a" * 64,
+        "path": "demo/SKILL.md",
+        "format": "openclaw",
+        "requirements": ["bin:ls", "env:X"],
+    }
 
 
 def test_json_report_carries_finding_fields():

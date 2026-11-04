@@ -12,15 +12,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Sequence
 
-from .config import OUTPUT_CAP_BYTES, JailConfig, Limits
+from .config import DEFAULT_PATH, OUTPUT_CAP_BYTES, JailConfig, Limits
 from .denials import classify_failure
 from .records import RunRecord, SandboxFailed
 
 # Host data that must never be readable from inside the jail, even though reads are otherwise
 # broad (a narrow allow-list kills the child with a silent SIGABRT — see the planning dig note).
 HOST_DATA_DENY = ("/Users", "/Volumes", "/private/etc", "/private/var/db")
-
-DEFAULT_PATH = "/usr/bin:/bin:/usr/sbin:/sbin"
 
 
 def build_profile(config: JailConfig) -> str:
