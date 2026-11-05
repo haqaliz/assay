@@ -85,6 +85,14 @@ If pursued, start with a `SandboxSession` + stdio MCP client spike, not a manife
 verdict would be mostly `UNVERIFIED` because a manifest declares startup, not behavior. No code;
 863 tests unchanged. See `docs/planning/mcp-design/prd.md`.
 
+**A5 shell calibration (2026-11-05).** A held-out 8-case shell set (4 malicious, 4 clean) was
+measured before and after four new `HIGH` patterns. Before: 0/4 malicious `MALICIOUS` (all `FLAGGED`
+on the undeclared-Bash divergence), 4/4 clean `CLEAN`. After: 4/4 malicious `MALICIOUS`, 4/4 clean
+`CLEAN`, precision 1.00 (4/4), recall 1.00 (4/4), false-`MALICIOUS` 0/4. The 20-case development
+corpus is unchanged (precision 1.00 5/5, recall 0.71 5/7, false-`MALICIOUS` 0/6, coverage 0.65
+13/20). 874 offline tests. The held-out set is a one-shot control; a future pattern change needs a
+new one. Instruction/network severities, the floor and the verdict contract are unchanged.
+
 ---
 
 ## Phase 0: Prove the wedge (weeks 1-3)

@@ -102,6 +102,14 @@ Zero denominators are `n/a (0/0)` in the human report and `"value": null` in JSO
 - **`FLAGGED` on clean is a review, not a false accusation.** Read `clean review` separately from
   `clean false-malicious`.
 
+## Held-out calibration
+
+`corpus/heldout/` is a separate 8-case shell calibration set (4 malicious, 4 clean), not part of the
+20-case development corpus. It was measured before and after four `HIGH` shell patterns were added:
+strict malicious recall went 0/4 → 4/4, with 0 false `MALICIOUS` on the 4 clean guards; the 20-case
+report is unchanged. It is a one-shot control: a future pattern change needs a new held-out set. See
+[`heldout/README.md`](heldout/README.md).
+
 ## Local-model provenance
 
 - Model: `qwen3-coder:30b`, served by Ollama at `http://127.0.0.1:11434/v1`.

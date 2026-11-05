@@ -169,9 +169,12 @@ a captured record of the run, which can be signed into a bundle a third party ve
 Strictness (`baseline`/`standard`/`strict`) decides only whether a run is `blocked`; it never
 changes the verdict. The severity floor for the four finding classes is fixed and cannot be
 lowered. An instruction-pattern match is a candidate capped at `REVIEW`: it can make a run
-`FLAGGED`, never `MALICIOUS`. The shell and instruction pattern lists are deliberately short; the
-A7 corpus measures their precision and recall on 20 labeled cases (18 synthetic, 2 local-model).
-Those numbers are a regression signal on that corpus, not a population estimate.
+`FLAGGED`, never `MALICIOUS`. The shell and instruction pattern lists are deliberately short. The A7
+corpus measures them on 20 labeled cases; the shell list was calibrated on a separate 8-case
+held-out set, adding four `HIGH` patterns (`dd` to a device, `pty.spawn`, `/dev/tcp/`, `socat ...
+EXEC:/bin/sh`) and taking strict malicious recall from 0/4 to 4/4 with 0 false `MALICIOUS` on four
+clean guards. Both sets are small and synthetic; those numbers are a regression/calibration signal,
+not a population estimate. The instruction list remains narrow and capped at `REVIEW`.
 
 A static scan or model may flag a candidate; the sandboxed, observed run assigns the verdict.
 
