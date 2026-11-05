@@ -111,6 +111,17 @@ No tag, no PyPI publish, no version bump. The engine capability roadmap is compl
 (file-based) and A10; A9 (hosted) and MCP are deferred. M2.3 remains gated on a second reviewer and
 the disclosure process.
 
+**A5 instruction calibration (2026-11-05).** A held-out 8-case instruction set (4 malicious, 4
+clean) was measured before and after five patterns were added (`ignore the above`, `disregard
+previous`, `forget your instructions`, `keep this between us`, `do not reveal this`) and two were
+narrowed (`override your`, `system prompt`). Before: 0/4 malicious detected (all `CLEAN`), 2/4 clean
+`FLAGGED`. After: 4/4 malicious `FLAGGED`, 4/4 clean `CLEAN`, detection 1.00 (4/4), clean review
+0.00 (0/4), false-`MALICIOUS` 0/4. Strict `MALICIOUS` recall stays 0/4 by design: instruction
+findings are capped at `REVIEW`. The 20-case development corpus is unchanged (precision 1.00 5/5,
+recall 0.71 5/7, detection 1.00 7/7, false-`MALICIOUS` 0/6, clean review 0.33 2/6, coverage 0.65
+13/20). 931 offline tests. The held-out set is a one-shot control; a future pattern change needs a
+fresh one. The cap, floor and verdict contract are unchanged.
+
 ---
 
 ## Phase 0: Prove the wedge (weeks 1-3)

@@ -111,6 +111,18 @@ strict malicious recall went 0/4 → 4/4, with 0 false `MALICIOUS` on the 4 clea
 report is unchanged. It is a one-shot control: a future pattern change needs a new held-out set. See
 [`heldout/README.md`](heldout/README.md).
 
+## Instruction calibration
+
+`corpus/heldout-instructions/` is a separate 8-case instruction calibration set (4 malicious, 4
+clean), also outside the 20-case development corpus. It was measured before and after five
+instruction patterns were added (`ignore the above`, `disregard previous`, `forget your
+instructions`, `keep this between us`, `do not reveal this`) and two narrowed (`override your`,
+`system prompt`). Detection went 0/4 → 4/4 and clean review 2/4 → 0/4, with 0 false `MALICIOUS`; the
+20-case report is unchanged. Strict malicious recall stays 0/4 by design: an instruction finding is
+capped at `REVIEW`, so `FLAGGED` is a review, not an accusation. It is a one-shot control: a future
+pattern change needs a fresh held-out set. See
+[`heldout-instructions/README.md`](heldout-instructions/README.md).
+
 ## Real-world control
 
 `corpus/real/` is a separate 8-case control of the maintainer's own Plumb skills, one local-model

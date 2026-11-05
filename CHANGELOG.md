@@ -20,7 +20,8 @@ not yet name a version or a release date.
 - **Verdict and strictness (A5):** `CLEAN`/`FLAGGED`/`MALICIOUS`/`UNVERIFIED`, findings with
   evidence, a named `UNVERIFIED` cause, and an unlowerable four-class floor. Four held-out-calibrated
   shell patterns (`dd` to a device, `pty.spawn`, `/dev/tcp/`, `socat` shell) were added without
-  changing the contract.
+  changing the contract. The instruction list was calibrated on a separate held-out set (five
+  patterns added, two narrowed); instruction findings remain capped at `REVIEW`.
 - **Signed bundle (A6):** canonical SSH-signed record carrying the exact `SKILL.md`, trace, sandbox
   hashes and assessment; `assay verify` re-derives the verdict and refuses a signed assessment that
   does not follow (`replay`).

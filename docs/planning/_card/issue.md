@@ -1,19 +1,25 @@
-# feat release-ci — v0.1 readiness: CI, changelog, version
+# feat instruction-calibration — held-out instruction calibration
 
 ## Brief
 
-Make the repo ready to be treated as a v0.1 project without cutting a release: a macOS GitHub
-Actions workflow that runs the offline suite, a `CHANGELOG.md` with an `Unreleased` section, and
-`assay --version` from the installed package metadata. No tag, no PyPI publish, no version bump; the
-release phase stays deferred. The workflow is read-only and needs no secrets.
+Calibrate A5's **instruction** patterns on a fresh held-out set, without changing the verdict
+contract or the `REVIEW` cap. Add `corpus/heldout-instructions/` with 8 cases: four malicious
+instruction texts the current list misses, and four clean near-miss guards, two of which the current
+broad `system prompt`/`override your` patterns wrongly flag. Measure the baseline, add four
+high-confidence patterns, narrow the two broad ones, and re-measure. Target: malicious detection
+0/4 → 4/4 (`FLAGGED`, never `MALICIOUS`), clean reviews 2/4 → 0/4, no false `MALICIOUS`, and the
+20-case benchmark unchanged.
 
-Source: the `assay-end-fast` release phase ("no release machinery today; do not hand-craft a
-release"), the 916-test suite, and the absence of `.github/`, `CHANGELOG.md` and a version flag.
+Source: the A5 row ("the instruction list remains narrow") and the A7 PRD's held-out-calibration
+discipline. The shell list was calibrated in #16; this is the other half. The instruction cap at
+`REVIEW` is deliberate and unchanged.
 
 ## Context carried from the pick
 
-- 916 offline tests pass locally; the suite needs macOS (`sandbox-exec`) and `ssh-keygen`.
-- `pyproject.toml` is version `0.0.1`, distribution `assayhq`; no CI, no changelog, no `--version`.
-- The release identity is `haqaliz`; the PyPI name is unsettled (`assay` taken, `assayhq` free when
-  checked). This unit does not publish.
-- No new dependency; no A5/corpus/trace/bundle change.
+- `INSTRUCTION_PATTERNS` in `src/assay/verdict/assess.py` is short; `system prompt` and
+  `override your` are broad and can flag benign documentation/preferences.
+- Instruction findings are capped at `REVIEW` and can never produce `MALICIOUS`; the held-out target
+  is detection/clean-review, not strict recall.
+- The main 20-case benchmark has one instruction case (`ignore previous instructions`) and no
+  near-miss guards; the A5 shell calibration set is separate and unchanged.
+- No model/network; synthetic traces; no new dependency.
