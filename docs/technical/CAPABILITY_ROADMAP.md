@@ -3,8 +3,9 @@
 Engine capabilities in build order. Each lands test-first. A1–A5 are built and composed by the
 `assay check` CLI (M1.4); A6 is built around a saved trace and composed by `assay bundle` /
 `assay verify`; A7 is built as an offline benchmark over a labeled corpus; A8's first two adapters
-(OpenClaw/ClawHub and Cursor rules) are built. MCP is not an A8 adapter: a server is a long-lived
-program, so it is a separate capability, deferred after the design spike.
+(OpenClaw/ClawHub and Cursor rules) are built; A10's static pre-filter is built. MCP is not an A8
+adapter: a server is a long-lived program, so it is a separate capability, deferred after the design
+spike.
 
 | ID | Capability | Depends on | Guardrail tie-in |
 |---|---|---|---|
@@ -17,7 +18,7 @@ program, so it is a separate capability, deferred after the design spike.
 | **A7** | **Findings corpus and benchmark.** Labeled malicious and clean samples; precision and recall with denominators and label authority. *(built: `src/assay/corpus/` + `corpus/`; a 20-case development benchmark (18 synthetic and 2 local-model) plus an 8-case real-world control of the maintainer's own skills, single labeler, no third-party skills. Measures A5; does not tune it)* | A5, A6 | Measure against human labels |
 | **A8** | **Format adapters.** OpenClaw/ClawHub, Cursor rules, other file-based formats as warranted. *(OpenClaw/ClawHub and Cursor rules built: format detection, OpenClaw requirements and pre-run `REQUIREMENTS_UNMET` gate, Cursor `globs`/`alwaysApply` file scope. MCP server manifests are not a file adapter; they are a separate capability, deferred after the design spike)* | A1-A5 | One at a time |
 | **A9** | **Registry and install-time layer (hosted).** Pre-listing check, `assay install` gate. | A5-A7 | Opt-in, BYOK |
-| **A10** | **Optional static pre-filter.** Cheap triage that can prioritize runs but never assigns a verdict above `UNVERIFIED`. | A1 | Constraint 1 |
+| **A10** | **Optional static pre-filter.** Cheap triage that can prioritize runs but never assigns a verdict above `UNVERIFIED`. *(built: `src/assay/triage/`, `assay triage`; `priority`/`signals` only, no verdict field, no `Assessment`, no run; uncalibrated queue heuristic)* | A1 | Constraint 1 |
 
 ## Sequencing
 

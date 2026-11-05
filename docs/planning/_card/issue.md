@@ -1,26 +1,24 @@
-# feat real-corpus — M2.3 prep: private real-world control set
+# feat a10-prefilter — optional static pre-filter (A10)
 
 ## Brief
 
-Add a **private real-world control set** of the remaining eight Plumb skills, run once each against
-the local model, stored as `local-model` cases under `corpus/real/`. The labels are `clean` (the
-maintainer's own benign skills) and the purpose is to measure coverage and false positives on real
-instructions, not to benchmark detection or publish findings. The 20-case development corpus and the
-A5 calibration set stay unchanged; the real set is reported separately. No third-party skills, no
-publication, no audit claim, no code change beyond a loader test and docs.
+Add `assay triage <skill>`: a cheap, deterministic static pre-filter that ranks a skill's text for
+which run to prioritize. It emits **priority** (`low`/`medium`/`high`) and **signals** only. It
+never emits `CLEAN`/`FLAGGED`/`MALICIOUS`, has no `verdict` field, no `Assessment`, and never calls a
+model or the sandbox. The output says "pre-filter only; run `assay check` for a verdict." This is
+A10: it may order the work, never decide it.
 
-Source: the A7 corpus limit ("18 synthetic, 2 local-model; synthetic-dominated"), the M2.3 audit
-gate (no third-party audit until a second reviewer), and the A7 PRD's "grow with real cases." This
-is the safe, own-skill step before any public audit.
+Source: `docs/technical/CAPABILITY_ROADMAP.md` A10 ("Optional static pre-filter. Cheap triage that
+can prioritize runs but never assigns a verdict above UNVERIFIED") and `CLAUDE.md` constraint 1
+("A static scan or a model reading the skill's markdown may flag a candidate or triage priority. Only
+an actual sandboxed run ... may produce a verdict above UNVERIFIED"). A1–A8 are shipped; A9 is
+deferred; A10 is the last buildable engine capability.
 
 ## Context carried from the pick
 
-- `corpus/` is the 20-case development benchmark; `corpus/heldout/` is the 8-case A5 calibration
-  control. Both are unchanged by this unit.
-- The existing local-model cases are `plumb-report-desktop-write` and
-  `plumb-begin-fast-no-trigger`, stored from the 2026-11-03/05 runs.
-- Ollama `qwen3-coder:30b` is available locally; runs cost nothing (`--input-price 0
-  --output-price 0 --max-cost 0.01`).
-- The M2.3 protocol requires three runs and a second reviewer for an audit; this set is a **control
-  corpus**, not an audit, and makes no public claim.
-- Constraints: no real secrets; the sandbox runs every tool call; no publication; no A5 change.
+- The engine has a deterministic `parse_skill` (Claude/OpenClaw/Cursor) and a canonical CLI/output
+  style; `check` is the only path that produces an `Assessment`.
+- The static pre-filter must be structurally unable to be mistaken for a verdict: no `verdict` key,
+  no `UnverifiedCause`, no `findings`, no trace.
+- The A7 corpus is a benchmark; the A10 is not measured by it and must not change it.
+- No new dependency; no network/model/sandbox.

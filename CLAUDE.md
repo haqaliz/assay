@@ -20,7 +20,8 @@ The name: to *assay* a metal is to test its purity by actually putting it throug
 by looking at it. Assay asks of a skill: *does it do only what it says it does, when you actually
 run it?*
 
-Status: **A1–A7 exist, plus two A8 adapters (OpenClaw/ClawHub and Cursor rules); nothing else.**
+Status: **A1–A7 exist, plus two A8 adapters (OpenClaw/ClawHub and Cursor rules) and the A10 static
+pre-filter; nothing else.**
 Ingest (`src/assay/ingest/`) turns a Claude Code or OpenClaw/ClawHub `SKILL.md`, or a Cursor `.mdc`
 project rule, into a frozen `Skill` record with a tri-state declared `Scope` (undeclared vs declared
 none), a `format`, and declared `requirements`/file scope (OpenClaw `metadata.openclaw`; Cursor
@@ -57,7 +58,9 @@ numbers are a regression signal, not a population estimate. A separate private 8
 clean; it is a false-positive and coverage control, not a benchmark or an audit. The A5 shell list
 was calibrated on a separate held-out set with four `HIGH` patterns (`dd` to a device, `pty.spawn`,
 `/dev/tcp/`, `socat` shell); the instruction list remains narrow and capped at `REVIEW`, and the
-20-case benchmark is unchanged. The audit gate (`ETHICS.md`,
+20-case benchmark is unchanged. The A10 static pre-filter (`assay triage`) ranks a skill's text with
+`priority`/`signals` only; it has no verdict, findings, trace or run, and its list is uncalibrated.
+The audit gate (`ETHICS.md`,
 `docs/audit/`) is in place; no third-party audit has run or been published, and a public finding
 needs a second reviewer and the disclosure window. MCP server verification is a separate capability,
 not an A8 adapter; it is deferred after the design spike (a manifest parser would be a static scan).
@@ -96,8 +99,8 @@ skill *did*, not what its text *looks like* it might do.
 ## Key strategic constraints (do not violate)
 
 1. **Execution decides, never a bare static or LLM judge.** A static scan or a model reading the
-   skill's markdown may *flag a candidate* or *triage priority*. Only an actual **sandboxed run,
-   observed and captured**, may produce a verdict above `UNVERIFIED`. If a design lets a pattern
+   skill's markdown may *flag a candidate* or *triage priority* (`assay triage`). Only an actual
+   **sandboxed run, observed and captured**, may produce a verdict above `UNVERIFIED`. If a design lets a pattern
    match or a model's opinion stand in for an observed behavior, stop and flag it.
 2. **No real secrets, no real user data, in the sandbox.** The sandbox that runs an untrusted
    skill is isolated: filesystem jail, network allowlist/deny-by-default, no real credentials.
