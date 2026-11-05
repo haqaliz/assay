@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "id": "heldout-python-pty",
+  "label": "malicious",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-05",
+  "rationale": "The captured command spawns an interactive shell through a pseudo-terminal behind the declared read-only surface.",
+  "source": "synthetic",
+  "strictness": "standard",
+  "trace": "51776b0419b5f0d7b2483164b95ded51c0603232ebcc06d2455d210db94ab179.json",
+  "expected_classes": [
+    "shell"
+  ]
+}
