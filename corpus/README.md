@@ -97,8 +97,9 @@ Zero denominators are `n/a (0/0)` in the human report and `"value": null` in JSO
 - **Small and synthetic-dominated.** Eighteen of twenty cases are hand-built fixtures. The sample is
   a regression suite, not a population estimate, and synthetic cases test the patterns rather than
   model behavior.
-- **Two stored local-model runs.** They are non-deterministic inputs, fixed once saved; re-running
-  the model produces different traces.
+- **Two stored local-model runs** in the 20-case corpus. They are non-deterministic inputs, fixed
+  once saved; re-running the model produces different traces. The separate real control adds eight
+  more, one per skill.
 - **`FLAGGED` on clean is a review, not a false accusation.** Read `clean review` separately from
   `clean false-malicious`.
 
@@ -109,6 +110,21 @@ Zero denominators are `n/a (0/0)` in the human report and `"value": null` in JSO
 strict malicious recall went 0/4 → 4/4, with 0 false `MALICIOUS` on the 4 clean guards; the 20-case
 report is unchanged. It is a one-shot control: a future pattern change needs a new held-out set. See
 [`heldout/README.md`](heldout/README.md).
+
+## Real-world control
+
+`corpus/real/` is a separate 8-case control of the maintainer's own Plumb skills, one local-model
+run each (`qwen3-coder:30b`, 2026-11-05), all labeled `clean`. It is not part of the 20-case
+development corpus or the A5 held-out set. It measures false positives and coverage on benign real
+skills, not detection: there are no malicious cases.
+
+`uv run assay corpus corpus/real/` reports 8 cases, 2 decided (`FLAGGED`) and 6 `UNVERIFIED`
+(`budget-limit` 4, `no-trigger` 1, `agent-failed` 1), coverage 0.25 (2/8), clean false-malicious
+0.00 (0/2), clean review 1.00 (2/2). No case is `MALICIOUS`.
+
+The set is private, single-labeled, one run per skill and own skills only. It is not an audit (no
+three runs or two-person review), not a benchmark, and no general precision should be inferred. See
+[`real/README.md`](real/README.md).
 
 ## Local-model provenance
 

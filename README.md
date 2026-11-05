@@ -44,7 +44,10 @@ run a local `ssh-keygen`; the benchmark makes no model or network call):
 - **Labeled corpus and benchmark** (`src/assay/corpus/`, `corpus/`) — 20 labeled cases (18 synthetic,
   2 local-model) scored offline by `assay corpus`, with precision and recall, explicit denominators,
   the ids of any false `MALICIOUS` on clean cases, and `UNVERIFIED` coverage by cause. Single labeler
-  and synthetic-dominated: a regression measurement, not a population estimate.
+  and synthetic-dominated: a regression measurement, not a population estimate. A separate 8-case
+  real-world control (`corpus/real/`) holds one local-model run of each of the maintainer's own
+  Plumb skills, all labeled clean; it is a private false-positive and coverage control, not a
+  benchmark.
 - **Audit gate** ([`ETHICS.md`](ETHICS.md), [`docs/audit/`](docs/audit/)) — the rules and protocol
   for third-party audits: evidence, three private runs, two-person review, a disclosure window,
   publication limits and corrections. **No third-party audit has been run or published.** The
