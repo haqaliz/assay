@@ -60,7 +60,8 @@ was calibrated on a separate held-out set with four `HIGH` patterns (`dd` to a d
 `/dev/tcp/`, `socat` shell); the instruction list remains narrow and capped at `REVIEW`, and the
 20-case benchmark is unchanged. The A10 static pre-filter (`assay triage`) ranks a skill's text with
 `priority`/`signals` only; it has no verdict, findings, trace or run, and its list is uncalibrated.
-The audit gate (`ETHICS.md`,
+CI runs the offline suite on macOS; `assay --version` reports the installed version; there is no tag
+or PyPI publish yet. The audit gate (`ETHICS.md`,
 `docs/audit/`) is in place; no third-party audit has run or been published, and a public finding
 needs a second reviewer and the disclosure window. MCP server verification is a separate capability,
 not an A8 adapter; it is deferred after the design spike (a manifest parser would be a static scan).
@@ -179,7 +180,9 @@ README.md                          # Repo front door
 VISION.md                          # Narrative thesis, moat, non-goals
 CLAUDE.md                          # This file
 ETHICS.md                          # Audit ethics, disclosure and corrections
+CHANGELOG.md                       # Unreleased history
 LICENSE                            # Apache-2.0
+.github/workflows/ci.yml           # macOS offline suite
 docs/
   ROADMAP.md                       # Phased plan + risk register
   technical/CAPABILITY_ROADMAP.md  # A1..A10 engine capabilities in build order

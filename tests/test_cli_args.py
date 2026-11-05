@@ -201,3 +201,13 @@ def test_bundle_defaults_match_the_spec():
     assert args.strictness == "standard"
     assert args.out is None
     assert args.json is False
+
+
+def test_version_flag_prints_the_installed_package_version(capsys):
+    import importlib.metadata
+
+    with pytest.raises(SystemExit) as caught:
+        main(["--version"])
+
+    assert caught.value.code == 0
+    assert capsys.readouterr().out == f"assay {importlib.metadata.version('assayhq')}\n"

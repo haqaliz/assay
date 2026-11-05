@@ -4,6 +4,7 @@
 real agent, captures what it actually did, and checks that against what it claims to do.
 
 [![Status](https://img.shields.io/badge/status-A1--A7%20+%20A8%2FOpenClaw%2BCursor%20+%20A10%20·%20offline-orange)](docs/ROADMAP.md)
+[![CI](https://github.com/haqaliz/assay/actions/workflows/ci.yml/badge.svg)](https://github.com/haqaliz/assay/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 [Vision](VISION.md) · [Roadmap](docs/ROADMAP.md) · [Architecture](docs/technical/ARCHITECTURE.md) · [Capabilities](docs/technical/CAPABILITY_ROADMAP.md)
@@ -199,6 +200,18 @@ clean guards. Both sets are small and synthetic; those numbers are a regression/
 not a population estimate. The instruction list remains narrow and capped at `REVIEW`.
 
 A static scan or model may flag a candidate; the sandboxed, observed run assigns the verdict.
+
+## Development
+
+macOS is required for the Seatbelt sandbox; the suite is offline (no model or network call).
+
+```sh
+uv sync --dev
+uv run pytest
+uv run assay --version
+```
+
+CI runs the same suite on `macos-latest`.
 
 ## Docs
 
