@@ -100,6 +100,11 @@ local-model run of each of the maintainer's own Plumb skills, all labeled `clean
 coverage control, not an audit or a benchmark. 876 offline tests. M2.3 remains gated: no
 third-party audit has run or been published.
 
+**A10 static pre-filter (2026-11-05).** `assay triage <skill>` ranks a skill's text with
+`priority`/`signals` only; no verdict, findings, trace, model or sandbox. It is optional, its list is
+uncalibrated, and it is not the moat: a high priority is not `MALICIOUS` and a low priority is not
+safe. 916 offline tests. The execution-grounded run remains the verdict.
+
 ---
 
 ## Phase 0: Prove the wedge (weeks 1-3)

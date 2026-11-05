@@ -3,10 +3,11 @@
 Design intent, not a description of built behavior. **A1 (`src/assay/ingest/`), A2
 (`src/assay/sandbox/`), A3 (`src/assay/agent/`), A4 (`src/assay/capture/`), A5
 (`src/assay/verdict/`), A6 (`src/assay/bundle/`) and A7 (`src/assay/corpus/`) are implemented**,
-as are the first two A8 adapters (OpenClaw/ClawHub `SKILL.md` and Cursor project rules); everything
-else below is still intent — verify against the code and `git log`. A1 parses Claude Code and
-OpenClaw/ClawHub `SKILL.md` and Cursor `.mdc` rules, carrying the format, declared requirements and
-file scope; A4 records and diffs observed behavior; A5 turns that diff into
+as are the first two A8 adapters (OpenClaw/ClawHub `SKILL.md` and Cursor project rules) and the A10
+static pre-filter; everything else below is still intent — verify against the code and `git log`.
+A1 parses Claude Code and OpenClaw/ClawHub `SKILL.md` and Cursor `.mdc` rules, carrying the format,
+declared requirements and file scope; A10 ranks a skill's text without a verdict; A4 records and
+diffs observed behavior; A5 turns that diff into
 one assessment; A6 signs the trace, the assessment, the sandbox config hashes and the exact
 `SKILL.md` source into a portable record that `verify` replays; A7 scores A5 against a labeled corpus.
 The manual Anthropic-keyed gate run is still unperformed; the Phase 0 gate ran a local model.
@@ -39,6 +40,9 @@ skill (Claude Code / OpenClaw SKILL.md | Cursor rule)
   A6 signed bundle
 ```
 
+A10 `assay triage` is optional and off the verdict path: it ranks a skill's text and emits
+`priority`/`signals` only, with no `Assessment`, trace, model or sandbox.
+
 MCP server verification is not this pipeline: a server is a long-lived JSON-RPC program exposing
 tools/resources/prompts, not a skill file. It needs a sandbox session and an MCP client; the design
 spike reclassifies it as a separate, deferred capability.
@@ -54,7 +58,8 @@ src/assay/
   verdict/    A5: findings, strictness, floor   ← built (assessment, pattern lists)
   bundle/     A6: hash list, signing, verify   ← built (SSH-signed canonical record)
   corpus/     A7: labeled cases, metrics   ← built (offline benchmark)
-  cli/        assay check | bundle | verify | corpus
+  triage/     A10: static pre-filter (no verdict)   ← built
+  cli/        assay check | bundle | verify | corpus | triage
 tests/        offline; recorded traces; no network, no model calls
 ```
 
@@ -63,7 +68,9 @@ tests/        offline; recorded traces; no network, no model calls
 - **Sandbox first.** Every skill runs only inside the jail. The jail is the first thing built and
   the most heavily tested; escape attempts are test cases.
 - **Observation over inference.** Verdicts above `UNVERIFIED` need a captured event. Static
-  signals only order the work.
+  signals only order the work. A10 `assay triage` is that ordering: it scans the skill text for
+  `priority`/`signals`, has no verdict/findings/trace/run, and its list is uncalibrated. A high
+  priority is not `MALICIOUS`; a low priority is not safe.
 - **Format adapters, one `Skill` record.** Claude Code and OpenClaw/ClawHub share the frontmatter and
   body shape; `metadata.openclaw` marks the format and declares gating requirements. Cursor project
   rules use a `.mdc` parser and map `globs`/`alwaysApply` to `Scope.files`. The jail PATH is the
@@ -125,7 +132,12 @@ assay bundle <trace.json> --skill <SKILL.md|dir> --key <private-key>
              [--strictness baseline|standard|strict] [--out DIR] [--json]
 assay verify <bundle.json> --public-key <pub> [--json]
 assay corpus <dir> [--json]
+assay triage <skill> [--json]
 ```
+
+`triage` parses a skill and prints `priority`/`signals`; it has no verdict, findings, trace, model
+or sandbox. Exit `0` for a triage, `1` for a parse refusal (a `triage` envelope, no verdict), `2`
+usage.
 
 `bundle` re-parses the skill (refusing unless its hash equals the trace's), re-runs `assess` at the
 chosen strictness, and signs the canonical record with `ssh-keygen -Y sign -n assay`. It defaults

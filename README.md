@@ -3,7 +3,7 @@
 **Execution-grounded security verifier for AI agent skills.** Runs a skill in a sandbox against a
 real agent, captures what it actually did, and checks that against what it claims to do.
 
-[![Status](https://img.shields.io/badge/status-A1--A7%20+%20A8%2FOpenClaw%2BCursor%20·%20offline-orange)](docs/ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-A1--A7%20+%20A8%2FOpenClaw%2BCursor%20+%20A10%20·%20offline-orange)](docs/ROADMAP.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 [Vision](VISION.md) · [Roadmap](docs/ROADMAP.md) · [Architecture](docs/technical/ARCHITECTURE.md) · [Capabilities](docs/technical/CAPABILITY_ROADMAP.md)
@@ -12,9 +12,10 @@ real agent, captures what it actually did, and checks that against what it claim
 
 ## Status
 
-**A1–A7 exist, plus two A8 adapters (OpenClaw/ClawHub and Cursor rules); the engine has a verdict, a
-portable record and a measured benchmark.** What is built and tested, all offline (the bundle tests
-run a local `ssh-keygen`; the benchmark makes no model or network call):
+**A1–A7 exist, plus two A8 adapters (OpenClaw/ClawHub and Cursor rules) and the A10 static
+pre-filter; the engine has a verdict, a portable record and a measured benchmark.** What is built and
+tested, all offline (the bundle tests run a local `ssh-keygen`; the benchmark makes no model or
+network call):
 
 - **Ingest** (`src/assay/ingest/`) — parses a Claude Code `SKILL.md`, an OpenClaw/ClawHub
   `SKILL.md` (format plus `metadata.openclaw` requirements), and a Cursor project rule (`.mdc`,
@@ -48,6 +49,9 @@ run a local `ssh-keygen`; the benchmark makes no model or network call):
   real-world control (`corpus/real/`) holds one local-model run of each of the maintainer's own
   Plumb skills, all labeled clean; it is a private false-positive and coverage control, not a
   benchmark.
+- **Static pre-filter** (`src/assay/triage/`, `assay triage`) — ranks a skill for a run from its
+  text; it emits `priority` and `signals` only, with no verdict, findings, trace or run. It is a
+  queue heuristic, not a detector, and the sandboxed run remains the verdict.
 - **Audit gate** ([`ETHICS.md`](ETHICS.md), [`docs/audit/`](docs/audit/)) — the rules and protocol
   for third-party audits: evidence, three private runs, two-person review, a disclosure window,
   publication limits and corrections. **No third-party audit has been run or published.** The
@@ -140,6 +144,20 @@ recall with explicit denominators, `UNVERIFIED` counts by cause, and the ids of 
 threshold. The corpus is small, single-labeled and synthetic-dominated; `corpus/README.md` states
 the limits, and the numbers are a regression signal, not a population estimate.
 
+### Triaging a collection
+
+`assay triage <skill>` ranks a skill from its text before you spend a run:
+
+```sh
+uv run assay triage path/to/SKILL.md
+uv run assay triage path/to/SKILL.md --json
+```
+
+It prints `priority` (`low`/`medium`/`high`) and the `signals` that produced it (credentials,
+network, shell, install, persistence, prompt injection, destructive, privilege, filesystem). It is a
+pre-filter: no verdict, no findings, no trace, no model and no sandbox. A high priority is not
+`MALICIOUS`, and a low priority is not safe; run `assay check` for an observed verdict.
+
 ## What Assay is
 
 Point Assay at a skill — a Claude Code or OpenClaw/ClawHub `SKILL.md`, or a Cursor project rule
@@ -151,8 +169,9 @@ a captured record of the run, which can be signed into a bundle a third party ve
 
 ## What Assay is not
 
-- Not a static pattern scanner. Those exist (NVIDIA's SkillSpector) and are a useful cheap
-  pre-filter, not a verdict.
+- Not a static pattern scanner as a verdict. Those exist (NVIDIA's SkillSpector) and are a cheap
+  pre-filter; `assay triage` is our queue heuristic, and it never decides. Only the sandboxed run
+  assigns a verdict.
 - Not an antivirus signature match. Assay observes novel behavior, not known hashes.
 - Not an MCP server verifier yet. A manifest says how to start a server, not what it does; MCP needs
   a sandbox session and a client, so it is a separate, deferred capability (see
