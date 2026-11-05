@@ -9,7 +9,10 @@ from assay.canonical import canonical
 from assay.capture import Trace
 from assay.corpus import Label, Metrics, Ratio, Source
 from assay.ingest import Skill
+from assay.triage import Triage
 from assay.verdict import Assessment, UnverifiedCause, Verdict
+
+TRIAGE_NOTE = "pre-filter only; this is not a verdict. Run `assay check`."
 
 
 def refusal(cause: str, detail: str, path: Path, as_json: bool) -> str:
@@ -65,6 +68,25 @@ def corpus_refusal(cause: str, detail: str, path: Path, as_json: bool) -> str:
         )
     return (
         f"corpus: {_screen(_path_text(path))}\n"
+        f"cause: {cause.upper().replace('-', '_')}\n"
+        f"detail: {_one_line(detail)}\n"
+        "exit: 1\n"
+    )
+
+
+def triage_refusal(cause: str, detail: str, path: Path, as_json: bool) -> str:
+    """The CLI's envelope for a skill triage could not parse; never a verdict."""
+    if as_json:
+        return canonical(
+            {
+                "schema": 1,
+                "skill": {"path": _path_text(path)},
+                "cause": cause,
+                "detail": detail,
+            }
+        )
+    return (
+        f"skill: {_screen(_path_text(path))}\n"
         f"cause: {cause.upper().replace('-', '_')}\n"
         f"detail: {_one_line(detail)}\n"
         "exit: 1\n"
@@ -222,6 +244,32 @@ def render_json(
             },
             "cost_usd": trace.cost_usd,
         }
+    )
+
+
+def render_triage(skill: Skill, record: Triage, as_json: bool) -> str:
+    if as_json:
+        return canonical(
+            {
+                "schema": 1,
+                "skill": {
+                    "name": skill.name,
+                    "content_hash": skill.content_hash,
+                    "path": _path_text(skill.source_path),
+                    "format": skill.format.value,
+                },
+                "priority": record.priority.value,
+                "signals": list(record.signals),
+                "note": TRIAGE_NOTE,
+            }
+        )
+    return (
+        f"skill: {_screen(skill.name)} {skill.content_hash[:12]}\n"
+        f"format: {skill.format.value}\n"
+        f"priority: {record.priority.value.upper()}\n"
+        f"signals: {', '.join(record.signals) or 'none'}\n"
+        f"note: {TRIAGE_NOTE}\n"
+        "exit: 0\n"
     )
 
 

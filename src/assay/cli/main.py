@@ -27,6 +27,7 @@ from assay.corpus import CaseError, evaluate, load_corpus
 from assay.ingest import SkillParseError, parse_skill
 from assay.sandbox import SandboxUnavailable
 from assay.sandbox.base import Sandbox, select_sandbox
+from assay.triage import triage
 from assay.verdict import Strictness, StrictnessPolicy, Verdict, assess
 
 from .output import (
@@ -37,7 +38,9 @@ from .output import (
     render_corpus,
     render_human,
     render_json,
+    render_triage,
     render_verify,
+    triage_refusal,
 )
 from .requirements import unmet_requirements
 
@@ -92,6 +95,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     corpus.add_argument("corpus", type=str)
     corpus.add_argument("--json", action="store_true")
+    triage_command = commands.add_parser(
+        "triage", help="rank a skill for a run; never a verdict"
+    )
+    triage_command.add_argument("skill", type=str)
+    triage_command.add_argument("--json", action="store_true")
     return parser
 
 
@@ -111,6 +119,8 @@ def main(
             return _bundle(args)
         if args.command == "corpus":
             return _corpus(args)
+        if args.command == "triage":
+            return _triage(args)
         return _verify(args)
     except KeyboardInterrupt:
         return 130
@@ -338,6 +348,19 @@ def _corpus(args: argparse.Namespace) -> int:
         _emit(corpus_refusal(cause, detail, path, args.json), sys.stdout)
         return 1
     _emit(render_corpus(evaluate(cases), path, args.json), sys.stdout)
+    return 0
+
+
+def _triage(args: argparse.Namespace) -> int:
+    path = Path(args.skill)
+    if path.is_dir():
+        path = path / "SKILL.md"
+    try:
+        skill = parse_skill(path)
+    except SkillParseError as exc:
+        _emit(triage_refusal("wont-parse", exc.detail, exc.path, args.json), sys.stdout)
+        return 1
+    _emit(render_triage(skill, triage(skill), args.json), sys.stdout)
     return 0
 
 

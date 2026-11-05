@@ -45,7 +45,7 @@ def triage(skill: Skill) -> Triage
 | label | priority | regex |
 |---|---|---|
 | `remote-script` | high | `\b(?:curl|wget)\b[^\n]*\|\s*(?:sudo\s+)?(?:ba|z)?sh\b` |
-| `credentials` | high | `\b(?:api[_-]?key|secret|token|password|passwd|\.env|id_rsa|authorized_keys|ssh)\b` |
+| `credentials` | high | `\b(?:api[_-]?key|secret|token|password|passwd|id_rsa|authorized_keys|ssh)\b|\.env\b` |
 | `persistence` | high | `\b(?:crontab|launchctl|systemd|systemctl|rc\.local|autostart)\b` |
 | `prompt-injection` | high | `\b(?:ignore\s+(?:all\s+)?previous|system\s+prompt|exfiltrat|do\s+not\s+tell|without\s+telling|override\s+your)\b` |
 | `destructive` | high | `\brm\s+-rf\b|\bdd\b[^\n]*\bof=/dev/|\bmkfs\b` |

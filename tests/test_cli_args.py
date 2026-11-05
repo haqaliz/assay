@@ -168,7 +168,19 @@ def test_corpus_requires_a_directory():
     assert caught.value.code == 2
 
 
-@pytest.mark.parametrize("command", ["check", "bundle", "verify", "corpus"])
+def test_triage_requires_a_skill():
+    with pytest.raises(SystemExit) as caught:
+        main(["triage"])
+    assert caught.value.code == 2
+
+
+def test_triage_defaults_match_the_spec():
+    args = build_parser().parse_args(["triage", "SKILL.md"])
+    assert args.skill == "SKILL.md"
+    assert args.json is False
+
+
+@pytest.mark.parametrize("command", ["check", "bundle", "verify", "corpus", "triage"])
 def test_subcommand_help_exits_zero(capsys, command):
     with pytest.raises(SystemExit) as caught:
         main([command, "--help"])
