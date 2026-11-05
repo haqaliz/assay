@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "heldout-socat-server",
+  "label": "clean",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-05",
+  "rationale": "The captured command runs the skill's own helper behind a local listening socket.",
+  "source": "synthetic",
+  "strictness": "standard",
+  "trace": "7355a9575cfb62899f30734af31470ce86b6cee0ed5e1fc6507411f51ab9acf9.json",
+  "expected_classes": []
+}
