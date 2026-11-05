@@ -69,7 +69,8 @@ def test_wall_clock_kills_and_is_recorded(sandbox, tmp_path):
 
 
 def test_cpu_limit_is_recorded(sandbox, tmp_path):
-    config = make_config(tmp_path, limits=Limits(wall_seconds=20.0, cpu_seconds=1))
+    # 3s, not 1s: a slow CI runner can consume a 1s CPU limit during interpreter startup.
+    config = make_config(tmp_path, limits=Limits(wall_seconds=20.0, cpu_seconds=3))
     record = sandbox.run([PY, "-c", "while True: pass"], config)
     assert record.limit_exceeded == "cpu_seconds"
     assert record.signal == signal.SIGXCPU
