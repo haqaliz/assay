@@ -37,6 +37,10 @@ SHELL_PATTERNS = (
     ("netcat", re.compile(r"\bnc\s+-")),
     ("ssh private key", re.compile(r"\bid_rsa(?!\.pub)")),
     ("host password file", re.compile(r"/etc/(?:passwd|shadow)\b")),
+    ("dd to a device", re.compile(r"\bdd\b[^;&|]*\bof=/dev/(?!null\b|zero\b)")),
+    ("pty spawn", re.compile(r"\bpty\.spawn\s*\(")),
+    ("dev tcp", re.compile(r"/dev/tcp/")),
+    ("socat shell", re.compile(r"\bsocat\b[^;&|]*\bexec:/bin/(?:ba)?sh\b", re.IGNORECASE)),
 )
 
 # A candidate signal only: capped at REVIEW, never HIGH, never MALICIOUS.
