@@ -49,9 +49,30 @@ INSTRUCTION_PATTERNS = (
     ("ignore all previous", re.compile(r"\bignore all previous\b")),
     ("do not tell the user", re.compile(r"\bdo(?: not|n't) tell the user\b")),
     ("without telling the user", re.compile(r"\bwithout telling the user\b")),
-    ("override your", re.compile(r"\boverride your\b")),
-    ("system prompt", re.compile(r"\bsystem prompt\b")),
+    (
+        "override your",
+        re.compile(r"\boverride\s+your\s+(?:instructions|rules|policy|policies|guidelines|system)\b"),
+    ),
+    (
+        "system prompt",
+        re.compile(
+            r"\b(?:reveal|print|show|output|repeat|ignore|override)\b[^\n]{0,40}\bsystem\s+prompt\b"
+        ),
+    ),
     ("exfiltrate", re.compile(r"\bexfiltrat(?:e|ion|ing)\b")),
+    ("ignore the above", re.compile(r"\bignore\s+(?:the\s+)?above\b")),
+    ("disregard previous", re.compile(r"\bdisregard\s+(?:all\s+)?(?:previous|prior|above)\b")),
+    (
+        "forget your instructions",
+        re.compile(r"\bforget\s+(?:your|the|all)\s+(?:instructions|rules|guidance)\b"),
+    ),
+    ("keep this between us", re.compile(r"\bkeep\s+this\s+between\s+us\b")),
+    (
+        "do not reveal this",
+        re.compile(
+            r"\bdo\s+not\s+reveal\s+(?:this|these|the\s+system\s+prompt|your\s+instructions)\b"
+        ),
+    ),
 )
 
 _BEHAVIOR = (EventKind.FILE_READ, EventKind.FILE_WRITE, EventKind.NETWORK, EventKind.SHELL)
