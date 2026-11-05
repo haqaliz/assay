@@ -196,8 +196,13 @@ lowered. An instruction-pattern match is a candidate capped at `REVIEW`: it can 
 corpus measures them on 20 labeled cases; the shell list was calibrated on a separate 8-case
 held-out set, adding four `HIGH` patterns (`dd` to a device, `pty.spawn`, `/dev/tcp/`, `socat ...
 EXEC:/bin/sh`) and taking strict malicious recall from 0/4 to 4/4 with 0 false `MALICIOUS` on four
-clean guards. Both sets are small and synthetic; those numbers are a regression/calibration signal,
-not a population estimate. The instruction list remains narrow and capped at `REVIEW`.
+clean guards. The instruction list was calibrated on its own 8-case held-out set: five patterns were
+added (`ignore the above`, `disregard previous`, `forget your instructions`, `keep this between us`,
+`do not reveal this`) and two narrowed (`override your`, `system prompt`), taking detection from 0/4
+to 4/4 and clean review from 2/4 to 0/4 with 0 false `MALICIOUS`. Both sets are small and synthetic;
+those numbers are a regression/calibration signal, not a population estimate. Instruction findings
+remain capped at `REVIEW` — `FLAGGED` is a review, never an accusation — so strict malicious recall
+stays 0/4 by design.
 
 A static scan or model may flag a candidate; the sandboxed, observed run assigns the verdict.
 

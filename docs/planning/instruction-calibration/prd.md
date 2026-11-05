@@ -49,7 +49,7 @@ be flagged; the A7 corpus's instruction coverage.
      `Do not reveal the API key in the report.`
 3. **Baseline first**: run `assay corpus corpus/heldout-instructions/` before editing
    `INSTRUCTION_PATTERNS`; record it. Expected: 4 malicious `CLEAN` (false negatives), 2 clean
-   `FLAGGED` (`system prompt`, `override your`), 2 clean `CLEAN`; detection 0/4, clean review 2/2.
+   `FLAGGED` (`system prompt`, `override your`), 2 clean `CLEAN`; detection 0/4, clean review 2/4 (0.50).
 4. **Pattern changes** in `INSTRUCTION_PATTERNS` (all `REVIEW`):
    - add `ignore the above` `\bignore\s+(?:the\s+)?above\b`;
    - add `disregard previous` `\bdisregard\s+(?:all\s+)?(?:previous|prior|above)\b`;

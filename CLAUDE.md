@@ -57,9 +57,12 @@ numbers are a regression signal, not a population estimate. A separate private 8
 (`corpus/real/`) holds one local-model run of each of the maintainer's own Plumb skills, all labeled
 clean; it is a false-positive and coverage control, not a benchmark or an audit. The A5 shell list
 was calibrated on a separate held-out set with four `HIGH` patterns (`dd` to a device, `pty.spawn`,
-`/dev/tcp/`, `socat` shell); the instruction list remains narrow and capped at `REVIEW`, and the
-20-case benchmark is unchanged. The A10 static pre-filter (`assay triage`) ranks a skill's text with
-`priority`/`signals` only; it has no verdict, findings, trace or run, and its list is uncalibrated.
+`/dev/tcp/`, `socat` shell); the instruction list was calibrated on its own 8-case held-out set
+(five patterns added, two narrowed), taking detection from 0/4 to 4/4 and clean review from 2/4 to
+0/4 with no false `MALICIOUS`. It is still narrow and capped at `REVIEW` — strict `MALICIOUS` recall
+stays 0/4 by design — and the 20-case benchmark is unchanged. The A10 static pre-filter (`assay
+triage`) ranks a skill's text with `priority`/`signals` only; it has no verdict, findings, trace or
+run, and its list is uncalibrated.
 CI runs the offline suite on macOS; `assay --version` reports the installed version; there is no tag
 or PyPI publish yet. The audit gate (`ETHICS.md`,
 `docs/audit/`) is in place; no third-party audit has run or been published, and a public finding

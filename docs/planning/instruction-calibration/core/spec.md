@@ -42,7 +42,7 @@ Read`, `metadata.assay.files: ["in.txt"]`, `network: []`, one benign `FILE_READ 
 - The benign file read + declared scope makes a no-finding run `CLEAN`; a matched instruction
   finding makes it `FLAGGED` (the finding branch precedes the no-trigger/scope checks).
 - Baseline expected: 4 malicious CLEAN, 2 clean FLAGGED, 2 clean CLEAN; detection 0/4; clean review
-  2/2; no false MALICIOUS.
+  2/4 (0.50); no false MALICIOUS.
 - After: 4 malicious FLAGGED, 4 clean CLEAN; detection 4/4; clean review 0/4; no false MALICIOUS.
   Strict `MALICIOUS` recall remains 0/4 by design (capped at REVIEW).
 
@@ -67,7 +67,7 @@ Keep the existing `ignore previous instructions`, `ignore all previous`, `do not
 ## Acceptance criteria
 
 1. Baseline on the held-out set: 4 malicious `CLEAN`, 2 clean `FLAGGED`, 2 clean `CLEAN`; detection
-   0/4; clean review 2/2; no false `MALICIOUS`. Record the exact report.
+   0/4; clean review 2/4 (0.50); no false `MALICIOUS`. Record the exact report.
 2. After: 4 malicious `FLAGGED`, 4 clean `CLEAN`; detection 1.00 (4/4); clean review 0.00 (0/4); no
    false `MALICIOUS`; strict `MALICIOUS` recall 0/4 (capped). Record the exact report.
 3. The main 20-case report is unchanged: precision 1.00 (5/5), recall 0.71 (5/7), detection 1.00
