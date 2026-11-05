@@ -8,6 +8,7 @@ import os
 import shutil
 import sys
 import tempfile
+from importlib.metadata import version
 from pathlib import Path
 from typing import Sequence
 
@@ -54,6 +55,9 @@ MAX_BUNDLE_BYTES = 64 * 1024 * 1024
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="assay", description="Run one skill through Assay.")
+    parser.add_argument(
+        "--version", action="version", version=f"assay {version('assayhq')}"
+    )
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("check", help="run a skill and print its verdict")
     check.add_argument("skill", type=str)
