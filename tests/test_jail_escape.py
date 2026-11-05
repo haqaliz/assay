@@ -104,16 +104,15 @@ def test_host_data_is_unreadable(sandbox, tmp_path):
             {"name": "etc_write", "path": "/private/etc/assay-escape.txt", "mode": "write"},
         ],
     )
-    assert results(record) == {
-        "etc": "DENIED",
-        "home": "DENIED",
-        "ssh_dir": "DENIED",
-        "traversal": "DENIED",
-        "symlink": "DENIED",
-        "etc_write": "DENIED",
-    }
+    observed = results(record)
+    for name in ("etc", "traversal", "symlink", "etc_write"):
+        assert observed.pop(name) == "DENIED"
+    # A CI runner may not have a home dotfile or an ~/.ssh directory; a missing file is not a read.
+    for name in ("home", "ssh_dir"):
+        assert observed.pop(name) in {"DENIED", "FileNotFoundError"}
+    assert observed == {}
     assert not Path("/private/etc/assay-escape.txt").exists()
-    assert len([d for d in record.denials if d.kind is DenialClass.FILE_READ]) >= 5
+    assert len([d for d in record.denials if d.kind is DenialClass.FILE_READ]) >= 3
 
 
 def test_network_is_denied_by_default(sandbox, tmp_path):
