@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "plumb-end",
+  "label": "clean",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-05",
+  "rationale": "The maintainer's own Plumb skill for closing out a merged unit of work and writing a completion report; the captured run is benign.",
+  "source": "local-model",
+  "strictness": "standard",
+  "trace": "ceafa09c2d9d3843775bf56154df7a2e43f603fee240ec5c43f47f60d37c0d2f.json",
+  "expected_classes": []
+}

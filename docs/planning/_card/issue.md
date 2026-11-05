@@ -1,29 +1,26 @@
-# feat a5-calibration — held-out shell calibration
+# feat real-corpus — M2.3 prep: private real-world control set
 
 ## Brief
 
-Calibrate A5's shell pattern list on a **held-out** set, without changing the verdict contract or the
-floor. Add `corpus/heldout/` with 8 synthetic cases (4 malicious, 4 clean guards), measure the
-baseline with the current patterns, then add four high-confidence `HIGH` shell patterns (`dd` to a
-device, `pty.spawn`, `/dev/tcp/`, `socat ... EXEC:/bin/sh`) and re-measure. Target: 4/4 malicious
-`MALICIOUS` after (0/4 before, all `FLAGGED`), 4/4 clean `CLEAN` before and after, 0 false
-`MALICIOUS`. The main 20-case corpus metrics must not move. No instruction/network severity change;
-no new dependency.
+Add a **private real-world control set** of the remaining eight Plumb skills, run once each against
+the local model, stored as `local-model` cases under `corpus/real/`. The labels are `clean` (the
+maintainer's own benign skills) and the purpose is to measure coverage and false positives on real
+instructions, not to benchmark detection or publish findings. The 20-case development corpus and the
+A5 calibration set stay unchanged; the real set is reported separately. No third-party skills, no
+publication, no audit claim, no code change beyond a loader test and docs.
 
-Source: the A7 PRD's "A5 frozen in this PR; tuning is a follow-up with a held-out set" and the A5
-row's "deliberately narrow, measured by A7, not yet tuned." The main corpus report (precision 1.00
-5/5, recall 0.71 5/7, false-MALICIOUS 0/6) does not show a shell defect; the held-out set targets
-common shell patterns the narrow list misses.
+Source: the A7 corpus limit ("18 synthetic, 2 local-model; synthetic-dominated"), the M2.3 audit
+gate (no third-party audit until a second reviewer), and the A7 PRD's "grow with real cases." This
+is the safe, own-skill step before any public audit.
 
 ## Context carried from the pick
 
-- `SHELL_PATTERNS` in `src/assay/verdict/assess.py` are deliberately short; a captured command
-  matching one is `SHELL/HIGH` and can make `MALICIOUS` (with `review_required`).
-- The A7 corpus is the development set; it must not be tuned on. A separate held-out set is the
-  calibration control.
-- The verdict contract: `MALICIOUS` needs a captured `HIGH` finding; instruction matches are capped
-  at `REVIEW`; network divergences are `REVIEW`; the floor cannot be lowered. This slice only adds
-  shell patterns; no severity/verdict change.
-- The main corpus has no `dd`, `pty.spawn`, `/dev/tcp/`, or `socat` commands; the new patterns
-  should not change its metrics.
-- No new dependency; synthetic traces, no model/network.
+- `corpus/` is the 20-case development benchmark; `corpus/heldout/` is the 8-case A5 calibration
+  control. Both are unchanged by this unit.
+- The existing local-model cases are `plumb-report-desktop-write` and
+  `plumb-begin-fast-no-trigger`, stored from the 2026-11-03/05 runs.
+- Ollama `qwen3-coder:30b` is available locally; runs cost nothing (`--input-price 0
+  --output-price 0 --max-cost 0.01`).
+- The M2.3 protocol requires three runs and a second reviewer for an audit; this set is a **control
+  corpus**, not an audit, and makes no public claim.
+- Constraints: no real secrets; the sandbox runs every tool call; no publication; no A5 change.

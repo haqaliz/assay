@@ -52,10 +52,12 @@ corpus layer (`src/assay/corpus/`, `corpus/`) holds 20 labeled cases (18 synthet
 local-model runs), and `assay corpus <dir>` re-runs A5 over them offline, reporting precision and
 recall with explicit denominators, false-`MALICIOUS` ids and `UNVERIFIED` coverage by cause. It
 measures A5; it does not tune it. The corpus is single-labeled and synthetic-dominated, so those
-numbers are a regression signal, not a population estimate. The A5 shell list was calibrated on a
-separate held-out set with four `HIGH` patterns (`dd` to a device, `pty.spawn`, `/dev/tcp/`,
-`socat` shell); the instruction list remains narrow and capped at `REVIEW`, and the 20-case
-benchmark is unchanged. The audit gate (`ETHICS.md`,
+numbers are a regression signal, not a population estimate. A separate private 8-case real control
+(`corpus/real/`) holds one local-model run of each of the maintainer's own Plumb skills, all labeled
+clean; it is a false-positive and coverage control, not a benchmark or an audit. The A5 shell list
+was calibrated on a separate held-out set with four `HIGH` patterns (`dd` to a device, `pty.spawn`,
+`/dev/tcp/`, `socat` shell); the instruction list remains narrow and capped at `REVIEW`, and the
+20-case benchmark is unchanged. The audit gate (`ETHICS.md`,
 `docs/audit/`) is in place; no third-party audit has run or been published, and a public finding
 needs a second reviewer and the disclosure window. MCP server verification is a separate capability,
 not an A8 adapter; it is deferred after the design spike (a manifest parser would be a static scan).

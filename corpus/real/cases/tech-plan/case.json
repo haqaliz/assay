@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "tech-plan",
+  "label": "clean",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-05",
+  "rationale": "The maintainer's own Plumb skill for turning a PRD and aspect spec into a phased technical implementation plan; the captured run is benign.",
+  "source": "local-model",
+  "strictness": "standard",
+  "trace": "62dfa7cb06372a6c5a02ca608bf35e0ff67b0570f19b4d02a49f5ca48b386707.json",
+  "expected_classes": []
+}

@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "prd-generator",
+  "label": "clean",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-05",
+  "rationale": "The maintainer's own Plumb skill for generating and critiquing PRDs, specs and roadmaps; the captured run is benign.",
+  "source": "local-model",
+  "strictness": "standard",
+  "trace": "bab225ac04c9711516a88e3e49151f8196767ffc38890907c90952c59a4b08c1.json",
+  "expected_classes": []
+}

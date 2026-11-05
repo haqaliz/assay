@@ -93,6 +93,13 @@ corpus is unchanged (precision 1.00 5/5, recall 0.71 5/7, false-`MALICIOUS` 0/6,
 13/20). 874 offline tests. The held-out set is a one-shot control; a future pattern change needs a
 new one. Instruction/network severities, the floor and the verdict contract are unchanged.
 
+**Real-world control (2026-11-05).** A private 8-case control (`corpus/real/`) stores one
+local-model run of each of the maintainer's own Plumb skills, all labeled `clean`. Report: 2
+`FLAGGED`, 6 `UNVERIFIED` (4 `budget-limit`, 1 `no-trigger`, 1 `agent-failed`), coverage 0.25
+(2/8), no false `MALICIOUS`; the 20-case benchmark is unchanged. It is a false-positive and
+coverage control, not an audit or a benchmark. 876 offline tests. M2.3 remains gated: no
+third-party audit has run or been published.
+
 ---
 
 ## Phase 0: Prove the wedge (weeks 1-3)

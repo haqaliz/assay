@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "plumb-next",
+  "label": "clean",
+  "labeler": "aliz",
+  "labeled_at": "2026-11-05",
+  "rationale": "The maintainer's own Plumb skill for picking the next capability from the repo's roadmap and planning files; the captured run is benign.",
+  "source": "local-model",
+  "strictness": "standard",
+  "trace": "a2a612a622ebdef12e110694032ee97e1b212ba32a2c44349ab701280c496af8.json",
+  "expected_classes": []
+}
