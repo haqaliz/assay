@@ -8,8 +8,9 @@ lives in the `docs/` folder.
 ## What this project is
 
 **Assay** is an **execution-grounded security verifier for AI agent skills**. Point it at a
-skill (a Claude Code `SKILL.md`, an OpenClaw/ClawHub skill, a Cursor rule, an MCP server, or
-similar), and Assay runs it in a sandbox against a real agent, captures exactly what it did
+skill (a Claude Code `SKILL.md`, an OpenClaw/ClawHub skill, a Cursor rule, or similar; MCP servers
+are a separate, deferred capability), and Assay runs it in a sandbox against a real agent, captures
+exactly what it did
 (files touched, network calls made, shell commands run, instructions it tried to inject), and
 compares that observed behavior against what the skill *declares* it does. It returns a
 **per-skill verdict** backed by a captured record of the run — never a guess from reading the
@@ -53,9 +54,11 @@ recall with explicit denominators, false-`MALICIOUS` ids and `UNVERIFIED` covera
 measures A5; it does not tune it. The corpus is single-labeled and synthetic-dominated, so those
 numbers are a regression signal, not a population estimate. The audit gate (`ETHICS.md`,
 `docs/audit/`) is in place; no third-party audit has run or been published, and a public finding
-needs a second reviewer and the disclosure window. The suite is offline on synthetic outcomes, the
-corpus and a local `ssh-keygen`; the Phase 0 gate ran a local model on 2026-10-31, and the first real
-Anthropic-keyed run has not happened. Do not describe capability that isn't there.
+needs a second reviewer and the disclosure window. MCP server verification is a separate capability,
+not an A8 adapter; it is deferred after the design spike (a manifest parser would be a static scan).
+The suite is offline on synthetic outcomes, the corpus and a local `ssh-keygen`; the Phase 0 gate ran
+a local model on 2026-10-31, and the first real Anthropic-keyed run has not happened. Do not describe
+capability that isn't there.
 
 Lineage: Assay is one of three siblings scaffolded together on 2026-10-22 (with Tenon and Pry),
 drawn from a market-demand research pass (`~/dev/at/ideas/market-demand-2026-10.md`) and sharing
@@ -143,9 +146,10 @@ A static scan or model may flag a candidate; **the sandboxed, observed run** ass
   a subscription this way. Do not build toward it without re-confirming it's permitted; default
   to BYOK API keys only.
 - Format coverage starts with Claude Code `SKILL.md` (narrowest, best understood); the
-  OpenClaw/ClawHub `SKILL.md` and Cursor rules adapters are built, and MCP server manifests and
-  others follow as they prove worth supporting — see `docs/technical/CAPABILITY_ROADMAP.md` for the
-  build order.
+  OpenClaw/ClawHub `SKILL.md` and Cursor rules adapters are built. MCP server manifests are not a
+  file adapter: a server is a long-lived program, so verification is a separate capability, deferred
+  after the design spike. Other file-based formats follow as they prove worth supporting — see
+  `docs/technical/CAPABILITY_ROADMAP.md` for the build order.
 - Pinned versions, deterministic sandbox setup, content-addressed captured traces, and a signed
   attestation bundle are core requirements, not nice-to-haves.
 - Capture every (skill, observed behavior, verdict) into a findings corpus wherever feasible —

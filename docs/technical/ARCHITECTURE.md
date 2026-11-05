@@ -14,7 +14,7 @@ The manual Anthropic-keyed gate run is still unperformed; the Phase 0 gate ran a
 ## Pipeline
 
 ```
-skill (Claude Code / OpenClaw SKILL.md | Cursor rule | MCP manifest)
+skill (Claude Code / OpenClaw SKILL.md | Cursor rule)
         |
         v
   A1 ingest  ---->  Skill record (format, requirements, declared scope)
@@ -38,6 +38,10 @@ skill (Claude Code / OpenClaw SKILL.md | Cursor rule | MCP manifest)
         v
   A6 signed bundle
 ```
+
+MCP server verification is not this pipeline: a server is a long-lived JSON-RPC program exposing
+tools/resources/prompts, not a skill file. It needs a sandbox session and an MCP client; the design
+spike reclassifies it as a separate, deferred capability.
 
 ## Layout
 
@@ -203,6 +207,10 @@ benchmark signs nothing; any case can be bundled and replayed with the shipped A
   any independent precision claim.
 - **Format coverage.** OpenClaw supports the documented YAML-flow metadata (JSON5-only frontmatter
   is not covered); Cursor supports project `.mdc` rules (`AGENTS.md`, `.cursorrules`, user/team rules
-  are out). The rest of a skill directory (scripts/assets) is not attested. MCP is next.
+  are out). The rest of a skill directory (scripts/assets) is not attested.
+- **MCP server verification.** A manifest is not a behavior declaration; a server is a long-lived
+  program with tools, resources and prompts. It needs a `SandboxSession` and an MCP client, so it is
+  a separate capability, not an A8 adapter. Design spike: `docs/planning/mcp-design/prd.md`;
+  deferred.
 - How to generate synthetic tasks that exercise a skill without an LLM judging the outcome.
 - Distribution name on PyPI: `assay` is taken; `assayhq` was free when checked.

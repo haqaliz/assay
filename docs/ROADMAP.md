@@ -75,7 +75,15 @@ A write outside the globs is `FLAGGED`; a rule with no findings stays
 `UNVERIFIED/NO_DECLARED_SCOPE` because the format declares no tools/network. A Cursor bundle carries
 an optional `skill.format` hint so `verify` replays a `.mdc` source, including a description-only
 rule; `SKILL.md` bundle bytes are unchanged. 863 offline tests. `AGENTS.md`, `.cursorrules`, and
-Cursor user/team rules are out of scope; MCP is next.
+Cursor user/team rules are out of scope.
+
+**MCP design spike (2026-11-05).** MCP is not a `SKILL.md` adapter: a server is a long-lived
+JSON-RPC program (stdio or Streamable HTTP) exposing tools/resources/prompts, and Assay has no MCP
+client or long-lived sandbox session. A manifest-only parser would be a static scan in disguise.
+Decision: **MCP is reclassified out of A8** as a separate capability (proposed A11, not scheduled).
+If pursued, start with a `SandboxSession` + stdio MCP client spike, not a manifest parser; the
+verdict would be mostly `UNVERIFIED` because a manifest declares startup, not behavior. No code;
+863 tests unchanged. See `docs/planning/mcp-design/prd.md`.
 
 ---
 
@@ -105,7 +113,7 @@ Cursor user/team rules are out of scope; MCP is next.
 | M2.1 | Signed attestation bundle (A6) — built | Hash-listed, signed record of a run; a third party can verify it with the signer's public key |
 | M2.2 | Labeled corpus + benchmark (A7) — built | Known-malicious samples plus clean ones; precision and recall reported with denominators and label authority |
 | M2.3 | Public audit of top N skills — protocol ready; audit not run | Findings reviewed, authors/registries notified before publication (see R3) |
-| M2.4 | Adapters: OpenClaw/ClawHub and Cursor rules — built; MCP next | One at a time, in that order, each behind its own test fixtures |
+| M2.4 | Adapters: OpenClaw/ClawHub and Cursor rules — built; MCP reclassified out of A8 (deferred) | One at a time, each behind its own test fixtures |
 
 ## Phase 3: Hosted/registry layer (after the 3-month window)
 
@@ -125,5 +133,5 @@ Not scheduled; depends on Phase 2 results.
 | R5 | Cost: real-agent runs spend the user's tokens | High/Med | Per-run and per-session caps, scripted-harness mode as a cheap fallback, cost shown before the run |
 | R6 | Consumer-subscription automation violates provider terms | Med/High | Default to BYOK API keys only; subscription route stays an open question until terms are checked |
 | R7 | SkillSpector or a registry ships overlapping behavioral checks | Med/Med | Differentiate on observed behavior and signed replay; treat static tools as complements |
-| R8 | Scope sprawl across formats | High/Med | One adapter at a time; Claude Code, OpenClaw/ClawHub and Cursor shipped, MCP next |
+| R8 | Scope sprawl across formats | High/Med | One adapter at a time; Claude Code, OpenClaw/ClawHub and Cursor shipped; MCP is a separate capability, deferred |
 | R9 | Slow adoption | Med/Med | Public audit as the credibility play; GitHub Action for skill authors |

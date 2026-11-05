@@ -3,7 +3,8 @@
 Engine capabilities in build order. Each lands test-first. A1–A5 are built and composed by the
 `assay check` CLI (M1.4); A6 is built around a saved trace and composed by `assay bundle` /
 `assay verify`; A7 is built as an offline benchmark over a labeled corpus; A8's first two adapters
-(OpenClaw/ClawHub and Cursor rules) are built. MCP and the rest are not.
+(OpenClaw/ClawHub and Cursor rules) are built. MCP is not an A8 adapter: a server is a long-lived
+program, so it is a separate capability, deferred after the design spike.
 
 | ID | Capability | Depends on | Guardrail tie-in |
 |---|---|---|---|
@@ -14,7 +15,7 @@ Engine capabilities in build order. Each lands test-first. A1–A5 are built and
 | **A5** | **Verdict and strictness.** `CLEAN/FLAGGED/MALICIOUS/UNVERIFIED`. Four finding classes: undeclared file access, undeclared network, shell execution, hidden or injected instructions. Strictness is user-raisable; a floor cannot be lowered. *(built: `src/assay/verdict/`; the shell and instruction pattern lists are deliberately narrow and are now measured by A7 on a small synthetic corpus, not yet tuned)* | A4 | Constraints 3 and 4 |
 | **A6** | **Signed attestation bundle.** Hash-listed record of skill hash, sandbox config, traces, verdict; verifiable by a third party. *(built: `src/assay/bundle/`; SSH-signed canonical record, schema 2. The bundle carries the exact `SKILL.md`; `verify` checks the signature and re-derives the verdict with the shipped `assess`, refusing a signed assessment that does not follow)* | A5 | Pattern copied from Plumb, not imported |
 | **A7** | **Findings corpus and benchmark.** Labeled malicious and clean samples; precision and recall with denominators and label authority. *(built: `src/assay/corpus/` + `corpus/`; 20 cases, 18 synthetic and 2 local-model, single labeler. Measures A5; does not tune it)* | A5, A6 | Measure against human labels |
-| **A8** | **Format adapters.** OpenClaw/ClawHub, Cursor rules, MCP server manifests, others as warranted. *(OpenClaw/ClawHub and Cursor rules built: format detection, OpenClaw requirements and pre-run `REQUIREMENTS_UNMET` gate, Cursor `globs`/`alwaysApply` file scope. MCP next)* | A1-A5 | One at a time |
+| **A8** | **Format adapters.** OpenClaw/ClawHub, Cursor rules, other file-based formats as warranted. *(OpenClaw/ClawHub and Cursor rules built: format detection, OpenClaw requirements and pre-run `REQUIREMENTS_UNMET` gate, Cursor `globs`/`alwaysApply` file scope. MCP server manifests are not a file adapter; they are a separate capability, deferred after the design spike)* | A1-A5 | One at a time |
 | **A9** | **Registry and install-time layer (hosted).** Pre-listing check, `assay install` gate. | A5-A7 | Opt-in, BYOK |
 | **A10** | **Optional static pre-filter.** Cheap triage that can prioritize runs but never assigns a verdict above `UNVERIFIED`. | A1 | Constraint 1 |
 

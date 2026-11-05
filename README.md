@@ -140,7 +140,8 @@ the limits, and the numbers are a regression signal, not a population estimate.
 ## What Assay is
 
 Point Assay at a skill — a Claude Code or OpenClaw/ClawHub `SKILL.md`, or a Cursor project rule
-today; MCP servers follow. It runs the skill in an isolated sandbox against a real
+today. MCP server verification is a separate, deferred capability: a server is a long-lived program,
+not a file. It runs the skill in an isolated sandbox against a real
 agent, captures every file access, network call, shell command, and injected instruction it
 produced, and diffs that against what the skill declares about itself. The verdict is backed by
 a captured record of the run, which can be signed into a bundle a third party verifies offline.
@@ -150,6 +151,9 @@ a captured record of the run, which can be signed into a bundle a third party ve
 - Not a static pattern scanner. Those exist (NVIDIA's SkillSpector) and are a useful cheap
   pre-filter, not a verdict.
 - Not an antivirus signature match. Assay observes novel behavior, not known hashes.
+- Not an MCP server verifier yet. A manifest says how to start a server, not what it does; MCP needs
+  a sandbox session and a client, so it is a separate, deferred capability (see
+  [`docs/planning/mcp-design/prd.md`](docs/planning/mcp-design/prd.md)).
 - Not a claim that a `CLEAN` skill is safe forever — only that this run's observed behavior
   matched its declared scope.
 
