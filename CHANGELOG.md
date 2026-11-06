@@ -30,7 +30,8 @@ not yet name a version or a release date.
   `assay corpus` reports precision/recall with denominators, false-`MALICIOUS` ids and `UNVERIFIED`
   coverage.
 - **Audit gate (M2.3):** `ETHICS.md`, a disclosure/audit protocol and a finding template. No
-  third-party audit has been run or published.
+  third-party audit has been run or published. A private own-skill runner dry run was executed on
+  2026-11-06; it is unreviewed and unpublished.
 - **Static pre-filter (A10):** `assay triage` ranks a skill's text with `priority`/`signals` only;
   no verdict, findings, trace, model or sandbox.
 - **CLI and CI:** `assay check | bundle | verify | corpus | triage`, `assay --version`, and a macOS
