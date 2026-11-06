@@ -1,25 +1,22 @@
-# feat instruction-calibration — held-out instruction calibration
+# feat mcp-spike — sandboxed MCP stdio session
 
 ## Brief
 
-Calibrate A5's **instruction** patterns on a fresh held-out set, without changing the verdict
-contract or the `REVIEW` cap. Add `corpus/heldout-instructions/` with 8 cases: four malicious
-instruction texts the current list misses, and four clean near-miss guards, two of which the current
-broad `system prompt`/`override your` patterns wrongly flag. Measure the baseline, add four
-high-confidence patterns, narrow the two broad ones, and re-measure. Target: malicious detection
-0/4 → 4/4 (`FLAGGED`, never `MALICIOUS`), clean reviews 2/4 → 0/4, no false `MALICIOUS`, and the
-20-case benchmark unchanged.
+Prove Assay can verify an AI agent skill that depends on an MCP server. Today A1–A8/A10 handle
+file-based skills and a fixed tool surface; MCP is a separate runtime capability, not an adapter.
 
-Source: the A5 row ("the instruction list remains narrow") and the A7 PRD's held-out-calibration
-discipline. The shell list was calibrated in #16; this is the other half. The instruction cap at
-`REVIEW` is deliberate and unchanged.
+The spike must:
 
-## Context carried from the pick
+1. add a `SandboxSession` that keeps a process alive inside the macOS Seatbelt jail (the current
+   `SeatbeltSandbox.run` is one-shot);
+2. add a minimal MCP JSON-RPC stdio client: `initialize`, `tools/list`, `tools/call`, errors and
+   timeouts;
+3. run a local test MCP server end to end, capture its tool calls in the trace, and verify the
+   sandbox boundary (a read inside the run root succeeds; an outside access is denied);
+4. keep the verdict contract unchanged: MCP calls are evidence, not a static-manifest verdict.
 
-- `INSTRUCTION_PATTERNS` in `src/assay/verdict/assess.py` is short; `system prompt` and
-  `override your` are broad and can flag benign documentation/preferences.
-- Instruction findings are capped at `REVIEW` and can never produce `MALICIOUS`; the held-out target
-  is detection/clean-review, not strict recall.
-- The main 20-case benchmark has one instruction case (`ignore previous instructions`) and no
-  near-miss guards; the A5 shell calibration set is separate and unchanged.
-- No model/network; synthetic traces; no new dependency.
+Out of scope: remote/HTTP MCP transports, auth, registry discovery, installing third-party MCP
+servers, exposing MCP tools to the LLM driver, changing the verdict classes/floor, hosted A9.
+
+No new dependency: the client and test server use the Python standard library. The spike is
+experimental and may be merged behind a module boundary or left unshipped if it does not prove out.
