@@ -109,10 +109,10 @@ safe. 916 offline tests. The execution-grounded run remains the verdict.
 **v0.1.0 release (2026-11-07).** `pyproject.toml` is `0.1.0` with PyPI metadata, `CHANGELOG.md`
 records the first release, and `.github/workflows/release.yml` publishes a `v*` tag through PyPI
 Trusted Publishing (OIDC, no token secret). macOS GitHub Actions runs the offline suite (931 tests)
-on the Intel image, and `assay --version` reports the installed package version. The tag and publish
-follow the PyPI pending-publisher setup. The engine capability roadmap is complete for A1–A8
-(file-based) and A10; A9 (hosted) and MCP are deferred. M2.3 remains gated on a second reviewer and
-the disclosure process.
+on the Intel image, and `assay --version` reports the installed package version. `assayhq` 0.1.0 is
+published on PyPI (wheel + sdist) and as a GitHub Release. The engine capability roadmap is
+complete for A1–A8 (file-based) and A10; A9 (hosted) and MCP are deferred. M2.3 remains gated on a
+second reviewer and the disclosure process.
 
 **A5 instruction calibration (2026-11-05).** A held-out 8-case instruction set (4 malicious, 4
 clean) was measured before and after five patterns were added (`ignore the above`, `disregard

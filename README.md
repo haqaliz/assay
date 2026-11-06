@@ -5,6 +5,7 @@ real agent, captures what it actually did, and checks that against what it claim
 
 [![Status](https://img.shields.io/badge/status-A1--A7%20+%20A8%2FOpenClaw%2BCursor%20+%20A10%20·%20offline-orange)](docs/ROADMAP.md)
 [![CI](https://github.com/haqaliz/assay/actions/workflows/ci.yml/badge.svg)](https://github.com/haqaliz/assay/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/assayhq.svg)](https://pypi.org/project/assayhq/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 [Vision](VISION.md) · [Roadmap](docs/ROADMAP.md) · [Architecture](docs/technical/ARCHITECTURE.md) · [Capabilities](docs/technical/CAPABILITY_ROADMAP.md)
