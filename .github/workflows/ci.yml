@@ -11,7 +11,8 @@ permissions:
 
 jobs:
   test:
-    runs-on: macos-latest
+    # Intel image: arm64 macOS runners were capacity-cancelled before starting; local dev covers arm64.
+    runs-on: macos-15-intel
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
