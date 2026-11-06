@@ -11,6 +11,18 @@ real agent, captures what it actually did, and checks that against what it claim
 
 ---
 
+## Install
+
+Sandboxed checks require macOS. Install the CLI with `uv` or `pip`:
+
+```sh
+uv tool install assayhq
+# or
+pip install assayhq
+```
+
+From a checkout, `uv sync --dev` then `uv run assay ...` works too.
+
 ## Status
 
 **A1–A7 exist, plus two A8 adapters (OpenClaw/ClawHub and Cursor rules) and the A10 static

@@ -63,8 +63,9 @@ was calibrated on a separate held-out set with four `HIGH` patterns (`dd` to a d
 stays 0/4 by design — and the 20-case benchmark is unchanged. The A10 static pre-filter (`assay
 triage`) ranks a skill's text with `priority`/`signals` only; it has no verdict, findings, trace or
 run, and its list is uncalibrated.
-CI runs the offline suite on macOS; `assay --version` reports the installed version; there is no tag
-or PyPI publish yet. The audit gate (`ETHICS.md`,
+CI runs the offline suite on macOS; `assay --version` reports the installed version; `0.1.0` is the
+first PyPI release, published by the `v0.1.0` tag through Trusted Publishing. The audit gate
+(`ETHICS.md`,
 `docs/audit/`) is in place; no third-party audit has run or been published, and a public finding
 needs a second reviewer and the disclosure window. A private own-skill runner dry run was executed on
 2026-11-06; it was not reviewer-signed and publishes nothing. MCP server verification is a separate

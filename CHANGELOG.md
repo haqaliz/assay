@@ -1,9 +1,10 @@
 # Changelog
 
-All notable changes to Assay. The project is pre-release; this file starts at `Unreleased` and does
-not yet name a version or a release date.
+All notable changes to Assay.
 
-## [Unreleased]
+## [0.1.0] - 2026-11-07
+
+First public release: execution-grounded verification for AI agent skills on macOS.
 
 ### Added
 
@@ -47,3 +48,5 @@ not yet name a version or a release date.
 - MCP server verification is a separate capability, deferred; A9 (hosted/registry) is deferred.
 - A bundle covers `SKILL.md`/`.mdc` only, not the rest of a skill directory. `UNVERIFIED` is never a
   pass; `CLEAN` means "matched declared scope in this run".
+
+[0.1.0]: https://github.com/haqaliz/assay/releases/tag/v0.1.0

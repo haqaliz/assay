@@ -106,9 +106,11 @@ third-party audit has run or been published.
 uncalibrated, and it is not the moat: a high priority is not `MALICIOUS` and a low priority is not
 safe. 916 offline tests. The execution-grounded run remains the verdict.
 
-**v0.1 readiness (2026-11-05).** macOS GitHub Actions runs the offline suite (917 tests), `assay
---version` reports the installed package version, and `CHANGELOG.md` starts an `Unreleased` history.
-No tag, no PyPI publish, no version bump. The engine capability roadmap is complete for A1–A8
+**v0.1.0 release (2026-11-07).** `pyproject.toml` is `0.1.0` with PyPI metadata, `CHANGELOG.md`
+records the first release, and `.github/workflows/release.yml` publishes a `v*` tag through PyPI
+Trusted Publishing (OIDC, no token secret). macOS GitHub Actions runs the offline suite (931 tests)
+on the Intel image, and `assay --version` reports the installed package version. The tag and publish
+follow the PyPI pending-publisher setup. The engine capability roadmap is complete for A1–A8
 (file-based) and A10; A9 (hosted) and MCP are deferred. M2.3 remains gated on a second reviewer and
 the disclosure process.
 
