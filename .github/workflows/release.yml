@@ -11,6 +11,7 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: pypi # Must match the PyPI pending publisher's environment name.
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
