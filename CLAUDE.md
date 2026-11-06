@@ -66,7 +66,9 @@ run, and its list is uncalibrated.
 CI runs the offline suite on macOS; `assay --version` reports the installed version; there is no tag
 or PyPI publish yet. The audit gate (`ETHICS.md`,
 `docs/audit/`) is in place; no third-party audit has run or been published, and a public finding
-needs a second reviewer and the disclosure window. MCP server verification is a separate capability,
+needs a second reviewer and the disclosure window. A private own-skill runner dry run was executed on
+2026-11-06; it was not reviewer-signed and publishes nothing. MCP server verification is a separate
+capability,
 not an A8 adapter; it is deferred after the design spike (a manifest parser would be a static scan).
 The suite is offline on synthetic outcomes, the corpus and a local `ssh-keygen`; the Phase 0 gate ran
 a local model on 2026-10-31, and the first real Anthropic-keyed run has not happened. Do not describe

@@ -57,8 +57,9 @@ are in place: captured evidence, at least three private runs, a reviewer who did
 30-day disclosure window (7 days for active exploitation), publication limits, corrections and
 records. **No third-party audit has been run or published.** The maintainer is the only reviewer, so
 a public finding waits for a second reviewer and the disclosure steps. Docs-only; 767 tests unchanged.
-Next: a private audit of the maintainer's own or explicitly permitted skills, then a public finding
-only after disclosure.
+A private own-skill **runner dry run** followed on 2026-11-06 (five Plumb skills, three runs each, 15
+signed bundles, all replayed; 9 `FLAGGED`, 6 `UNVERIFIED`, 0 `HIGH`/`MALICIOUS`). Reviewer sign-off
+was not performed, so it is **unreviewed** and supports no finding. The public-audit gate remains.
 
 **M2.4 first adapter — OpenClaw/ClawHub (2026-11-05).** `assay check` accepts an OpenClaw/ClawHub
 `SKILL.md`, records its `format` and `metadata.openclaw` requirements, and refuses a skill the jail
