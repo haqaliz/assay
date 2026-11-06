@@ -1,9 +1,30 @@
 [project]
 name = "assayhq"
-version = "0.0.1"
+version = "0.1.0"
 description = "Execution-grounded security verifier for AI agent skills"
+readme = "README.md"
 requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Ali Haqiqi" }]
+keywords = ["ai-agents", "security", "sandbox", "agent-skills", "verification"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+]
 dependencies = ["pyyaml>=6"]
+
+[project.urls]
+Homepage = "https://github.com/haqaliz/assay"
+Repository = "https://github.com/haqaliz/assay"
+Issues = "https://github.com/haqaliz/assay/issues"
+Changelog = "https://github.com/haqaliz/assay/blob/master/CHANGELOG.md"
 
 [project.scripts]
 assay = "assay.cli:main"
