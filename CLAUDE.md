@@ -69,8 +69,8 @@ first PyPI release, published by the `v0.1.0` tag through Trusted Publishing. Th
 public finding needs a second reviewer and the disclosure window. A private own-skill runner dry run
 was executed on 2026-11-06; it was not reviewer-signed and publishes nothing. MCP server verification
 is a separate capability, not an A8 adapter; a 2026-11-07 spike adds a `SandboxSession` + stdio
-client and `TOOL` evidence, but there is no `Server` record, driver integration, bundle or verdict,
-so the capability remains deferred.
+client, and Stage A adds `Server`/manifest + `assay mcp` inspection, but there is no driver,
+assessment, bundle or verdict, so MCP verification remains deferred.
 The suite is offline on synthetic outcomes, the corpus and a local `ssh-keygen`; the Phase 0 gate ran
 a local model on 2026-10-31, and the first real Anthropic-keyed run has not happened. Do not describe
 capability that isn't there.
