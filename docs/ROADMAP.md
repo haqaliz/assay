@@ -111,8 +111,15 @@ records the first release, and `.github/workflows/release.yml` publishes a `v*` 
 Trusted Publishing (OIDC, no token secret). macOS GitHub Actions runs the offline suite (931 tests)
 on the Intel image, and `assay --version` reports the installed package version. `assayhq` 0.1.0 is
 published on PyPI (wheel + sdist) and as a GitHub Release. The engine capability roadmap is
-complete for A1–A8 (file-based) and A10; A9 (hosted) and MCP are deferred. M2.3 remains gated on a
-second reviewer and the disclosure process.
+complete for A1–A8 (file-based) and A10; A9 (hosted) is deferred, and MCP remains deferred (spike
+below). M2.3 remains gated on a second reviewer and the disclosure process.
+
+**MCP spike (2026-11-07).** A long-lived `SandboxSession` and a stdlib stdio MCP client
+(`initialize`, `tools/list`, `tools/call`) run against a local fixture inside Seatbelt. Tool calls
+are captured as `EventKind.TOOL`; a TOOL-only trace is `UNVERIFIED/NO_TRIGGER`. The fixture proves
+inside-root reads and an outside-read denial, a request timeout, and teardown with no orphan. This
+is **evidence-only**: no `Server` record, driver integration, bundle or verdict, and no MCP claim.
+961 offline tests; the floor, cap and trace schema are unchanged. MCP remains deferred.
 
 **A5 instruction calibration (2026-11-05).** A held-out 8-case instruction set (4 malicious, 4
 clean) was measured before and after five patterns were added (`ignore the above`, `disregard
