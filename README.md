@@ -188,8 +188,10 @@ a captured record of the run, which can be signed into a bundle a third party ve
   pre-filter; `assay triage` is our queue heuristic, and it never decides. Only the sandboxed run
   assigns a verdict.
 - Not an antivirus signature match. Assay observes novel behavior, not known hashes.
-- Not an MCP server verifier yet. A manifest says how to start a server, not what it does; MCP needs
-  a sandbox session and a client, so it is a separate, deferred capability (see
+- Not an MCP server verifier yet. A manifest says how to start a server, not what it does. An
+  experimental spike now proves a long-lived `SandboxSession` and a stdio MCP client, and captures
+  tool calls as `TOOL` evidence; it has no `Server` record, driver integration, bundle or verdict,
+  so MCP verification remains a separate, deferred capability (see
   [`docs/planning/mcp-design/prd.md`](docs/planning/mcp-design/prd.md)).
 - Not a claim that a `CLEAN` skill is safe forever — only that this run's observed behavior
   matched its declared scope.

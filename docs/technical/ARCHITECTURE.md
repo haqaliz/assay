@@ -222,7 +222,9 @@ benchmark signs nothing; any case can be bundled and replayed with the shipped A
   are out). The rest of a skill directory (scripts/assets) is not attested.
 - **MCP server verification.** A manifest is not a behavior declaration; a server is a long-lived
   program with tools, resources and prompts. It needs a `SandboxSession` and an MCP client, so it is
-  a separate capability, not an A8 adapter. Design spike: `docs/planning/mcp-design/prd.md`;
-  deferred.
+  a separate capability, not an A8 adapter. Design spike: `docs/planning/mcp-design/prd.md`. The
+  2026-11-07 spike adds `src/assay/sandbox/session.py` and `src/assay/mcp/` (initialize,
+  `tools/list`, `tools/call`), with calls captured as `EventKind.TOOL`; it is **evidence-only** and
+  has no `Server` record, driver integration, bundle or verdict. The capability remains deferred.
 - How to generate synthetic tasks that exercise a skill without an LLM judging the outcome.
 - Distribution name on PyPI: `assay` is taken; `assayhq` was free when checked.

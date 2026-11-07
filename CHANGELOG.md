@@ -2,6 +2,21 @@
 
 All notable changes to Assay.
 
+## [Unreleased]
+
+### Added
+
+- **Experimental MCP spike:** a long-lived `SandboxSession` and a stdlib stdio MCP client
+  (`initialize`, `tools/list`, `tools/call`), plus a fixture server. MCP tool calls are captured as
+  `EventKind.TOOL` evidence. This is **not** an MCP verifier: there is no `Server` record, driver
+  integration, bundle or verdict; a TOOL-only trace is `UNVERIFIED/NO_TRIGGER`. The floor, `REVIEW`
+  cap and trace schema are unchanged.
+
+### Limits
+
+- The spike pins protocol `2026-07-28`, covers stdio only, and captures denials/tool results, not
+  full server syscalls. MCP server verification remains a separate, deferred capability.
+
 ## [0.1.0] - 2026-11-07
 
 First public release: execution-grounded verification for AI agent skills on macOS.
