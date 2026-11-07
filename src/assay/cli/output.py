@@ -9,10 +9,12 @@ from assay.canonical import canonical
 from assay.capture import Trace
 from assay.corpus import Label, Metrics, Ratio, Source
 from assay.ingest import Skill
+from assay.mcp.inspect import ServerReport
 from assay.triage import Triage
 from assay.verdict import Assessment, UnverifiedCause, Verdict
 
 TRIAGE_NOTE = "pre-filter only; this is not a verdict. Run `assay check`."
+MCP_NOTE = "inspection only; no verdict."
 
 
 def refusal(cause: str, detail: str, path: Path, as_json: bool) -> str:
@@ -271,6 +273,35 @@ def render_triage(skill: Skill, record: Triage, as_json: bool) -> str:
         f"note: {TRIAGE_NOTE}\n"
         "exit: 0\n"
     )
+
+
+def render_mcp(report: ServerReport, as_json: bool) -> str:
+    exit_code = 0 if report.started and report.error is None else 1
+    if as_json:
+        payload = report.to_payload()
+        payload["schema"] = 1
+        payload["note"] = MCP_NOTE
+        payload["exit"] = exit_code
+        return canonical(payload)
+    lines = [
+        f"server: {_one_line(report.server.name)}",
+        f"command: {_one_line(' '.join([report.server.command, *report.server.args]))}",
+        f"transport: {report.server.transport}",
+        f"started: {'yes' if report.started else 'no'}",
+    ]
+    if report.protocol_version is not None:
+        lines.append(f"protocol: {_one_line(report.protocol_version)}")
+    lines.append(f"tools: {_one_line(', '.join(tool.name for tool in report.tools) or 'none')}")
+    if report.session is not None:
+        denials = ", ".join(
+            f"{denial.kind.value} {denial.detail}" for denial in report.session.denials
+        )
+        lines.append(f"denials: {_one_line(denials or 'none')}")
+    if report.error is not None:
+        lines.append(f"error: {_one_line(report.error)}")
+    lines.append(f"note: {MCP_NOTE}")
+    lines.append(f"exit: {exit_code}")
+    return "\n".join(lines) + "\n"
 
 
 def render_bundle(bundle: Bundle, path: Path, as_json: bool) -> str:

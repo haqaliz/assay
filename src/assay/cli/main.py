@@ -26,6 +26,8 @@ from assay.bundle import Bundle, BundleError, SigningError, build, verify
 from assay.capture import CaptureError, TraceStore, capture
 from assay.corpus import CaseError, evaluate, load_corpus
 from assay.ingest import SkillParseError, parse_skill
+from assay.mcp.inspect import inspect_server
+from assay.mcp.server import ServerError, parse_server
 from assay.sandbox import SandboxUnavailable
 from assay.sandbox.base import Sandbox, select_sandbox
 from assay.triage import triage
@@ -39,6 +41,7 @@ from .output import (
     render_corpus,
     render_human,
     render_json,
+    render_mcp,
     render_triage,
     render_verify,
     triage_refusal,
@@ -104,6 +107,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     triage_command.add_argument("skill", type=str)
     triage_command.add_argument("--json", action="store_true")
+    mcp_command = commands.add_parser(
+        "mcp", help="inspect a stdio MCP server; never a verdict"
+    )
+    mcp_command.add_argument("manifest", type=str)
+    mcp_command.add_argument("--name", metavar="NAME")
+    mcp_command.add_argument("--timeout", type=float, default=10.0, metavar="SECONDS")
+    mcp_command.add_argument("--json", action="store_true")
+    mcp_command.add_argument("--keep-run-root", action="store_true")
     return parser
 
 
@@ -125,6 +136,8 @@ def main(
             return _corpus(args)
         if args.command == "triage":
             return _triage(args)
+        if args.command == "mcp":
+            return _mcp(args, sandbox)
         return _verify(args)
     except KeyboardInterrupt:
         return 130
@@ -366,6 +379,42 @@ def _triage(args: argparse.Namespace) -> int:
         return 1
     _emit(render_triage(skill, triage(skill), args.json), sys.stdout)
     return 0
+
+
+def _mcp(args: argparse.Namespace, sandbox: Sandbox | None) -> int:
+    timeout = args.timeout
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise UsageError("--timeout must be a finite positive number")
+    try:
+        server = parse_server(Path(args.manifest), name=args.name)
+    except ServerError as exc:
+        _emit(f"error: {exc}\n", sys.stderr)
+        return 2
+    if sandbox is None:
+        try:
+            sandbox = select_sandbox()
+        except SandboxUnavailable as exc:
+            _emit(f"error: sandbox-unavailable: {exc}\n", sys.stderr)
+            return 1
+    run_root = _make_run_root()
+    sandbox_exec = Path(
+        getattr(sandbox, "sandbox_exec", Path("/usr/bin/sandbox-exec"))
+    )
+    if args.keep_run_root:
+        _emit(f"run root: {run_root}\n", sys.stderr)
+    try:
+        report = inspect_server(
+            server,
+            run_root=run_root,
+            sandbox_exec=sandbox_exec,
+            timeout=timeout,
+            keep=args.keep_run_root,
+        )
+        _emit(render_mcp(report, args.json), sys.stdout)
+        return 0 if report.started and report.error is None else 1
+    finally:
+        if not args.keep_run_root:
+            shutil.rmtree(run_root, ignore_errors=True)
 
 
 def _bundle_failure(cause: str, detail: str, path: Path, as_json: bool) -> int:
