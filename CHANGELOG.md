@@ -11,11 +11,18 @@ All notable changes to Assay.
   `EventKind.TOOL` evidence. This is **not** an MCP verifier: there is no `Server` record, driver
   integration, bundle or verdict; a TOOL-only trace is `UNVERIFIED/NO_TRIGGER`. The floor, `REVIEW`
   cap and trace schema are unchanged.
+- **MCP server inspector (Stage A):** `assay mcp <manifest>` parses a Claude Desktop-style
+  `mcpServers` manifest into a `Server` record, starts one stdio server in Seatbelt, runs
+  `initialize`/`tools/list`, and prints a `ServerReport` (startup, protocol, tools, denials). It
+  refuses env values and HTTP. **This is not a verifier:** no model, driver, assessment, bundle or
+  verdict; exit `0` means "started and listed tools", not safe.
 
 ### Limits
 
 - The spike pins protocol `2026-07-28`, covers stdio only, and captures denials/tool results, not
-  full server syscalls. MCP server verification remains a separate, deferred capability.
+  full server syscalls.
+- The inspector refuses manifest `env` values (no secrets in the jail), supports stdio only, and
+  prints no verdict. Stage B (driver + conservative assessment) remains deferred.
 
 ## [0.1.0] - 2026-11-07
 

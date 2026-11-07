@@ -173,6 +173,20 @@ network, shell, install, persistence, prompt injection, destructive, privilege, 
 pre-filter: no verdict, no findings, no trace, no model and no sandbox. A high priority is not
 `MALICIOUS`, and a low priority is not safe; run `assay check` for an observed verdict.
 
+### Inspecting an MCP server
+
+`assay mcp <manifest>` starts one stdio server from a Claude Desktop-style `mcpServers` manifest,
+initializes it, and lists its tools:
+
+```sh
+uv run assay mcp path/to/mcp.json
+uv run assay mcp path/to/mcp.json --name my-server --json
+```
+
+It prints startup, protocol, tool names and jail denials, and **no verdict**. It refuses manifest
+`env` values (no secrets in the jail) and HTTP transport. Exit `0` means the server started and
+listed tools, not that it is safe. Stage B will add the driver and assessment.
+
 ## What Assay is
 
 Point Assay at a skill — a Claude Code or OpenClaw/ClawHub `SKILL.md`, or a Cursor project rule
@@ -188,11 +202,11 @@ a captured record of the run, which can be signed into a bundle a third party ve
   pre-filter; `assay triage` is our queue heuristic, and it never decides. Only the sandboxed run
   assigns a verdict.
 - Not an antivirus signature match. Assay observes novel behavior, not known hashes.
-- Not an MCP server verifier yet. A manifest says how to start a server, not what it does. An
-  experimental spike now proves a long-lived `SandboxSession` and a stdio MCP client, and captures
-  tool calls as `TOOL` evidence; it has no `Server` record, driver integration, bundle or verdict,
-  so MCP verification remains a separate, deferred capability (see
-  [`docs/planning/mcp-design/prd.md`](docs/planning/mcp-design/prd.md)).
+- Not an MCP server verifier yet. `assay mcp <manifest>` is a runtime inspector: it starts one
+  stdio server in Seatbelt and reports the protocol, tools and denials. It has no model, driver,
+  assessment, bundle or verdict; exit `0` means "started and listed tools", not safe. A manifest
+  says how to start a server, not what it does, so MCP verification remains a separate, deferred
+  capability (Stage B; see [`docs/planning/mcp-design/prd.md`](docs/planning/mcp-design/prd.md)).
 - Not a claim that a `CLEAN` skill is safe forever — only that this run's observed behavior
   matched its declared scope.
 
