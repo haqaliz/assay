@@ -16,13 +16,22 @@ All notable changes to Assay.
   `initialize`/`tools/list`, and prints a `ServerReport` (startup, protocol, tools, denials). It
   refuses env values and HTTP. **This is not a verifier:** no model, driver, assessment, bundle or
   verdict; exit `0` means "started and listed tools", not safe.
+- **MCP server report (Stage B):** `assay mcp-report <manifest> --task ...` registers the server's
+  tools with the model (only those tools), runs the task, captures each `tools/call` as `TOOL`
+  evidence, and reports `UNVERIFIED` (no-trigger, no-declared-scope, agent/budget failure) or
+  `FLAGGED` (instruction text in a tool description/result). **No `CLEAN` or `MALICIOUS`:** a
+  manifest declares startup, not behavior, and server syscalls are not mediated. Exit `0` means the
+  report was produced, not that the server is safe.
 
 ### Limits
 
 - The spike pins protocol `2026-07-28`, covers stdio only, and captures denials/tool results, not
   full server syscalls.
 - The inspector refuses manifest `env` values (no secrets in the jail), supports stdio only, and
-  prints no verdict. Stage B (driver + conservative assessment) remains deferred.
+  prints no verdict.
+- `mcp-report` is not a pass gate: it only sees tool calls/results/denials, not the server's own
+  syscalls; it requires an explicit `--task`, gives the model no built-in tools, and produces no
+  bundle.
 
 ## [0.1.0] - 2026-11-07
 

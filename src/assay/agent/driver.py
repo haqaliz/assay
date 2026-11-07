@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import time
-from typing import Callable
+from typing import Callable, Sequence
 
 from assay.ingest import Skill
 from assay.sandbox import SandboxFailed, SandboxUnavailable
 
 from .base import Message, Model
 from .records import Budget, ModelFailed, RunCause, RunOutcome, ToolAction, Usage
-from .tools import TOOLS, Toolbox
+from .tools import TOOLS, ToolExecutor, ToolSpec
 
 MAX_TOOL_CONTENT_CHARS = 16_000
 
@@ -26,15 +26,29 @@ def drive(
     skill: Skill,
     task: str,
     model: Model,
-    toolbox: Toolbox,
+    toolbox: ToolExecutor,
     budget: Budget,
     *,
+    clock: Callable[[], float] = time.monotonic,
+) -> RunOutcome:
+    """Run a skill: the system prompt is the skill body and the tool surface is the built-ins."""
+    return drive_with(skill.body, task, model, toolbox, budget, clock=clock)
+
+
+def drive_with(
+    system_prompt: str,
+    task: str,
+    model: Model,
+    toolbox: ToolExecutor,
+    budget: Budget,
+    *,
+    tools: Sequence[ToolSpec] = TOOLS,
     clock: Callable[[], float] = time.monotonic,
 ) -> RunOutcome:
     # shortcut: wall time is checked between calls; a single slow call is bounded by the
     # transport's 60 s timeout, not by this budget.
     started = clock()
-    messages = [Message("system", skill.body), Message("user", task)]
+    messages = [Message("system", system_prompt), Message("user", task)]
     actions: list[ToolAction] = []
     usage = Usage()
     spent = 0.0
@@ -63,7 +77,7 @@ def drive(
             return outcome(RunCause.COST_CAPPED)
 
         try:
-            reply = model.complete(messages, TOOLS)
+            reply = model.complete(messages, tools)
         except ModelFailed:
             return outcome(RunCause.MODEL_FAILED)
 

@@ -226,7 +226,9 @@ benchmark signs nothing; any case can be bundled and replayed with the shipped A
   2026-11-07 spike adds `src/assay/sandbox/session.py` and `src/assay/mcp/` (initialize,
   `tools/list`, `tools/call`), with calls captured as `EventKind.TOOL`. Stage A adds a `Server`
   record/manifest parser and `assay mcp` startup/tool inspection (`src/assay/mcp/server.py`,
-  `inspect.py`); it is **evidence-only** and has no driver, assessment, bundle or verdict. Stage B
-  remains deferred.
+  `inspect.py`). Stage B adds `assay mcp-report`: driver registration (`src/assay/mcp/toolbox.py`),
+  TOOL evidence and a conservative `ServerAssessment` (`src/assay/mcp/assess.py`) that is
+  `UNVERIFIED` or `FLAGGED`, never `CLEAN`/`MALICIOUS`, with no bundle or syscall mediation. MCP
+  verification remains a separate, deferred capability.
 - How to generate synthetic tasks that exercise a skill without an LLM judging the outcome.
 - Distribution name on PyPI: `assay` is taken; `assayhq` was free when checked.

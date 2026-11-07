@@ -283,6 +283,14 @@ def _dangerous_shell(command: str) -> str | None:
     return next((label for label, pattern in SHELL_PATTERNS if pattern.search(normalised)), None)
 
 
+def instruction_labels(text: str) -> tuple[str, ...]:
+    """The A5 instruction labels that match text, for reuse on untrusted MCP text."""
+    normal = _normalise(text)
+    return tuple(
+        label for label, pattern in INSTRUCTION_PATTERNS if pattern.search(normal)
+    )
+
+
 def _instruction_findings(skill: Skill, trace: Trace) -> tuple[Finding, ...]:
     # Only the system instruction is the skill's own text. The user task is ours, and scanning it
     # would attribute our prompt to the skill.

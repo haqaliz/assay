@@ -9,12 +9,14 @@ from assay.canonical import canonical
 from assay.capture import Trace
 from assay.corpus import Label, Metrics, Ratio, Source
 from assay.ingest import Skill
+from assay.mcp.assess import ServerAssessment, ServerRun
 from assay.mcp.inspect import ServerReport
 from assay.triage import Triage
 from assay.verdict import Assessment, UnverifiedCause, Verdict
 
 TRIAGE_NOTE = "pre-filter only; this is not a verdict. Run `assay check`."
 MCP_NOTE = "inspection only; no verdict."
+MCP_REPORT_NOTE = "observation report; not a pass; no CLEAN/MALICIOUS."
 
 
 def refusal(cause: str, detail: str, path: Path, as_json: bool) -> str:
@@ -300,6 +302,99 @@ def render_mcp(report: ServerReport, as_json: bool) -> str:
     if report.error is not None:
         lines.append(f"error: {_one_line(report.error)}")
     lines.append(f"note: {MCP_NOTE}")
+    lines.append(f"exit: {exit_code}")
+    return "\n".join(lines) + "\n"
+
+
+def _session_payload(session) -> dict[str, object] | None:
+    if session is None:
+        return None
+    return {
+        "exit_code": session.exit_code,
+        "signal": session.signal,
+        "timed_out": session.timed_out,
+        "config_hash": session.config_hash,
+        "run_root": session.run_root,
+        "teardown_error": session.teardown_error,
+        "denials": [
+            {"kind": denial.kind.value, "detail": denial.detail}
+            for denial in session.denials
+        ],
+    }
+
+
+def _event_payload(event) -> dict[str, object]:
+    return {
+        "kind": event.kind.value,
+        "outcome": event.outcome.value,
+        "target": event.target,
+        "request": event.request,
+        "content_sha256": event.content_sha256,
+        "content_bytes": event.content_bytes,
+        "excerpt": event.excerpt,
+        "input_sha256": event.input_sha256,
+        "denials": list(event.denials),
+        "truncated": event.truncated,
+    }
+
+
+def render_mcp_report(
+    run: ServerRun, assessment: ServerAssessment, as_json: bool, exit_code: int
+) -> str:
+    if as_json:
+        return canonical(
+            {
+                "schema": 1,
+                "server": {
+                    "name": run.server.name,
+                    "command": run.server.command,
+                    "args": list(run.server.args),
+                    "transport": run.server.transport,
+                    "source_path": _path_text(run.server.source_path),
+                    "source_hash": run.server.source_hash,
+                },
+                "task_sha256": run.task_hash,
+                "tools": [
+                    {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "input_schema": dict(tool.input_schema),
+                    }
+                    for tool in run.tools
+                ],
+                "events": [_event_payload(event) for event in run.events],
+                "session": _session_payload(run.session),
+                "assessment": assessment.to_payload(),
+                "note": MCP_REPORT_NOTE,
+                "exit": exit_code,
+            }
+        )
+    counts = {"ok": 0, "failed": 0, "denied": 0}
+    for event in run.events:
+        counts[event.outcome.value] += 1
+    lines = [
+        f"server: {_one_line(run.server.name)}",
+        f"task_sha256: {run.task_hash}",
+        f"tools: {_one_line(', '.join(tool.name for tool in run.tools) or 'none')}",
+        f"calls: {len(run.events)} (ok {counts['ok']}, failed {counts['failed']}, "
+        f"denied {counts['denied']})",
+    ]
+    if run.session is not None:
+        denials = ", ".join(
+            f"{denial.kind.value} {denial.detail}" for denial in run.session.denials
+        )
+        lines.append(f"denials: {_one_line(denials or 'none')}")
+    findings = ", ".join(finding.target for finding in assessment.findings)
+    lines.append(f"findings: {_one_line(findings or 'none')}")
+    lines.append(f"verdict: {assessment.verdict.value.upper()}")
+    cause = (
+        assessment.cause.value.upper().replace("-", "_")
+        if assessment.cause is not None
+        else "-"
+    )
+    lines.append(f"cause: {cause}")
+    lines.append(f"blocked: {'yes' if assessment.blocked else 'no'}")
+    lines.append(f"note: {MCP_REPORT_NOTE}")
     lines.append(f"exit: {exit_code}")
     return "\n".join(lines) + "\n"
 

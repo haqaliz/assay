@@ -8,7 +8,7 @@ import socket
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, Sequence
+from typing import Mapping, Protocol, Sequence
 from urllib.parse import urlsplit
 
 from assay.sandbox import (
@@ -32,6 +32,10 @@ class ToolSpec:
     name: str
     description: str
     input_schema: Mapping[str, object]
+
+
+class ToolExecutor(Protocol):
+    def execute(self, call: ToolCall) -> ToolResult: ...
 
 
 def _spec(name: str, description: str, properties: Mapping[str, object]) -> ToolSpec:
