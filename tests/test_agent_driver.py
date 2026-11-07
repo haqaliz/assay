@@ -14,8 +14,8 @@ from assay.agent import (
     Usage,
 )
 from assay.agent.base import Message, ModelReply
-from assay.agent.driver import drive
-from assay.agent.tools import TOOLS, Toolbox
+from assay.agent.driver import drive, drive_with
+from assay.agent.tools import TOOLS, Toolbox, ToolSpec
 from assay.ingest import Scope, Skill
 from assay.sandbox import RunRecord, SandboxUnavailable
 
@@ -307,3 +307,36 @@ def test_a_jail_failure_mid_run_is_a_named_cause_not_a_tool_error():
     outcome = drive(skill(), "task", model, BrokenToolbox(), Budget(max_usd=1.0))
     assert outcome.cause is RunCause.SANDBOX_UNAVAILABLE
     assert outcome.actions == ()
+
+
+def test_drive_with_uses_the_supplied_system_prompt_and_tools():
+    custom = ToolSpec(
+        name="custom",
+        description="A custom tool.",
+        input_schema={"type": "object", "properties": {}},
+    )
+    model = FakeModel([reply("done")])
+
+    outcome = drive_with(
+        "CUSTOM SYSTEM",
+        "custom task",
+        model,
+        FakeToolbox(),
+        Budget(max_usd=1.0),
+        tools=(custom,),
+    )
+
+    assert outcome.cause is None
+    messages, tools = model.seen[0]
+    assert messages[0] == Message("system", "CUSTOM SYSTEM")
+    assert tools == [custom]
+
+
+def test_drive_still_uses_the_skill_body_and_default_tools():
+    model = FakeModel([reply("done")])
+
+    drive(skill(), "task", model, FakeToolbox(), Budget(max_usd=1.0))
+
+    messages, tools = model.seen[0]
+    assert messages[0] == Message("system", "DEMO BODY\n")
+    assert tools == list(TOOLS)
