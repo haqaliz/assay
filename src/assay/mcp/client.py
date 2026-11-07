@@ -90,10 +90,16 @@ class MCPClient:
         return tuple(parsed)
 
     def call_tool(
-        self, name: str, arguments: Mapping[str, object] | None = None
+        self,
+        name: str,
+        arguments: Mapping[str, object] | None = None,
+        *,
+        timeout: float | None = None,
     ) -> MCPResult:
         result = self._request(
-            "tools/call", {"name": name, "arguments": dict(arguments or {})}
+            "tools/call",
+            {"name": name, "arguments": dict(arguments or {})},
+            timeout=timeout,
         )
         content = result.get("content", [])
         if not isinstance(content, list):
@@ -119,13 +125,19 @@ class MCPClient:
     def __exit__(self, *exc: object) -> None:
         self.close()
 
-    def _request(self, method: str, params: Mapping[str, object]) -> Mapping[str, object]:
+    def _request(
+        self,
+        method: str,
+        params: Mapping[str, object],
+        *,
+        timeout: float | None = None,
+    ) -> Mapping[str, object]:
         self._next_id += 1
         request_id = self._next_id
         self._send(
             {"jsonrpc": "2.0", "id": request_id, "method": method, "params": dict(params)}
         )
-        deadline = time.monotonic() + self._timeout
+        deadline = time.monotonic() + (self._timeout if timeout is None else timeout)
         while True:
             message = self._read(deadline)
             if "id" not in message:

@@ -94,11 +94,11 @@ def test_a_slow_call_times_out_and_tears_down(tmp_path):
     session = start(config)
     session.__enter__()
     pid = session.pid
-    client = MCPClient(session, timeout=0.2)
+    client = MCPClient(session, timeout=5.0)
     client.initialize()
 
     with pytest.raises(MCPTimeout):
-        client.call_tool("slow", {"seconds": 5})
+        client.call_tool("slow", {"seconds": 5}, timeout=0.2)
 
     record = session.close()
     assert record.timed_out is True
