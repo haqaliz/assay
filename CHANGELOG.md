@@ -23,6 +23,10 @@ All notable changes to Assay.
   manifest declares startup, not behavior, and server syscalls are not mediated. Exit `0` means the
   report was produced, not that the server is safe.
 
+### Fixed
+
+- `assay.__version__` now matches the packaged version (`0.1.0`) instead of the stale `0.0.1`.
+
 ### Limits
 
 - The spike pins protocol `2026-07-28`, covers stdio only, and captures denials/tool results, not
