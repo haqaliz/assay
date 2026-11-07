@@ -185,7 +185,24 @@ uv run assay mcp path/to/mcp.json --name my-server --json
 
 It prints startup, protocol, tool names and jail denials, and **no verdict**. It refuses manifest
 `env` values (no secrets in the jail) and HTTP transport. Exit `0` means the server started and
-listed tools, not that it is safe. Stage B will add the driver and assessment.
+listed tools, not that it is safe.
+
+### Running an MCP task
+
+`assay mcp-report <manifest> --task "..."` gives the model only the server's tools, runs the task,
+and captures each `tools/call` as evidence:
+
+```sh
+uv run assay mcp-report path/to/mcp.json \
+  --task "Read the project README and summarize it" \
+  --model qwen3-coder:30b --provider openai-compatible --base-url http://127.0.0.1:11434/v1 \
+  --input-price 0 --output-price 0 --max-cost 0.01 --json
+```
+
+It reports `UNVERIFIED` (no trigger, no declared scope, or a failed run) or `FLAGGED` when tool
+descriptions/results contain instruction-like text. There is **no `CLEAN` or `MALICIOUS`**: a
+manifest declares startup, not behavior, and the server's own syscalls are not mediated. Exit `0`
+means the report was produced, not that the server is safe. It has no bundle.
 
 ## What Assay is
 
@@ -202,11 +219,12 @@ a captured record of the run, which can be signed into a bundle a third party ve
   pre-filter; `assay triage` is our queue heuristic, and it never decides. Only the sandboxed run
   assigns a verdict.
 - Not an antivirus signature match. Assay observes novel behavior, not known hashes.
-- Not an MCP server verifier yet. `assay mcp <manifest>` is a runtime inspector: it starts one
-  stdio server in Seatbelt and reports the protocol, tools and denials. It has no model, driver,
-  assessment, bundle or verdict; exit `0` means "started and listed tools", not safe. A manifest
-  says how to start a server, not what it does, so MCP verification remains a separate, deferred
-  capability (Stage B; see [`docs/planning/mcp-design/prd.md`](docs/planning/mcp-design/prd.md)).
+- Not an MCP server verifier yet. `assay mcp` inspects startup/tools; `assay mcp-report` runs a
+  task with only the server's tools and reports `UNVERIFIED` or `FLAGGED`. There is no `CLEAN` or
+  `MALICIOUS`: a manifest declares startup, not behavior, and the server's own syscalls are not
+  mediated. Exit `0` means the report was produced, not safe; there is no bundle. MCP verification
+  remains a separate, deferred capability (see
+  [`docs/planning/mcp-design/prd.md`](docs/planning/mcp-design/prd.md)).
 - Not a claim that a `CLEAN` skill is safe forever — only that this run's observed behavior
   matched its declared scope.
 

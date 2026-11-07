@@ -124,8 +124,14 @@ MCP claim. 961 offline tests; the floor, cap and trace schema are unchanged. MCP
 **MCP server inspector (2026-11-07).** `assay mcp <manifest>` parses a Claude Desktop `mcpServers`
 entry into a `Server` record, starts one stdio server in Seatbelt, and reports protocol, tools and
 denials. It refuses env values and HTTP; no model, driver, assessment, bundle or verdict. Exit `0`
-means "started and listed tools", not safe. 983 offline tests; Stage B (driver + conservative
-verdict) remains deferred.
+means "started and listed tools", not safe. 983 offline tests; Stage B followed (below).
+
+**MCP server report (2026-11-08).** `assay mcp-report <manifest> --task ...` registers the server's
+tools with the driver (only those tools), runs the task, captures `tools/call` as `TOOL` evidence,
+and reports `UNVERIFIED` (no-trigger, no-declared-scope, agent/budget failure) or `FLAGGED`
+(instruction text in a tool description/result). There is no `CLEAN`/`MALICIOUS`: a manifest
+declares startup, not behavior, and the server's own syscalls are not mediated. Exit `0` means the
+report was produced, not safe; no bundle. 1,017 offline tests. MCP verification remains deferred.
 
 **A5 instruction calibration (2026-11-05).** A held-out 8-case instruction set (4 malicious, 4
 clean) was measured before and after five patterns were added (`ignore the above`, `disregard
