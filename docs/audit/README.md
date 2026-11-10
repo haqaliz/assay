@@ -8,11 +8,12 @@ The gate for third-party skill audits.
 - [`finding-template.md`](finding-template.md) — the private finding record and publication draft.
 
 **Status: no third-party skill audit has been run or published.** A private own-skill **runner dry
-run** was executed on 2026-11-06: five Plumb skills, three runs each, 15 signed bundles, all
-`signature + replay` verified; 9 `FLAGGED`, 6 `UNVERIFIED` (`model-failed`), 0 `HIGH`/`MALICIOUS`.
-**Reviewer sign-off was not performed (unreviewed), so it supports no finding and is not a public
-audit.** Records are private under `.assay/audits/` (gitignored). The maintainer is currently the
-only reviewer, which is not enough for a public finding. The first public audit needs:
+run** was executed on 2026-11-06; six `model-failed` cases were re-run on 2026-11-07. It produced 21
+signed bundles, all `signature + replay` verified. Latest per case: 12/15 decided (all `FLAGGED`), 3
+`UNVERIFIED`, 0 `HIGH`/`MALICIOUS`. **Reviewer sign-off was recorded privately on 2026-11-10; it
+supports no public finding and is not a public audit.** Records are private under `.assay/audits/`
+(gitignored). The maintainer is currently the only reviewer, which is not enough for a public
+finding. The first public audit needs:
 
 1. a second reviewer who did not run the skill;
 2. a terms check for the selected registry/provider;

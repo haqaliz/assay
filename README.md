@@ -69,9 +69,9 @@ network call):
 - **Audit gate** ([`ETHICS.md`](ETHICS.md), [`docs/audit/`](docs/audit/)) — the rules and protocol
   for third-party audits: evidence, three private runs, two-person review, a disclosure window,
   publication limits and corrections. **No third-party audit has been run or published.** A private
-  own-skill runner dry run was executed on 2026-11-06; it is unreviewed and unpublished. The
-  maintainer is the only reviewer today; a public finding waits for a second reviewer and the
-  disclosure steps.
+  own-skill runner dry run was executed on 2026-11-06 and privately reviewed on 2026-11-10; it
+  remains unpublished. The maintainer is the only reviewer today; a public finding waits for a
+  second reviewer and the disclosure steps.
 
 The pattern lists are now measured on that corpus; run `assay corpus corpus/` for the current
 numbers and read `corpus/README.md` for the limits. The first real Anthropic-keyed run has not
