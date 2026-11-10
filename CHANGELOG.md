@@ -27,6 +27,11 @@ All notable changes to Assay.
 
 - `assay.__version__` now matches the packaged version (`0.1.0`) instead of the stale `0.0.1`.
 
+### Changed
+
+- The private own-skill audit dry run was reviewed privately on 2026-11-10. It remains unpublished
+  and authorizes no public finding; the M2.3 public-audit gate is unchanged.
+
 ### Limits
 
 - The spike pins protocol `2026-07-28`, covers stdio only, and captures denials/tool results, not

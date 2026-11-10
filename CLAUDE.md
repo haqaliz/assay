@@ -67,7 +67,8 @@ CI runs the offline suite on macOS; `assay --version` reports the installed vers
 first PyPI release, published by the `v0.1.0` tag through Trusted Publishing. The audit gate
 (`ETHICS.md`, `docs/audit/`) is in place; no third-party audit has run or been published, and a
 public finding needs a second reviewer and the disclosure window. A private own-skill runner dry run
-was executed on 2026-11-06; it was not reviewer-signed and publishes nothing. MCP server verification
+was executed on 2026-11-06 and privately reviewed on 2026-11-10; it publishes nothing and authorizes
+no public finding. MCP server verification
 is a separate capability, not an A8 adapter; a 2026-11-07 spike adds a `SandboxSession` + stdio
 client, Stage A adds `Server`/manifest + `assay mcp`, and Stage B adds `mcp-report` (driver +
 conservative `UNVERIFIED`/`FLAGGED`; no `CLEAN`/`MALICIOUS`, no bundle). MCP verification remains
