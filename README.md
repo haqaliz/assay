@@ -1,6 +1,6 @@
 <div align="center">
 
-<!-- Logo: add assets/assay-logo.svg above the title when available. -->
+<img src="assets/assay-logo.svg" alt="Assay" width="108" />
 
 # Assay
 
@@ -16,7 +16,13 @@ real agent, captures what it actually did, and checks that against what it claim
 [![uv](https://img.shields.io/badge/built%20with-uv-DE5FE9?logo=astral&logoColor=white)](https://github.com/astral-sh/uv)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-3fb950)](CONTRIBUTING.md)
 
-[Install](#install) · [Quickstart](#quickstart) · [Usage](#usage) · [Architecture](docs/technical/ARCHITECTURE.md) · [Roadmap](docs/ROADMAP.md) · [Audit protocol](docs/audit/PROTOCOL.md) · [Contributing](CONTRIBUTING.md)
+[Install](#install) · [Quickstart](#quickstart) · [Usage](#usage) · [Website](https://haqaliz.github.io/assay/) · [Architecture](docs/technical/ARCHITECTURE.md) · [Roadmap](docs/ROADMAP.md) · [Audit protocol](docs/audit/PROTOCOL.md) · [Contributing](CONTRIBUTING.md)
+
+<br/>
+
+<img src="assets/assay-demo.png" alt="Assay CLI: assay 0.1.0 and the 20-case corpus report" width="900" />
+
+<sub>Real CLI output: <code>assay --version</code>, then the 20-case corpus report. No model or network call.</sub>
 
 </div>
 
