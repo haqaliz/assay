@@ -26,6 +26,8 @@ All notable changes to Assay.
   and a pull-request template; README header/quickstart and GitHub topics.
 - **Brand and GitHub Pages:** the Assay logo, a real CLI terminal screenshot, a static `site/`
   landing page and `.github/workflows/pages.yml`.
+- **Support:** the same crypto donation link used by the sibling `contig` project is now in the
+  README and the site footer.
 
 ### Fixed
 

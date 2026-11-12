@@ -337,6 +337,14 @@ For a finding about a third-party skill, follow [`ETHICS.md`](ETHICS.md) and the
 The project is also looking for an independent reviewer for a public audit:
 [issue #31](https://github.com/haqaliz/assay/issues/31) (unpaid, 30–60 minutes).
 
+## Support the project
+
+If this project is useful to you, you can chip in with a crypto donation:
+
+<a href="https://nowpayments.io/donation?api_key=52f38854-167a-4828-a00f-0424ab7dcc1e" target="_blank" rel="noreferrer noopener">
+    <img src="https://nowpayments.io/images/embeds/donation-button-black.svg" alt="Crypto donation button by NOWPayments">
+</a>
+
 ## Lineage
 
 Assay is one of three siblings scaffolded together on 2026-10-22 (with [Tenon](../tenon) and
