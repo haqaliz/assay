@@ -24,6 +24,8 @@ All notable changes to Assay.
   report was produced, not that the server is safe.
 - **Public repo surface:** `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, issue templates
   and a pull-request template; README header/quickstart and GitHub topics.
+- **Brand and GitHub Pages:** the Assay logo, a real CLI terminal screenshot, a static `site/`
+  landing page and `.github/workflows/pages.yml`.
 
 ### Fixed
 

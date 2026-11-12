@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assay — execution-grounded security verifier for AI agent skills</title>
+<meta name="description" content="Assay runs an AI agent skill in a macOS sandbox against a real agent, captures what it actually did, and checks that against what it claims to do. Signed evidence, honest verdicts, an audit gate.">
+<meta name="theme-color" content="#070b18">
+<link rel="icon" href="assets/assay-logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="Assay — execution-grounded security verifier for AI agent skills">
+<meta property="og:description" content="Runs a skill in a sandbox against a real agent, captures what it actually did, and checks that against what it claims to do.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://haqaliz.github.io/assay/">
+<meta property="og:image" content="https://haqaliz.github.io/assay/assets/assay-demo.png">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-head">
+  <div class="wrap head-inner">
+    <a class="brand" href="#top">
+      <img class="brand-mark" src="assets/assay-logo.svg" alt="" width="34" height="26">
+      <span>Assay</span>
+    </a>
+    <nav aria-label="Primary">
+      <ul class="nav">
+        <li><a href="#why">Why</a></li>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#commands">Commands</a></li>
+        <li><a href="#status">Status</a></li>
+        <li><a href="https://github.com/haqaliz/assay">GitHub</a></li>
+        <li><a href="https://pypi.org/project/assayhq/">PyPI</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="hero" id="top" aria-labelledby="hero-title">
+    <div class="wrap hero-inner">
+      <div class="hero-copy">
+        <img class="hero-mark" src="assets/assay-logo.svg" alt="Assay" width="88" height="66">
+        <p class="chip">v0.1.0 &middot; execution-grounded</p>
+        <h1 id="hero-title">Assay</h1>
+        <p class="tagline">Execution-grounded security verifier for AI agent skills.</p>
+        <p class="lede">Runs a skill in a macOS sandbox against a real agent, captures what it actually did, and checks that against what it claims to do. The verdict is backed by a record a third party can verify.</p>
+
+        <div class="actions">
+          <a class="btn btn-primary" href="https://github.com/haqaliz/assay">View on GitHub</a>
+          <a class="btn" href="https://pypi.org/project/assayhq/">Install from PyPI</a>
+          <a class="btn btn-quiet" href="https://github.com/haqaliz/assay/blob/master/docs/audit/PROTOCOL.md">Audit protocol</a>
+        </div>
+
+        <div class="terminal" aria-label="Quickstart commands">
+          <p class="terminal-bar"><span class="tick" aria-hidden="true"></span>quickstart</p>
+          <pre tabindex="0"><code><span class="t-prompt">$</span> uv tool install assayhq
+<span class="t-prompt">$</span> assay triage path/to/SKILL.md
+<span class="t-prompt">$</span> assay check path/to/SKILL.md --model ... --max-cost 0.01</code></pre>
+        </div>
+        <p class="fine">A sandboxed run needs a provider, model and cost cap. The quickstart uses a pre-filter and the CLI only; see the <a href="https://github.com/haqaliz/assay#usage">README</a> for a full run.</p>
+      </div>
+
+      <figure class="hero-demo">
+        <img src="assets/assay-demo.png" alt="Assay CLI: assay 0.1.0 and the 20-case corpus report" width="1200" height="650">
+        <figcaption>Real CLI output: <code>assay --version</code>, then the 20-case corpus report. No model or network call.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="why" aria-labelledby="why-title">
+    <div class="wrap">
+      <p class="step"><span class="step-num">01</span> Why</p>
+      <h2 id="why-title">The scan is not the verdict.</h2>
+      <p class="body">A static pattern or a model's opinion can flag a candidate. Assay's claim is narrower and stronger: what the skill <em>actually did</em> in a confined run, captured and checked against what it declared.</p>
+
+      <div class="cards">
+        <article class="card">
+          <h3>Execution decides</h3>
+          <p>A sandboxed, observed run assigns the verdict. A high static score is a reason to run, never a result.</p>
+        </article>
+        <article class="card">
+          <h3>Honest verdicts</h3>
+          <p><code>CLEAN</code> means the run matched the declared scope, not that the skill is safe. <code>UNVERIFIED</code> is never a pass.</p>
+        </article>
+        <article class="card">
+          <h3>Evidence you can verify</h3>
+          <p>Canonical traces and SSH-signed bundles. <code>assay verify</code> checks the signature, the hashes and the replay offline.</p>
+        </article>
+        <article class="card">
+          <h3>An audit gate</h3>
+          <p>Private runs, a reviewer who did not run the target, a 30-day disclosure window and a correction route before publication.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <p class="step"><span class="step-num">02</span> How it works</p>
+      <h2 id="how-title">One run, five links in the chain.</h2>
+
+      <div class="flow">
+        <article class="flow-step">
+          <span class="flow-num">1</span>
+          <h3>Ingest</h3>
+          <p>Parse a Claude Code or OpenClaw <code>SKILL.md</code>, or a Cursor rule, into a typed record with its declared scope.</p>
+        </article>
+        <article class="flow-step">
+          <span class="flow-num">2</span>
+          <h3>Run</h3>
+          <p>Run it against a real agent in Seatbelt, with a scrubbed environment, confined writes and cost/step caps.</p>
+        </article>
+        <article class="flow-step">
+          <span class="flow-num">3</span>
+          <h3>Capture</h3>
+          <p>Record file, network, shell and instruction events as a canonical, content-addressed trace.</p>
+        </article>
+        <article class="flow-step">
+          <span class="flow-num">4</span>
+          <h3>Assess</h3>
+          <p>Diff observed against declared scope. Four classes, a severity floor that cannot be lowered, and a named cause when undecidable.</p>
+        </article>
+        <article class="flow-step">
+          <span class="flow-num">5</span>
+          <h3>Attest</h3>
+          <p>Sign the trace and its exact source into a bundle. Anyone can check the signature and replay the verdict offline.</p>
+        </article>
+      </div>
+
+      <p class="body note">MCP is a separate capability: <code>assay mcp</code> inspects startup and tools, and <code>assay mcp-report</code> runs a task and reports <code>UNVERIFIED</code>/<code>FLAGGED</code>. A manifest declares startup, not behavior, so there is no <code>CLEAN</code> or <code>MALICIOUS</code> server claim.</p>
+    </div>
+  </section>
+
+  <section id="commands" aria-labelledby="commands-title">
+    <div class="wrap">
+      <p class="step"><span class="step-num">03</span> Commands</p>
+      <h2 id="commands-title">Small surface, explicit claims.</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th scope="col">Command</th><th scope="col">What it does</th><th scope="col">Verdict</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>assay check &lt;skill&gt;</code></td><td>Sandboxed run against a real agent; saves the trace and prints the assessment.</td><td>Yes; exit 0 only on <code>CLEAN</code></td></tr>
+            <tr><td><code>assay bundle</code></td><td>Sign a saved trace and its exact source into a canonical record.</td><td>Carries the assessment</td></tr>
+            <tr><td><code>assay verify</code></td><td>Check hashes and signature, then replay the shipped verdict.</td><td>Verifies the record</td></tr>
+            <tr><td><code>assay corpus</code></td><td>Measure the verdict on the labeled 20-case benchmark.</td><td>Report only</td></tr>
+            <tr><td><code>assay triage &lt;skill&gt;</code></td><td>Rank a skill from its text before spending a run.</td><td>No; pre-filter only</td></tr>
+            <tr><td><code>assay mcp &lt;manifest&gt;</code></td><td>Start one stdio MCP server, list tools and show denials.</td><td>No; inspection only</td></tr>
+            <tr><td><code>assay mcp-report &lt;manifest&gt; --task ...</code></td><td>Run a task with the server's tools and report the observation.</td><td><code>UNVERIFIED</code>/<code>FLAGGED</code>; no <code>CLEAN</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fine">Full flags, providers and limits: <a href="https://github.com/haqaliz/assay#usage">README &rarr; Usage</a>.</p>
+    </div>
+  </section>
+
+  <section id="status" aria-labelledby="status-title">
+    <div class="wrap status-grid">
+      <div>
+        <p class="step"><span class="step-num">04</span> Status</p>
+        <h2 id="status-title">Shipped, measured, and honest about the gaps.</h2>
+        <p class="body"><strong>v0.1.0 is on PyPI.</strong> The engine covers A1&ndash;A8 (file-based) and A10; MCP has a sandbox session, stdio client, inspector and conservative report. The 20-case benchmark, held-out shell/instruction sets and a private real-world control are in the repo.</p>
+        <p class="body">The private own-skill audit dry run was reviewed privately on 2026-11-10: 21/21 bundles verified, 12/15 runs decided, no <code>HIGH</code>, no <code>MALICIOUS</code>. A public audit still needs an independent reviewer and the disclosure window. The reviewer call is <a href="https://github.com/haqaliz/assay/issues/31">issue #31</a>.</p>
+        <p class="fine">Assay is a verifier, not a guarantee. <code>CLEAN</code> is per-run and scope-matched; <code>UNVERIFIED</code> is never a pass.</p>
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="stat-num">20</span><span class="stat-label">labeled benchmark cases</span></div>
+        <div class="stat"><span class="stat-num">21</span><span class="stat-label">signed audit bundles replayed</span></div>
+        <div class="stat"><span class="stat-num">0</span><span class="stat-label">HIGH findings in the private dry run</span></div>
+        <div class="stat"><span class="stat-num">v0.1.0</span><span class="stat-label">on PyPI, Apache-2.0</span></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-foot">
+  <div class="wrap foot-inner">
+    <p>Assay &middot; execution-grounded verification for AI agent skills.</p>
+    <p class="foot-links">
+      <a href="https://github.com/haqaliz/assay">GitHub</a>
+      <a href="https://pypi.org/project/assayhq/">PyPI</a>
+      <a href="https://github.com/haqaliz/assay/blob/master/docs/ROADMAP.md">Roadmap</a>
+      <a href="https://github.com/haqaliz/assay/blob/master/ETHICS.md">Ethics</a>
+      <a href="https://github.com/haqaliz/assay/blob/master/LICENSE">Apache-2.0</a>
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
