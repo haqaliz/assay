@@ -22,6 +22,8 @@ All notable changes to Assay.
   `FLAGGED` (instruction text in a tool description/result). **No `CLEAN` or `MALICIOUS`:** a
   manifest declares startup, not behavior, and server syscalls are not mediated. Exit `0` means the
   report was produced, not that the server is safe.
+- **Public repo surface:** `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, issue templates
+  and a pull-request template; README header/quickstart and GitHub topics.
 
 ### Fixed
 

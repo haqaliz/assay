@@ -1,16 +1,42 @@
+<div align="center">
+
+<!-- Logo: add assets/assay-logo.svg above the title when available. -->
+
 # Assay
 
 **Execution-grounded security verifier for AI agent skills.** Runs a skill in a sandbox against a
 real agent, captures what it actually did, and checks that against what it claims to do.
 
-[![Status](https://img.shields.io/badge/status-A1--A7%20+%20A8%2FOpenClaw%2BCursor%20+%20A10%20·%20offline-orange)](docs/ROADMAP.md)
+[![Release](https://img.shields.io/github/v/release/haqaliz/assay?color=3fb950&label=release)](https://github.com/haqaliz/assay/releases/latest)
+[![Status](https://img.shields.io/badge/status-v0.1.0-3fb950)](docs/ROADMAP.md)
 [![CI](https://github.com/haqaliz/assay/actions/workflows/ci.yml/badge.svg)](https://github.com/haqaliz/assay/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/assayhq.svg)](https://pypi.org/project/assayhq/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.12+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![uv](https://img.shields.io/badge/built%20with-uv-DE5FE9?logo=astral&logoColor=white)](https://github.com/astral-sh/uv)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-3fb950)](CONTRIBUTING.md)
 
-[Vision](VISION.md) · [Roadmap](docs/ROADMAP.md) · [Architecture](docs/technical/ARCHITECTURE.md) · [Capabilities](docs/technical/CAPABILITY_ROADMAP.md)
+[Install](#install) · [Quickstart](#quickstart) · [Usage](#usage) · [Architecture](docs/technical/ARCHITECTURE.md) · [Roadmap](docs/ROADMAP.md) · [Audit protocol](docs/audit/PROTOCOL.md) · [Contributing](CONTRIBUTING.md)
+
+</div>
 
 ---
+
+## Why Assay
+
+- **Execution decides.** A static scan or a model's opinion may flag a candidate; only an observed,
+  sandboxed run assigns a verdict above `UNVERIFIED`.
+- **Verdicts that do not overclaim.** `CLEAN` means "matched declared scope in this run", not
+  "safe"; `UNVERIFIED` is not a pass; instruction findings are capped at `REVIEW`.
+- **Evidence you can verify.** Canonical, content-addressed traces and SSH-signed bundles;
+  `assay verify` checks the signature, the hashes and the replay offline.
+- **Measured, not tuned.** A 20-case benchmark, held-out shell and instruction sets, and a private
+  real-world control; the numbers are a regression signal, not a population estimate.
+- **An audit gate, not an accusation.** Private runs, a reviewer who did not run the target, a
+  30-day disclosure window and a public correction route before any finding is published.
+- **MCP without overclaiming.** `assay mcp` inspects startup/tools; `assay mcp-report` runs a task
+  and reports `UNVERIFIED`/`FLAGGED`. A manifest declares startup, not behavior, so there is no
+  `CLEAN`/`MALICIOUS` server claim.
 
 ## Install
 
@@ -24,12 +50,24 @@ pip install assayhq
 
 From a checkout, `uv sync --dev` then `uv run assay ...` works too.
 
+## Quickstart
+
+No model required:
+
+```sh
+assay triage path/to/SKILL.md      # rank a skill; pre-filter, not a verdict
+assay mcp path/to/mcp.json         # inspect a stdio MCP server; not a verdict
+```
+
+A sandboxed run needs a provider, model and cost cap; see [Usage](#usage). `assay check` exits `0`
+only on `CLEAN`, and `CLEAN` means the run matched the declared scope, not that the skill is safe.
+
 ## Status
 
-**A1–A7 exist, plus two A8 adapters (OpenClaw/ClawHub and Cursor rules) and the A10 static
-pre-filter; the engine has a verdict, a portable record and a measured benchmark.** What is built and
-tested, all offline (the bundle tests run a local `ssh-keygen`; the benchmark makes no model or
-network call):
+**v0.1.0 is shipped.** A1–A7 exist, plus two A8 file adapters (OpenClaw/ClawHub and Cursor rules),
+the A10 static pre-filter, and the separate MCP capability (spike + inspector + report); the engine
+has a verdict, a portable record and a measured benchmark. What is built and tested, all offline (the
+bundle tests run a local `ssh-keygen`; the benchmark makes no model or network call):
 
 - **Ingest** (`src/assay/ingest/`) — parses a Claude Code `SKILL.md`, an OpenClaw/ClawHub
   `SKILL.md` (format plus `metadata.openclaw` requirements), and a Cursor project rule (`.mdc`,
@@ -63,6 +101,11 @@ network call):
   real-world control (`corpus/real/`) holds one local-model run of each of the maintainer's own
   Plumb skills, all labeled clean; it is a private false-positive and coverage control, not a
   benchmark.
+- **MCP (separate capability)** (`src/assay/sandbox/session.py`, `src/assay/mcp/`) — a long-lived
+  `SandboxSession`, a stdlib stdio MCP client, `assay mcp` startup/tool inspection and
+  `assay mcp-report` task runs. Tool calls are `TOOL` evidence; the report is
+  `UNVERIFIED`/`FLAGGED`, never `CLEAN`/`MALICIOUS`, because a manifest declares startup, not
+  behavior. MCP verification remains deferred.
 - **Static pre-filter** (`src/assay/triage/`, `assay triage`) — ranks a skill for a run from its
   text; it emits `priority` and `signals` only, with no verdict, findings, trace or run. It is a
   queue heuristic, not a detector, and the sandboxed run remains the verdict.
@@ -264,7 +307,7 @@ uv run pytest
 uv run assay --version
 ```
 
-CI runs the same suite on `macos-latest`.
+CI runs the same suite on the `macos-15-intel` image.
 
 ## Docs
 
@@ -275,6 +318,18 @@ CI runs the same suite on `macos-latest`.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — phased plan and risk register.
 - [`docs/technical/CAPABILITY_ROADMAP.md`](docs/technical/CAPABILITY_ROADMAP.md) — A1..A10 capabilities in build order.
 - [`docs/technical/ARCHITECTURE.md`](docs/technical/ARCHITECTURE.md) — the design.
+
+## Contributing
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup, test-first expectations and the guardrails.
+Participation is covered by the [`Code of Conduct`](CODE_OF_CONDUCT.md).
+
+For a vulnerability in Assay itself, do not open a public issue: follow [`SECURITY.md`](SECURITY.md).
+For a finding about a third-party skill, follow [`ETHICS.md`](ETHICS.md) and the
+[audit protocol](docs/audit/PROTOCOL.md); do not publish a finding before disclosure.
+
+The project is also looking for an independent reviewer for a public audit:
+[issue #31](https://github.com/haqaliz/assay/issues/31) (unpaid, 30–60 minutes).
 
 ## Lineage
 
