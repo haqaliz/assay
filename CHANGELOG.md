@@ -28,6 +28,8 @@ All notable changes to Assay.
   landing page and `.github/workflows/pages.yml`.
 - **Support:** the same crypto donation link used by the sibling `contig` project is now in the
   README and the site footer.
+- **Product Hunt launch package:** five 1270×760 gallery slides, a 240×240 thumbnail, listing copy,
+  maker comment, FAQ and checklist under `docs/launch/`.
 
 ### Fixed
 
