@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability in Assay
+    url: https://github.com/haqaliz/assay/security/advisories/new
+    about: Report privately. Do not open a public issue for a vulnerability.
+  - name: Audit ethics and protocol
+    url: https://github.com/haqaliz/assay/blob/master/ETHICS.md
+    about: Read before reporting a finding about a third-party skill.
+  - name: Independent audit reviewer
+    url: https://github.com/haqaliz/assay/issues/31
+    about: Volunteer to review a public audit; no pay, 30-60 minutes.
