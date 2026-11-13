@@ -165,9 +165,21 @@ bwrap
   suite.
 - `ubuntu-22.04` (kernel 5.15) expects no-network only; `*:port` refuses.
 - macOS job unchanged.
-- Probe the Ubuntu 24.04 `kernel.apparmor_restrict_unprivileged_userns=1` behavior first. If
-  `bubblewrap` is blocked, document the AppArmor profile/sysctl or fall back to Docker; do not ship
-  a broken backend.
+- Ubuntu 23.10+ restricts unprivileged user namespaces with AppArmor. The per-binary profile below
+  grants `userns` to `bwrap` only; load it with
+  `sudo apparmor_parser -r /etc/apparmor.d/bwrap`. The global
+  `kernel.apparmor_restrict_unprivileged_userns=0` sysctl is the fallback. Without either, fail
+  closed with `SANDBOX_UNAVAILABLE`; do not ship an unconfined workaround.
+
+  ```apparmor
+  abi <abi/4.0>,
+  include <tunables/global>
+
+  profile bwrap /usr/bin/bwrap flags=(unconfined) {
+    userns,
+    include if exists <local/bwrap>
+  }
+  ```
 - WSL2: detect `microsoft` in `/proc/sys/kernel/osrelease`; document; test manually.
 
 ## 6. Milestones

@@ -60,6 +60,11 @@ On Linux, install `bubblewrap` and `curl` (for example `sudo apt install bubblew
 sandbox has no network; `http_get` fails closed with `UNVERIFIED/SANDBOX_UNAVAILABLE`, while the
 model itself runs outside the jail. MCP runs are macOS-only for now.
 
+Ubuntu 23.10+ restricts unprivileged user namespaces with AppArmor. Add a `bwrap` profile with
+`userns,` (the exact profile is in the [Linux plan](docs/planning/linux-backend/prd.md#54-ci-and-wsl2))
+or set `kernel.apparmor_restrict_unprivileged_userns=0`; without either, `assay check` fails closed
+with `SANDBOX_UNAVAILABLE`.
+
 ### Platform support
 
 | Platform | Sandboxed execution (`assay check`, MCP runs) | Non-sandbox commands (`triage`, `verify`, `corpus`) |
