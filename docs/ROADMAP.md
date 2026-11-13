@@ -119,7 +119,8 @@ below). M2.3 remains gated on a second reviewer and the disclosure process.
 namespaces, no daemon) with no sandbox network; `http_get` fails closed with
 `UNVERIFIED/SANDBOX_UNAVAILABLE`, while the model runs outside the jail. MCP sessions and a network
 allowlist remain follow-ups; Windows uses the same backend via WSL2. The full suite runs on macOS
-and Ubuntu 24.04. The trace/verdict schema and the macOS Seatbelt path are unchanged.
+and Ubuntu 24.04. Released as `0.1.1` on 2026-11-14; the trace/verdict schema and the macOS
+Seatbelt path are unchanged.
 
 **MCP spike (2026-11-07).** A long-lived `SandboxSession` and a stdlib stdio MCP client
 (`initialize`, `tools/list`, `tools/call`) run against a local fixture inside Seatbelt. Tool calls
