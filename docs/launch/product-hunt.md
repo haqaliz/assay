@@ -1,4 +1,4 @@
-# Product Hunt launch package — Assay v0.1.0
+# Product Hunt launch package — Assay v0.1.1
 
 Status: **draft package ready; the Product Hunt listing is not created.** The repo, PyPI release and
 GitHub Pages site are live. This file gives you the copy, gallery, thumbnail, first comment, FAQ and
@@ -10,7 +10,7 @@ checklist. You create the PH draft and publish from your account.
 |---|---|
 | **Name** | Assay |
 | **Tagline** (56/60) | Execution-grounded security verifier for AI agent skills |
-| **Description** (230/500) | Assay runs an AI agent skill in a sandbox on macOS or Linux against a real agent, captures what it actually did, and checks it against what it claims to do. Signed evidence, honest verdicts, and an audit gate. Open source, v0.1.0. |
+| **Description** (230/500) | Assay runs an AI agent skill in a sandbox on macOS or Linux against a real agent, captures what it actually did, and checks it against what it claims to do. Signed evidence, honest verdicts, and an audit gate. Open source, v0.1.1. |
 | **Website** | https://haqaliz.github.io/assay/ |
 | **GitHub** | https://github.com/haqaliz/assay |
 | **PyPI** | https://pypi.org/project/assayhq/ |
@@ -44,7 +44,7 @@ model's opinion. Assay runs the skill in a sandbox on macOS or Linux against a r
 what it actually did, and checks that against what the skill declares. The verdict is backed by a
 signed record a third party can verify offline.
 
-v0.1.0 is open source on PyPI. It covers Claude Code/OpenClaw skills and Cursor rules; MCP has an
+v0.1.1 is open source on PyPI. It covers Claude Code/OpenClaw skills and Cursor rules; MCP has an
 inspector and a conservative report. It does not claim a skill is safe: CLEAN means the run matched
 the declared scope, and UNVERIFIED is never a pass.
 

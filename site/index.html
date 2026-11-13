@@ -43,7 +43,7 @@
     <div class="wrap hero-inner">
       <div class="hero-copy">
         <img class="hero-mark" src="assets/assay-logo.svg" alt="Assay" width="88" height="66">
-        <p class="chip">v0.1.0 &middot; execution-grounded</p>
+        <p class="chip">v0.1.1 &middot; execution-grounded</p>
         <h1 id="hero-title">Assay</h1>
         <p class="tagline">Execution-grounded security verifier for AI agent skills.</p>
         <p class="lede">Runs a skill in a sandbox on macOS or Linux against a real agent, captures what it actually did, and checks that against what it claims to do. The verdict is backed by a record a third party can verify.</p>
@@ -164,7 +164,7 @@
       <div>
         <p class="step"><span class="step-num">04</span> Status</p>
         <h2 id="status-title">Shipped, measured, and honest about the gaps.</h2>
-        <p class="body"><strong>v0.1.0 is on PyPI.</strong> The engine covers A1&ndash;A8 (file-based) and A10; MCP has a sandbox session, stdio client, inspector and conservative report. The 20-case benchmark, held-out shell/instruction sets and a private real-world control are in the repo.</p>
+        <p class="body"><strong>v0.1.1 is on PyPI.</strong> The engine covers A1&ndash;A8 (file-based) and A10; MCP has a sandbox session, stdio client, inspector and conservative report. The 20-case benchmark, held-out shell/instruction sets and a private real-world control are in the repo.</p>
         <p class="body">The private own-skill audit dry run was reviewed privately on 2026-11-10: 21/21 bundles verified, 12/15 runs decided, no <code>HIGH</code>, no <code>MALICIOUS</code>. A public audit still needs an independent reviewer and the disclosure window. The reviewer call is <a href="https://github.com/haqaliz/assay/issues/31">issue #31</a>.</p>
         <p class="body"><strong>Platforms.</strong> <code>assay check</code> runs on macOS (Seatbelt) and Linux (bubblewrap); Windows uses the Linux backend via WSL2. Linux has no sandbox network, so <code>http_get</code> fails closed, and MCP runs are macOS-only for now. There is no unconfined fallback. <a href="https://github.com/haqaliz/assay/blob/master/docs/planning/linux-backend/prd.md">Platform plan &rarr;</a></p>
         <p class="fine">Assay is a verifier, not a guarantee. <code>CLEAN</code> is per-run and scope-matched; <code>UNVERIFIED</code> is never a pass.</p>
@@ -173,7 +173,7 @@
         <div class="stat"><span class="stat-num">20</span><span class="stat-label">labeled benchmark cases</span></div>
         <div class="stat"><span class="stat-num">21</span><span class="stat-label">signed audit bundles replayed</span></div>
         <div class="stat"><span class="stat-num">0</span><span class="stat-label">HIGH findings in the private dry run</span></div>
-        <div class="stat"><span class="stat-num">v0.1.0</span><span class="stat-label">on PyPI, Apache-2.0</span></div>
+        <div class="stat"><span class="stat-num">v0.1.1</span><span class="stat-label">on PyPI, Apache-2.0</span></div>
       </div>
     </div>
   </section>
