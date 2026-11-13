@@ -32,7 +32,8 @@ window to release a fix before public disclosure.
   audit protocol, not a public issue.
 - `UNVERIFIED` or `FLAGGED` results, or a `CLEAN` that means "matched declared scope in this run".
   Assay does not claim a skill is safe forever.
-- The absence of a non-macOS sandbox backend, or the absence of a hosted/registry service.
+- The absence of a native Windows sandbox backend, MCP sessions or a network allowlist on Linux, or
+  the absence of a hosted/registry service.
 - Model/provider behavior outside the jail, unless it crosses a documented Assay boundary.
 
 ## Third-party audit findings
@@ -45,7 +46,8 @@ response window. Do not open a public issue with a finding.
 ## Design notes
 
 - The sandbox runs with a scrubbed environment and no real credentials or user data. A skill's host
-  home, `/private/etc`, and `/Volumes` are denied by the Seatbelt profile.
+  home, `/private/etc`, and `/Volumes` are denied by the Seatbelt profile; on Linux, `bubblewrap`
+  hides `/home`, `/root` and the host `/etc` behind a private mount tree.
 - Traces and bundles are content-addressed; `assay verify` checks the signature, the hashes, and
   replays the shipped verdict. A bundle proves integrity and provenance, not that the run happened.
 - Instruction findings are capped at `REVIEW`; the four-class floor cannot be lowered.

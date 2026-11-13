@@ -11,7 +11,8 @@ and [`docs/ROADMAP.md`](docs/ROADMAP.md) before a non-trivial change.
 ## Development setup
 
 Assay is a Python 3.12+ package managed with [`uv`](https://github.com/astral-sh/uv). The sandbox is
-macOS Seatbelt, so the real sandbox tests require macOS; other tests run anywhere.
+Seatbelt on macOS and `bubblewrap` on Linux, so the real sandbox tests require one of those; other
+tests run anywhere. CI runs both.
 
 ```sh
 git clone https://github.com/haqaliz/assay.git
@@ -37,9 +38,10 @@ blocks.
 
 ### Sandbox tests
 
-The real jail tests use `/usr/bin/sandbox-exec` and are skipped off macOS. CI runs the suite on a
-macOS Intel runner. If you change the sandbox, capture, or `SandboxSession`, run the full suite
-locally on macOS before opening a PR.
+The real jail tests use `/usr/bin/sandbox-exec` on macOS and `bwrap` on Linux; they skip when the
+backend is absent. CI runs macOS Intel and Ubuntu 24.04 (Linux needs `bubblewrap`, `curl` and
+`ssh-keygen`). If you change the sandbox, capture, or `SandboxSession`, run the full suite on both
+backends before opening a PR.
 
 ## Test-first
 
@@ -58,7 +60,7 @@ held-out set; do not tune on the development corpus.
 ```
 src/assay/
 ├── ingest/      # SKILL.md, OpenClaw, Cursor .mdc parsing + declared scope
-├── sandbox/     # Seatbelt jail, one-shot runs, SandboxSession
+├── sandbox/     # Seatbelt/bubblewrap jails, one-shot runs, SandboxSession
 ├── agent/       # bounded BYOK model loop and tool surface
 ├── capture/     # canonical traces, events, diff
 ├── verdict/     # CLEAN / FLAGGED / MALICIOUS / UNVERIFIED, floor and policy

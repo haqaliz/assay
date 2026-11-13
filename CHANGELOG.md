@@ -30,6 +30,10 @@ All notable changes to Assay.
   README and the site footer.
 - **Product Hunt launch package:** five 1270×760 gallery slides, a 240×240 thumbnail, listing copy,
   maker comment, FAQ and checklist under `docs/launch/`.
+- **Linux sandbox backend (v1):** `assay check` runs under `bubblewrap` (mount/PID/net namespaces,
+  no daemon) with no sandbox network; `http_get` fails closed with `UNVERIFIED/SANDBOX_UNAVAILABLE`,
+  while the model runs outside the jail. MCP sessions and a network allowlist are follow-ups;
+  Windows uses the same backend via WSL2. Linux CI runs the full suite on Ubuntu 24.04.
 
 ### Fixed
 
@@ -49,6 +53,8 @@ All notable changes to Assay.
 - `mcp-report` is not a pass gate: it only sees tool calls/results/denials, not the server's own
   syscalls; it requires an explicit `--task`, gives the model no built-in tools, and produces no
   bundle.
+- Linux uses `bubblewrap`; there is no sandbox network, so `http_get` fails closed, and MCP sessions
+  are not supported yet. Native Windows is not supported.
 
 ## [0.1.0] - 2026-11-07
 

@@ -5,7 +5,7 @@
 | **Capability** | A2 follow-on — Linux sandbox backend |
 | **Phase / milestone** | Post-v0.1; next platform slice |
 | **Slug** | `linux-backend` |
-| **Status** | Draft for review; **not started** |
+| **Status** | Linux v1 (one-shot, no network) built; MCP sessions and network allowlists are follow-ups |
 | **Owner** | aliz |
 | **Tracking issue** | [#36](https://github.com/haqaliz/assay/issues/36) |
 | **Guardrails touched** | R4 (escape), R2 (false verdict), `CLAUDE.md` constraint 2 (nothing real is reachable) |
@@ -165,9 +165,21 @@ bwrap
   suite.
 - `ubuntu-22.04` (kernel 5.15) expects no-network only; `*:port` refuses.
 - macOS job unchanged.
-- Probe the Ubuntu 24.04 `kernel.apparmor_restrict_unprivileged_userns=1` behavior first. If
-  `bubblewrap` is blocked, document the AppArmor profile/sysctl or fall back to Docker; do not ship
-  a broken backend.
+- Ubuntu 23.10+ restricts unprivileged user namespaces with AppArmor. The per-binary profile below
+  grants `userns` to `bwrap` only; load it with
+  `sudo apparmor_parser -r /etc/apparmor.d/bwrap`. The global
+  `kernel.apparmor_restrict_unprivileged_userns=0` sysctl is the fallback. Without either, fail
+  closed with `SANDBOX_UNAVAILABLE`; do not ship an unconfined workaround.
+
+  ```apparmor
+  abi <abi/4.0>,
+  include <tunables/global>
+
+  profile bwrap /usr/bin/bwrap flags=(unconfined) {
+    userns,
+    include if exists <local/bwrap>
+  }
+  ```
 - WSL2: detect `microsoft` in `/proc/sys/kernel/osrelease`; document; test manually.
 
 ## 6. Milestones
@@ -263,5 +275,6 @@ Open questions (recommendations):
 confirm the Landlock ABI/network behavior on the CI kernel; confirm seccomp UDP denial from a
 Python/Node child; solve the DNS path; decide the trace schema question.
 
-This is a plan, not a promise. Do not start before the Nov 17 Product Hunt launch; the launch copy
-stays macOS-only.
+Linux v1 is built: `assay check` runs one-shot under `bubblewrap` with no sandbox network. MCP
+sessions, a network allowlist and readable backend identity in the trace remain follow-ups; do not
+start them before the Nov 17 Product Hunt launch.

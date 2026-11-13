@@ -115,6 +115,12 @@ published on PyPI (wheel + sdist) and as a GitHub Release. The engine capability
 complete for A1–A8 (file-based) and A10; A9 (hosted) is deferred, and MCP remains deferred (spike
 below). M2.3 remains gated on a second reviewer and the disclosure process.
 
+**Linux sandbox v1 (2026-11-14).** `assay check` runs on Linux under `bubblewrap` (mount/PID/net
+namespaces, no daemon) with no sandbox network; `http_get` fails closed with
+`UNVERIFIED/SANDBOX_UNAVAILABLE`, while the model runs outside the jail. MCP sessions and a network
+allowlist remain follow-ups; Windows uses the same backend via WSL2. The full suite runs on macOS
+and Ubuntu 24.04. The trace/verdict schema and the macOS Seatbelt path are unchanged.
+
 **MCP spike (2026-11-07).** A long-lived `SandboxSession` and a stdlib stdio MCP client
 (`initialize`, `tools/list`, `tools/call`) run against a local fixture inside Seatbelt. Tool calls
 are captured as `EventKind.TOOL`; a TOOL-only trace is `UNVERIFIED/NO_TRIGGER`. The fixture proves
@@ -182,12 +188,13 @@ Not scheduled; depends on Phase 2 results.
 
 ---
 
-## Platform follow-on (planned, not started)
+## Platform support (Linux v1)
 
-Linux execution check: `bubblewrap` + Landlock + seccomp behind the `Sandbox` seam; Windows via
-WSL2. The plan, acceptance tests and risks are in
-[`planning/linux-backend/prd.md`](planning/linux-backend/prd.md). v0.1.0 remains macOS-only until
-that slice is built and tested.
+`assay check` runs on Linux under `bubblewrap` (mount/PID/net namespaces, no daemon) with no
+sandbox network; `http_get` fails closed with `UNVERIFIED/SANDBOX_UNAVAILABLE`. Windows uses the
+same backend via WSL2. MCP sessions and a network allowlist remain follow-ups. CI runs macOS and
+Ubuntu 24.04; the plan and remaining risks are in
+[`planning/linux-backend/prd.md`](planning/linux-backend/prd.md).
 
 ---
 

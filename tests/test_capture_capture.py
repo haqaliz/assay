@@ -33,7 +33,7 @@ def record(**over):
         denials=(),
         limit_exceeded=None,
         config_hash="sha256:" + "f" * 64,
-        run_root="/run",
+        run_root="/__assay_missing_run__",
         started_at="2026-10-29T00:00:00Z",
     )
     base.update(over)
@@ -92,10 +92,10 @@ def test_each_action_becomes_one_event_of_its_kind_in_order():
     [
         ("read_file", "./out/x.txt", "out/x.txt"),
         ("read_file", "out/x.txt", "out/x.txt"),
-        ("read_file", "/run/out/x.txt", "out/x.txt"),
+        ("read_file", "/__assay_missing_run__/out/x.txt", "out/x.txt"),
         ("read_file", "../escape.md", "../escape.md"),
         ("read_file", "/etc/passwd", "/etc/passwd"),
-        ("write_file", "/run/out/deep/x.txt", "out/deep/x.txt"),
+        ("write_file", "/__assay_missing_run__/out/deep/x.txt", "out/deep/x.txt"),
     ],
 )
 def test_file_targets_are_normalised(name, path, expected):

@@ -46,7 +46,7 @@ real agent, captures what it actually did, and checks that against what it claim
 
 ## Install
 
-Sandboxed checks require macOS today. Install the CLI with `uv` or `pip`:
+Sandboxed checks require macOS or Linux. Install the CLI with `uv` or `pip`:
 
 ```sh
 uv tool install assayhq
@@ -56,17 +56,26 @@ pip install assayhq
 
 From a checkout, `uv sync --dev` then `uv run assay ...` works too.
 
+On Linux, install `bubblewrap` and `curl` (for example `sudo apt install bubblewrap curl`). The
+sandbox has no network; `http_get` fails closed with `UNVERIFIED/SANDBOX_UNAVAILABLE`, while the
+model itself runs outside the jail. MCP runs are macOS-only for now.
+
+Ubuntu 23.10+ restricts unprivileged user namespaces with AppArmor. Add a `bwrap` profile with
+`userns,` (the exact profile is in the [Linux plan](docs/planning/linux-backend/prd.md#54-ci-and-wsl2))
+or set `kernel.apparmor_restrict_unprivileged_userns=0`; without either, `assay check` fails closed
+with `SANDBOX_UNAVAILABLE`.
+
 ### Platform support
 
 | Platform | Sandboxed execution (`assay check`, MCP runs) | Non-sandbox commands (`triage`, `verify`, `corpus`) |
 |---|---|---|
 | macOS | **Supported** (Seatbelt) | Supported and tested |
-| Linux | **Not yet**; fails closed with `SANDBOX_UNAVAILABLE` | Expected to run (pure Python; `verify` needs `ssh-keygen`), not yet Linux CI-tested |
-| Windows (WSL2) | **Not yet**; same Linux backend | Same as Linux |
+| Linux | **Supported for `assay check`** (`bubblewrap`; no sandbox network; `http_get` fails closed). MCP runs not yet. | Supported and tested (Linux CI) |
+| Windows (WSL2) | Same as Linux | Same as Linux |
 | Native Windows | Not supported | Not yet CI-tested |
 
-There is no unconfined mode. The Linux backend is a plan, not a support claim:
-[`docs/planning/linux-backend/prd.md`](docs/planning/linux-backend/prd.md).
+There is no unconfined mode. The Linux backend is `bubblewrap`; MCP sessions and a network allowlist
+are follow-ups. Plan: [`docs/planning/linux-backend/prd.md`](docs/planning/linux-backend/prd.md).
 
 ## Quickstart
 
@@ -93,9 +102,10 @@ bundle tests run a local `ssh-keygen`; the benchmark makes no model or network c
   (undeclared vs declared none) and a named refusal for malformed input. A declared
   `env`/`config`/`os` requirement the jail cannot satisfy, or a missing required binary, is refused
   before a run with `UNVERIFIED/REQUIREMENTS_UNMET`.
-- **Sandbox** (`src/assay/sandbox/`) — runs a command under a macOS Seatbelt jail: writes confined
-  to a run root, network deny-by-default with a port-scoped allowlist, a scrubbed environment,
-  CPU/wall limits, and a capture channel the child cannot rewrite.
+- **Sandbox** (`src/assay/sandbox/`) — runs a command under a macOS Seatbelt or Linux bubblewrap
+  jail: writes confined to a run root, network deny-by-default (port-scoped allowlist on macOS; no
+  network on Linux v1), a scrubbed environment, CPU/wall limits, and a capture channel the child
+  cannot rewrite.
 - **Agent driver** (`src/assay/agent/`) — a bounded BYOK loop: the model runs outside the jail, every
   tool call runs inside it, with cost, step, action and wall caps and a named stop cause.
 - **Capture and diff** (`src/assay/capture/`) — turns a run into a canonical, content-addressed
@@ -317,9 +327,8 @@ A static scan or model may flag a candidate; the sandboxed, observed run assigns
 
 ## Development
 
-The real-confinement suite requires macOS (Seatbelt); the rest is not macOS-specific. CI runs the
-full suite on `macos-15-intel` today; Linux CI is part of the Linux backend plan. The suite is
-offline (no model or network call).
+The real-confinement suite runs on macOS (Seatbelt) and Linux (bubblewrap). CI runs both; Linux
+needs `bubblewrap`, `curl` and `ssh-keygen`. The suite is offline (no model or network call).
 
 ```sh
 uv sync --dev

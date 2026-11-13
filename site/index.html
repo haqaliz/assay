@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Assay — execution-grounded security verifier for AI agent skills</title>
-<meta name="description" content="Assay runs an AI agent skill in a macOS sandbox against a real agent, captures what it actually did, and checks that against what it claims to do. Signed evidence, honest verdicts, an audit gate.">
+<meta name="description" content="Assay runs an AI agent skill in a sandbox on macOS or Linux against a real agent, captures what it actually did, and checks that against what it claims to do. Signed evidence, honest verdicts, an audit gate.">
 <meta name="theme-color" content="#070b18">
 <link rel="icon" href="assets/assay-logo.svg" type="image/svg+xml">
 <link rel="stylesheet" href="styles.css">
@@ -46,7 +46,7 @@
         <p class="chip">v0.1.0 &middot; execution-grounded</p>
         <h1 id="hero-title">Assay</h1>
         <p class="tagline">Execution-grounded security verifier for AI agent skills.</p>
-        <p class="lede">Runs a skill in a macOS sandbox against a real agent, captures what it actually did, and checks that against what it claims to do. The verdict is backed by a record a third party can verify.</p>
+        <p class="lede">Runs a skill in a sandbox on macOS or Linux against a real agent, captures what it actually did, and checks that against what it claims to do. The verdict is backed by a record a third party can verify.</p>
 
         <div class="actions">
           <a class="btn btn-primary" href="https://github.com/haqaliz/assay">View on GitHub</a>
@@ -111,7 +111,7 @@
         <article class="flow-step">
           <span class="flow-num">2</span>
           <h3>Run</h3>
-          <p>Run it against a real agent in Seatbelt, with a scrubbed environment, confined writes and cost/step caps.</p>
+          <p>Run it against a real agent in Seatbelt on macOS or bubblewrap on Linux, with a scrubbed environment, confined writes and cost/step caps.</p>
         </article>
         <article class="flow-step">
           <span class="flow-num">3</span>
@@ -166,7 +166,7 @@
         <h2 id="status-title">Shipped, measured, and honest about the gaps.</h2>
         <p class="body"><strong>v0.1.0 is on PyPI.</strong> The engine covers A1&ndash;A8 (file-based) and A10; MCP has a sandbox session, stdio client, inspector and conservative report. The 20-case benchmark, held-out shell/instruction sets and a private real-world control are in the repo.</p>
         <p class="body">The private own-skill audit dry run was reviewed privately on 2026-11-10: 21/21 bundles verified, 12/15 runs decided, no <code>HIGH</code>, no <code>MALICIOUS</code>. A public audit still needs an independent reviewer and the disclosure window. The reviewer call is <a href="https://github.com/haqaliz/assay/issues/31">issue #31</a>.</p>
-        <p class="body"><strong>Platforms.</strong> Sandboxed execution is macOS-only today. Linux and Windows via WSL2 are planned, not shipped; there is no unconfined fallback. The non-sandbox commands are not macOS-specific, but Linux CI is still part of the plan. <a href="https://github.com/haqaliz/assay/blob/master/docs/planning/linux-backend/prd.md">Platform plan &rarr;</a></p>
+        <p class="body"><strong>Platforms.</strong> <code>assay check</code> runs on macOS (Seatbelt) and Linux (bubblewrap); Windows uses the Linux backend via WSL2. Linux has no sandbox network, so <code>http_get</code> fails closed, and MCP runs are macOS-only for now. There is no unconfined fallback. <a href="https://github.com/haqaliz/assay/blob/master/docs/planning/linux-backend/prd.md">Platform plan &rarr;</a></p>
         <p class="fine">Assay is a verifier, not a guarantee. <code>CLEAN</code> is per-run and scope-matched; <code>UNVERIFIED</code> is never a pass.</p>
       </div>
       <div class="stats">
