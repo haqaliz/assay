@@ -166,6 +166,7 @@
         <h2 id="status-title">Shipped, measured, and honest about the gaps.</h2>
         <p class="body"><strong>v0.1.0 is on PyPI.</strong> The engine covers A1&ndash;A8 (file-based) and A10; MCP has a sandbox session, stdio client, inspector and conservative report. The 20-case benchmark, held-out shell/instruction sets and a private real-world control are in the repo.</p>
         <p class="body">The private own-skill audit dry run was reviewed privately on 2026-11-10: 21/21 bundles verified, 12/15 runs decided, no <code>HIGH</code>, no <code>MALICIOUS</code>. A public audit still needs an independent reviewer and the disclosure window. The reviewer call is <a href="https://github.com/haqaliz/assay/issues/31">issue #31</a>.</p>
+        <p class="body"><strong>Platforms.</strong> Sandboxed execution is macOS-only today. Linux and Windows via WSL2 are planned, not shipped; there is no unconfined fallback. The non-sandbox commands are not macOS-specific, but Linux CI is still part of the plan. <a href="https://github.com/haqaliz/assay/blob/master/docs/planning/linux-backend/prd.md">Platform plan &rarr;</a></p>
         <p class="fine">Assay is a verifier, not a guarantee. <code>CLEAN</code> is per-run and scope-matched; <code>UNVERIFIED</code> is never a pass.</p>
       </div>
       <div class="stats">
