@@ -46,7 +46,7 @@ real agent, captures what it actually did, and checks that against what it claim
 
 ## Install
 
-Sandboxed checks require macOS. Install the CLI with `uv` or `pip`:
+Sandboxed checks require macOS today. Install the CLI with `uv` or `pip`:
 
 ```sh
 uv tool install assayhq
@@ -55,6 +55,18 @@ pip install assayhq
 ```
 
 From a checkout, `uv sync --dev` then `uv run assay ...` works too.
+
+### Platform support
+
+| Platform | Sandboxed execution (`assay check`, MCP runs) | Non-sandbox commands (`triage`, `verify`, `corpus`) |
+|---|---|---|
+| macOS | **Supported** (Seatbelt) | Supported and tested |
+| Linux | **Not yet**; fails closed with `SANDBOX_UNAVAILABLE` | Expected to run (pure Python; `verify` needs `ssh-keygen`), not yet Linux CI-tested |
+| Windows (WSL2) | **Not yet**; same Linux backend | Same as Linux |
+| Native Windows | Not supported | Not yet CI-tested |
+
+There is no unconfined mode. The Linux backend is a plan, not a support claim:
+[`docs/planning/linux-backend/prd.md`](docs/planning/linux-backend/prd.md).
 
 ## Quickstart
 
@@ -305,7 +317,9 @@ A static scan or model may flag a candidate; the sandboxed, observed run assigns
 
 ## Development
 
-macOS is required for the Seatbelt sandbox; the suite is offline (no model or network call).
+The real-confinement suite requires macOS (Seatbelt); the rest is not macOS-specific. CI runs the
+full suite on `macos-15-intel` today; Linux CI is part of the Linux backend plan. The suite is
+offline (no model or network call).
 
 ```sh
 uv sync --dev

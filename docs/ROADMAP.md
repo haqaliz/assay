@@ -182,6 +182,15 @@ Not scheduled; depends on Phase 2 results.
 
 ---
 
+## Platform follow-on (planned, not started)
+
+Linux execution check: `bubblewrap` + Landlock + seccomp behind the `Sandbox` seam; Windows via
+WSL2. The plan, acceptance tests and risks are in
+[`planning/linux-backend/prd.md`](planning/linux-backend/prd.md). v0.1.0 remains macOS-only until
+that slice is built and tested.
+
+---
+
 ## Risk register
 
 | ID | Risk | L/I | Mitigation |
