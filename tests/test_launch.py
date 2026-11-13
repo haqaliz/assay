@@ -123,7 +123,7 @@ def test_teardown_failure_is_recorded(sandbox, tmp_path, monkeypatch):
             raise OSError("boom")
         return real_rmtree(path, *args, **kwargs)
 
-    monkeypatch.setattr("assay.sandbox.seatbelt.shutil.rmtree", failing_once)
+    monkeypatch.setattr("assay.sandbox.process.shutil.rmtree", failing_once)
     record = sandbox.run(["/bin/echo", "hi"], make_config(tmp_path))
     assert record.teardown_error is not None
     assert "run root" in record.teardown_error

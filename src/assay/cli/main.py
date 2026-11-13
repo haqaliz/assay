@@ -435,6 +435,13 @@ def _mcp(args: argparse.Namespace, sandbox: Sandbox | None) -> int:
         except SandboxUnavailable as exc:
             _emit(f"error: sandbox-unavailable: {exc}\n", sys.stderr)
             return 1
+    if not getattr(sandbox, "supports_session", False):
+        _emit(
+            "error: sandbox-unavailable: MCP sessions are not supported by the Linux "
+            "backend yet\n",
+            sys.stderr,
+        )
+        return 1
     run_root = _make_run_root()
     sandbox_exec = Path(
         getattr(sandbox, "sandbox_exec", Path("/usr/bin/sandbox-exec"))
@@ -483,6 +490,13 @@ def _mcp_report(
         except SandboxUnavailable as exc:
             _emit(f"error: sandbox-unavailable: {exc}\n", sys.stderr)
             return 1
+    if not getattr(sandbox, "supports_session", False):
+        _emit(
+            "error: sandbox-unavailable: MCP sessions are not supported by the Linux "
+            "backend yet\n",
+            sys.stderr,
+        )
+        return 1
 
     budget = Budget(
         max_usd=args.max_cost,

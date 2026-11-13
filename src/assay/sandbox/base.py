@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 import sys
 from pathlib import Path
 from typing import Protocol, Sequence
@@ -10,14 +11,21 @@ from .config import JailConfig
 from .records import RunRecord, SandboxUnavailable
 
 DEFAULT_SANDBOX_EXEC = Path("/usr/bin/sandbox-exec")
+DEFAULT_BWRAP = Path("/usr/bin/bwrap")
 
 
 class Sandbox(Protocol):
+    backend: str
+    child_path: str
+    supports_session: bool
+
     def run(self, argv: Sequence[str], config: JailConfig) -> RunRecord: ...
 
 
 def select_sandbox(
-    platform: str | None = None, sandbox_exec: Path = DEFAULT_SANDBOX_EXEC
+    platform: str | None = None,
+    sandbox_exec: Path = DEFAULT_SANDBOX_EXEC,
+    bwrap: Path | None = None,
 ) -> Sandbox:
     """Return a confining backend or raise. There is deliberately no unconfined fallback."""
     plat = platform if platform is not None else sys.platform
@@ -29,6 +37,20 @@ def select_sandbox(
         from .seatbelt import SeatbeltSandbox
 
         return SeatbeltSandbox(sandbox_exec=Path(sandbox_exec))
+    if plat == "linux":
+        executable = (
+            Path(bwrap)
+            if bwrap is not None
+            else Path(shutil.which("bwrap") or DEFAULT_BWRAP)
+        )
+        if not executable.exists():
+            raise SandboxUnavailable(
+                f"bwrap not found at {executable}; install bubblewrap "
+                "(see docs/planning/linux-backend/prd.md)"
+            )
+        from .bubblewrap import BubblewrapSandbox
+
+        return BubblewrapSandbox(bwrap=executable)
     raise SandboxUnavailable(
         f"no confining sandbox backend for platform {plat!r}; refusing to run unconfined"
     )

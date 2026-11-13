@@ -22,9 +22,9 @@ from assay.sandbox.base import Sandbox
 from .records import AgentUnavailable, ToolCall, ToolResult
 
 MAX_TOOL_PAYLOAD_BYTES = 1_000_000
-CURL = Path("/usr/bin/curl")
+CURL = Path(shutil.which("curl") or "/usr/bin/curl")
 CP = "/bin/cp"
-SSL_DIR = Path("/private/etc/ssl")
+SSL_DIR = Path("/private/etc/ssl") if Path("/private/etc/ssl").exists() else Path("/etc/ssl/certs")
 
 
 @dataclass(frozen=True, slots=True)

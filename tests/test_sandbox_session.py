@@ -1,5 +1,6 @@
 import os
 import time
+from pathlib import Path
 
 import pytest
 
@@ -98,6 +99,12 @@ def test_close_kills_the_process_group(tmp_path):
             os.kill(pid, 0)
         except (ProcessLookupError, PermissionError):
             return
+        # A zombie is dead; Linux PID 1 in a container may not reap it promptly.
+        try:
+            if Path(f"/proc/{pid}/stat").read_text().split()[2] == "Z":
+                return
+        except (OSError, IndexError):
+            pass
         time.sleep(0.05)
     pytest.fail(f"orphan {pid} survived teardown")
 

@@ -5,7 +5,7 @@
 | **Capability** | A2 follow-on — Linux sandbox backend |
 | **Phase / milestone** | Post-v0.1; next platform slice |
 | **Slug** | `linux-backend` |
-| **Status** | Draft for review; **not started** |
+| **Status** | Linux v1 (one-shot, no network) built; MCP sessions and network allowlists are follow-ups |
 | **Owner** | aliz |
 | **Tracking issue** | [#36](https://github.com/haqaliz/assay/issues/36) |
 | **Guardrails touched** | R4 (escape), R2 (false verdict), `CLAUDE.md` constraint 2 (nothing real is reachable) |
@@ -263,5 +263,6 @@ Open questions (recommendations):
 confirm the Landlock ABI/network behavior on the CI kernel; confirm seccomp UDP denial from a
 Python/Node child; solve the DNS path; decide the trace schema question.
 
-This is a plan, not a promise. Do not start before the Nov 17 Product Hunt launch; the launch copy
-stays macOS-only.
+Linux v1 is built: `assay check` runs one-shot under `bubblewrap` with no sandbox network. MCP
+sessions, a network allowlist and readable backend identity in the trace remain follow-ups; do not
+start them before the Nov 17 Product Hunt launch.

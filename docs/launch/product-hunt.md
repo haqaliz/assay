@@ -10,7 +10,7 @@ checklist. You create the PH draft and publish from your account.
 |---|---|
 | **Name** | Assay |
 | **Tagline** (56/60) | Execution-grounded security verifier for AI agent skills |
-| **Description** (218/260) | Assay runs an AI agent skill in a macOS sandbox against a real agent, captures what it actually did, and checks it against what it claims to do. Signed evidence, honest verdicts, and an audit gate. Open source, v0.1.0. |
+| **Description** (230/500) | Assay runs an AI agent skill in a sandbox on macOS or Linux against a real agent, captures what it actually did, and checks it against what it claims to do. Signed evidence, honest verdicts, and an audit gate. Open source, v0.1.0. |
 | **Website** | https://haqaliz.github.io/assay/ |
 | **GitHub** | https://github.com/haqaliz/assay |
 | **PyPI** | https://pypi.org/project/assayhq/ |
@@ -40,22 +40,23 @@ Post this as the first comment immediately after launch:
 Hi Product Hunt — I'm Ali, the maker.
 
 I built Assay because "is this AI agent skill safe?" is usually answered by a static scan or a
-model's opinion. Assay runs the skill in a macOS sandbox against a real agent, captures what it
-actually did, and checks that against what the skill declares. The verdict is backed by a signed
-record a third party can verify offline.
+model's opinion. Assay runs the skill in a sandbox on macOS or Linux against a real agent, captures
+what it actually did, and checks that against what the skill declares. The verdict is backed by a
+signed record a third party can verify offline.
 
 v0.1.0 is open source on PyPI. It covers Claude Code/OpenClaw skills and Cursor rules; MCP has an
 inspector and a conservative report. It does not claim a skill is safe: CLEAN means the run matched
 the declared scope, and UNVERIFIED is never a pass.
 
-macOS + Python 3.12+ today; no web app. I'd especially value feedback on the verdict model and the
-audit workflow. Ask me anything.
+macOS and Linux today (Linux has no sandbox network yet); Windows via WSL2. No web app; MCP runs
+are macOS-only for now. I'd especially value feedback on the verdict model and the audit workflow.
+Ask me anything.
 ```
 
 ## FAQ (use in replies or the listing)
 
 **What does Assay actually do?**
-It runs an agent skill in a macOS Seatbelt sandbox against a real model, records every file,
+It runs an agent skill in a sandbox on macOS or Linux against a real model, records every file,
 network, shell and instruction event, and diffs that observed behavior against what the skill says it
 will do. The result is a verdict plus a signed, replayable record.
 
@@ -68,7 +69,9 @@ No. `CLEAN` means the run matched the declared scope. It is per-run, not a guara
 never a pass.
 
 **What platforms are supported?**
-macOS for the sandbox; Python 3.12+. The CLI and tests run on macOS today. Linux is not supported.
+macOS and Linux for `assay check`; Linux uses `bubblewrap` with no sandbox network, so `http_get`
+fails closed. Windows via WSL2. MCP runs are macOS-only for now; native Windows is not supported.
+Python 3.12+.
 
 **Do I need an API key?**
 No for `assay triage` or `assay mcp`. A sandboxed `assay check` needs a provider: BYOK Anthropic or
@@ -98,7 +101,7 @@ reviewer and the disclosure window. Do not call the product "audited" in the lis
       late-December holidays.
 - [ ] Re-read the listing against the "do not say" list below.
 - [ ] Ask 5–10 people for honest feedback on the draft; do **not** ask for upvotes.
-- [ ] Prepare replies for the first 12 hours; know the limits and the macOS-only answer.
+- [ ] Prepare replies for the first 12 hours; know the limits and the Linux/MCP answer.
 - [ ] Optional: set the GitHub social preview to `assets/assay-demo.png` (manual, repo settings).
 - [ ] Optional: a custom domain; `haqaliz.github.io/assay` works.
 
@@ -122,7 +125,8 @@ reviewer and the disclosure window. Do not call the product "audited" in the lis
 - "Assay makes AI agent skills safe." It does not.
 - "Audited" or "security certified." The public audit is not complete.
 - "Malware detector" or "antivirus." It is a per-run behavior verifier.
-- "Works on Linux." macOS only today.
+- "Linux is fully supported." `assay check` works on Linux, but there is no sandbox network
+  (`http_get` fails closed) and MCP runs are macOS-only.
 - "MCP is verified." The report is `UNVERIFIED`/`FLAGGED`; there is no `CLEAN`/`MALICIOUS` server
   claim.
 - "Replaces code review." It is a complement.
@@ -161,8 +165,10 @@ magick /tmp/assay-logo.png -gravity center -crop 771x771+0+0 +repage \
 
 ## Risks and honest gaps
 
-- **macOS CLI, not a web app.** Product Hunt traffic may not install a Python CLI. The gallery and
-  first comment must make that clear; the site is the demo.
+- **CLI, not a web app.** Product Hunt traffic may not install a Python CLI. The gallery and first
+  comment must make that clear; the site is the demo.
+- **Linux is partial.** `assay check` runs under `bubblewrap`, but the sandbox has no network
+  (`http_get` fails closed) and MCP runs are macOS-only. Say that plainly.
 - **No public audit yet.** The private dry run is signed; a public finding still needs a reviewer and
   disclosure. Do not imply certification.
 - **No video.** The gallery is real output; a terminal video would be a plus, not a requirement.

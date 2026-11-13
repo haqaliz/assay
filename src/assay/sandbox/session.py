@@ -14,13 +14,8 @@ from typing import Sequence
 from .config import DEFAULT_PATH, OUTPUT_CAP_BYTES, JailConfig
 from .denials import classify_failure
 from .records import DenialRecord, SandboxFailed
-from .seatbelt import (
-    _kill_group,
-    _limit_setter,
-    _remove_tree,
-    _wait_quietly,
-    build_profile,
-)
+from .process import _kill_group, _limit_setter, _remove_tree, _wait_quietly
+from .seatbelt import build_profile
 
 
 class SessionError(RuntimeError):

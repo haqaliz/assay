@@ -15,7 +15,7 @@
     <h1>Assay</h1>
     <p class="tagline">Execution-grounded security verifier<br>for AI agent skills.</p>
     <p class="lede">Runs a skill in a sandbox against a real agent, captures what it actually did, and checks that against what it claims to do.</p>
-    <p class="meta">macOS &middot; Python 3.12+ &middot; Apache-2.0 &middot; PyPI <span class="mono">assayhq</span></p>
+    <p class="meta">macOS / Linux &middot; Python 3.12+ &middot; Apache-2.0 &middot; PyPI <span class="mono">assayhq</span></p>
   </div>
   <div class="slide-foot"><span>github.com/haqaliz/assay</span><span>haqaliz.github.io/assay</span></div>
 </section>
@@ -41,7 +41,7 @@
   <p class="sub">A file-based skill today; MCP is a separate inspector and report, not a manifest verdict.</p>
   <div class="steps">
     <div class="step"><span class="num">1</span><h3>Ingest</h3><p>Parse <span class="mono">SKILL.md</span> or a Cursor rule into a typed record with its declared scope.</p></div>
-    <div class="step"><span class="num">2</span><h3>Run</h3><p>Run it against a real agent in Seatbelt: scrubbed env, confined writes, caps.</p></div>
+    <div class="step"><span class="num">2</span><h3>Run</h3><p>Run it against a real agent in Seatbelt on macOS or bubblewrap on Linux: scrubbed env, confined writes, caps.</p></div>
     <div class="step"><span class="num">3</span><h3>Capture</h3><p>Record file, network, shell and instruction events as a canonical trace.</p></div>
     <div class="step"><span class="num">4</span><h3>Assess</h3><p>Diff observed against declared scope. Four classes; a floor that cannot be lowered.</p></div>
     <div class="step"><span class="num">5</span><h3>Attest</h3><p>Sign the trace and its exact source. Verify the signature and replay offline.</p></div>
@@ -82,7 +82,7 @@
     <span><b>GitHub</b> github.com/haqaliz/assay</span>
     <span><b>Site</b> haqaliz.github.io/assay</span>
   </div>
-  <p class="fine">macOS + Python 3.12+ &middot; Apache-2.0 &middot; v0.1.0 &middot; <span class="mono">CLEAN</span> is per-run and scope-matched; <span class="mono">UNVERIFIED</span> is never a pass.</p>
+  <p class="fine">macOS / Linux + Python 3.12+ &middot; Apache-2.0 &middot; v0.1.0 &middot; MCP runs: macOS only &middot; <span class="mono">CLEAN</span> is per-run and scope-matched; <span class="mono">UNVERIFIED</span> is never a pass.</p>
   <div class="slide-foot"><span>github.com/haqaliz/assay</span><span>05</span></div>
 </section>
 
