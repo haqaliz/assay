@@ -4,6 +4,8 @@ All notable changes to Assay.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-14
+
 ### Added
 
 - **Experimental MCP spike:** a long-lived `SandboxSession` and a stdlib stdio MCP client
@@ -37,7 +39,7 @@ All notable changes to Assay.
 
 ### Fixed
 
-- `assay.__version__` now matches the packaged version (`0.1.0`) instead of the stale `0.0.1`.
+- `assay.__version__` now matches the packaged version instead of the stale `0.0.1`.
 
 ### Changed
 
