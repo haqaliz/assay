@@ -1,4 +1,4 @@
-"""Long-lived Seatbelt session: spawn, line I/O, stderr capture, teardown."""
+"""Long-lived sandbox session: spawn, line I/O, stderr capture, teardown."""
 
 from __future__ import annotations
 
@@ -15,7 +15,6 @@ from .config import DEFAULT_PATH, OUTPUT_CAP_BYTES, JailConfig
 from .denials import classify_failure
 from .records import DenialRecord, SandboxFailed
 from .process import _kill_group, _limit_setter, _remove_tree, _wait_quietly
-from .seatbelt import build_profile
 
 
 class SessionError(RuntimeError):
@@ -46,19 +45,21 @@ class SessionRecord:
 class SandboxSession:
     def __init__(
         self,
-        sandbox_exec: Path,
-        argv: Sequence[str],
+        command: Sequence[str],
         config: JailConfig,
         *,
+        path: str = DEFAULT_PATH,
+        setup_error_prefix: str = "sandbox-exec:",
         max_line_bytes: int = 1_048_576,
     ) -> None:
-        if not argv:
-            raise ValueError("argv must not be empty")
+        if not command:
+            raise ValueError("command must not be empty")
         if max_line_bytes <= 0:
             raise ValueError("max_line_bytes must be positive")
-        self._sandbox_exec = Path(sandbox_exec)
-        self._argv = [str(a) for a in argv]
+        self._command = [str(a) for a in command]
         self._config = config
+        self._path = path
+        self._setup_error_prefix = setup_error_prefix
         self._max_line_bytes = max_line_bytes
         self._proc: subprocess.Popen[bytes] | None = None
         self._stdout: queue.Queue[bytes | BaseException | None] = queue.Queue()
@@ -73,17 +74,11 @@ class SandboxSession:
     def __enter__(self) -> "SandboxSession":
         if self._proc is not None:
             return self
-        command = [
-            str(self._sandbox_exec),
-            "-p",
-            build_profile(self._config),
-            *self._argv,
-        ]
         try:
             self._proc = subprocess.Popen(
-                command,
+                self._command,
                 cwd=self._config.run_root,
-                env={"PATH": DEFAULT_PATH, **dict(self._config.env)},
+                env={"PATH": self._path, **dict(self._config.env)},
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -91,7 +86,7 @@ class SandboxSession:
                 preexec_fn=_limit_setter(self._config.limits),
             )
         except OSError as exc:
-            raise SandboxFailed(f"could not start sandbox-exec: {exc}") from exc
+            raise SandboxFailed(f"could not start sandbox: {exc}") from exc
         self._stdout_thread = threading.Thread(target=self._drain_stdout, daemon=True)
         self._stderr_thread = threading.Thread(target=self._drain_stderr, daemon=True)
         self._stdout_thread.start()
@@ -247,9 +242,11 @@ class SandboxSession:
             raise SessionClosed("session was not started")
         code = proc.poll()
         stderr = self._stderr_text()
-        if code in (65, 71) or stderr.startswith("sandbox-exec:"):
+        failed = stderr.startswith(self._setup_error_prefix)
+        if failed or (self._setup_error_prefix == "sandbox-exec:" and code in (65, 71)):
+            name = self._setup_error_prefix.rstrip(":")
             raise SandboxFailed(
-                f"sandbox-exec could not establish the jail (exit {code}): "
+                f"{name} could not establish the jail (exit {code}): "
                 f"{stderr.strip()[:200]}"
             )
         if code is not None:

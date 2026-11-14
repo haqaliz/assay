@@ -5,10 +5,13 @@ from __future__ import annotations
 import shutil
 import sys
 from pathlib import Path
-from typing import Protocol, Sequence
+from typing import TYPE_CHECKING, Protocol, Sequence
 
 from .config import JailConfig
 from .records import RunRecord, SandboxUnavailable
+
+if TYPE_CHECKING:
+    from .session import SandboxSession
 
 DEFAULT_SANDBOX_EXEC = Path("/usr/bin/sandbox-exec")
 DEFAULT_BWRAP = Path("/usr/bin/bwrap")
@@ -17,9 +20,12 @@ DEFAULT_BWRAP = Path("/usr/bin/bwrap")
 class Sandbox(Protocol):
     backend: str
     child_path: str
-    supports_session: bool
 
     def run(self, argv: Sequence[str], config: JailConfig) -> RunRecord: ...
+
+    def start_session(
+        self, argv: Sequence[str], config: JailConfig
+    ) -> "SandboxSession": ...
 
 
 def select_sandbox(

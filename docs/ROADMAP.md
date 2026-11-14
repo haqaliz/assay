@@ -117,10 +117,13 @@ below). M2.3 remains gated on a second reviewer and the disclosure process.
 
 **Linux sandbox v1 (2026-11-14).** `assay check` runs on Linux under `bubblewrap` (mount/PID/net
 namespaces, no daemon) with no sandbox network; `http_get` fails closed with
-`UNVERIFIED/SANDBOX_UNAVAILABLE`, while the model runs outside the jail. MCP sessions and a network
-allowlist remain follow-ups; Windows uses the same backend via WSL2. The full suite runs on macOS
-and Ubuntu 24.04. Released as `0.1.1` on 2026-11-14; the trace/verdict schema and the macOS
-Seatbelt path are unchanged.
+`UNVERIFIED/SANDBOX_UNAVAILABLE`, while the model runs outside the jail. Windows uses the same
+backend via WSL2. The full suite runs on macOS and Ubuntu 24.04. Released as `0.1.1` on 2026-11-14;
+the trace/verdict schema and the macOS Seatbelt path are unchanged.
+
+**Linux MCP sessions (2026-11-14).** `SandboxSession` now takes a backend-built command;
+`assay mcp` and `assay mcp-report` run local stdio servers under `bubblewrap`. Linux still has no
+sandbox network, and remote MCP over HTTP remains out of scope. On master; release pending.
 
 **MCP spike (2026-11-07).** A long-lived `SandboxSession` and a stdlib stdio MCP client
 (`initialize`, `tools/list`, `tools/call`) run against a local fixture inside Seatbelt. Tool calls
@@ -192,10 +195,10 @@ Not scheduled; depends on Phase 2 results.
 ## Platform support (Linux v1)
 
 `assay check` runs on Linux under `bubblewrap` (mount/PID/net namespaces, no daemon) with no
-sandbox network; `http_get` fails closed with `UNVERIFIED/SANDBOX_UNAVAILABLE`. Windows uses the
-same backend via WSL2. MCP sessions and a network allowlist remain follow-ups. CI runs macOS and
-Ubuntu 24.04; the plan and remaining risks are in
-[`planning/linux-backend/prd.md`](planning/linux-backend/prd.md).
+sandbox network; `http_get` fails closed with `UNVERIFIED/SANDBOX_UNAVAILABLE`. `assay mcp` and
+`assay mcp-report` also run local stdio servers under `bubblewrap`. Windows uses the same backend
+via WSL2. A network allowlist remains a follow-up. CI runs macOS and Ubuntu 24.04; the plan and
+remaining risks are in [`planning/linux-backend/prd.md`](planning/linux-backend/prd.md).
 
 ---
 

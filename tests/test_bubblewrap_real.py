@@ -7,13 +7,16 @@ import pytest
 
 from assay.agent import ToolCall
 from assay.agent.tools import Toolbox
-from assay.sandbox import JailConfig, Limits
+from assay.mcp.client import MCPClient, PROTOCOL_VERSION
+from assay.sandbox import DenialClass, JailConfig, Limits
 from assay.sandbox.bubblewrap import BubblewrapSandbox
 
 pytestmark = pytest.mark.skipif(
     sys.platform != "linux" or shutil.which("bwrap") is None,
     reason="bubblewrap is Linux-only",
 )
+
+FIXTURE = Path(__file__).parent / "fixtures" / "mcp_server.py"
 
 
 @pytest.fixture
@@ -157,3 +160,43 @@ def test_toolbox_write_and_read(tmp_path, sandbox):
         )
         assert read.ok, read.output
         assert read.output == "hello from linux"
+
+
+def test_mcp_fixture_starts_under_bwrap(tmp_path, sandbox):
+    python = "/usr/bin/python3"
+    if not Path(python).exists():
+        pytest.skip("/usr/bin/python3 is not installed")
+    run_root = tmp_path / "run"
+    run_root.mkdir()
+    shutil.copy2(FIXTURE, run_root / "mcp_server.py")
+    (run_root / "inside.txt").write_text("inside\n")
+    config = JailConfig(
+        run_root=run_root,
+        limits=Limits(wall_seconds=30.0, cpu_seconds=30),
+    )
+
+    with sandbox.start_session(
+        [python, "-u", str(run_root / "mcp_server.py")], config
+    ) as session:
+        client = MCPClient(session, timeout=5.0)
+        init = client.initialize()
+        assert init["protocolVersion"] == PROTOCOL_VERSION
+        assert {tool.name for tool in client.list_tools()} == {
+            "echo",
+            "read_inside",
+            "read_outside",
+            "slow",
+        }
+        echo = client.call_tool("echo", {"text": "hello"})
+        assert echo.ok and echo.text == "hello"
+        inside = client.call_tool("read_inside", {"path": "inside.txt"})
+        assert inside.ok and inside.text == "inside\n"
+        outside = client.call_tool("read_outside", {"path": "/etc/hostname"})
+        assert not outside.ok
+        client.close()
+
+    record = session.record
+    assert record is not None
+    assert record.exit_code == 0
+    assert record.timed_out is False
+    assert any(denial.kind is DenialClass.FILE_READ for denial in record.denials)

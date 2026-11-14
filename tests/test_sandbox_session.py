@@ -24,6 +24,10 @@ def make_config(tmp_path, *, keep=False):
     return JailConfig(run_root=root, limits=Limits(wall_seconds=10.0), keep=keep)
 
 
+def session_for(argv, config, *, launcher=FAKE, **kwargs):
+    return SandboxSession([launcher, "-p", "", *argv], config, **kwargs)
+
+
 def test_write_and_read_a_line(tmp_path):
     config = make_config(tmp_path)
     argv = [
@@ -32,7 +36,7 @@ def test_write_and_read_a_line(tmp_path):
         "while IFS= read -r line; do printf 'echo:%s\\n' \"$line\"; done",
     ]
 
-    with SandboxSession(FAKE, argv, config) as session:
+    with session_for(argv, config) as session:
         session.write_line("hello")
         assert session.read_line(time.monotonic() + 2) == "echo:hello"
         record = session.close()
@@ -48,7 +52,7 @@ def test_write_and_read_a_line(tmp_path):
 def test_read_line_times_out(tmp_path):
     config = make_config(tmp_path)
 
-    with SandboxSession(FAKE, ["/bin/cat"], config) as session:
+    with session_for(["/bin/cat"], config) as session:
         with pytest.raises(SessionTimeout):
             session.read_line(time.monotonic() + 0.1)
         record = session.close()
@@ -58,7 +62,7 @@ def test_read_line_times_out(tmp_path):
 
 def test_close_is_idempotent(tmp_path):
     config = make_config(tmp_path)
-    session = SandboxSession(FAKE, ["/bin/cat"], config)
+    session = session_for(["/bin/cat"], config)
     session.__enter__()
 
     first = session.close()
@@ -70,7 +74,7 @@ def test_close_is_idempotent(tmp_path):
 
 def test_dead_process_raises_session_closed(tmp_path):
     config = make_config(tmp_path)
-    session = SandboxSession(FAKE, ["/bin/true"], config)
+    session = session_for(["/bin/true"], config)
     session.__enter__()
 
     with pytest.raises(SessionClosed):
@@ -82,13 +86,13 @@ def test_sandbox_exec_failure_raises_sandbox_failed(tmp_path):
     config = make_config(tmp_path)
 
     with pytest.raises(SandboxFailed, match="sandbox-exec"):
-        with SandboxSession(FAIL, ["/bin/true"], config) as session:
+        with session_for(["/bin/true"], config, launcher=FAIL) as session:
             session.read_line(time.monotonic() + 2)
 
 
 def test_close_kills_the_process_group(tmp_path):
     config = make_config(tmp_path)
-    session = SandboxSession(FAKE, ["/bin/sh", "-c", "sleep 60 & echo $!"], config)
+    session = session_for(["/bin/sh", "-c", "sleep 60 & echo $!"], config)
     session.__enter__()
 
     pid = int(session.read_line(time.monotonic() + 2))
@@ -112,7 +116,7 @@ def test_close_kills_the_process_group(tmp_path):
 def test_keep_preserves_the_run_root(tmp_path):
     config = make_config(tmp_path, keep=True)
 
-    with SandboxSession(FAKE, ["/bin/cat"], config) as session:
+    with session_for(["/bin/cat"], config) as session:
         session.close()
 
     assert config.run_root.exists()
@@ -121,7 +125,7 @@ def test_keep_preserves_the_run_root(tmp_path):
 def test_write_line_rejects_an_oversized_line(tmp_path):
     config = make_config(tmp_path)
 
-    with SandboxSession(FAKE, ["/bin/cat"], config, max_line_bytes=8) as session:
+    with session_for(["/bin/cat"], config, max_line_bytes=8) as session:
         with pytest.raises(SessionError, match="too long"):
             session.write_line("x" * 9)
 
@@ -130,6 +134,6 @@ def test_read_line_rejects_an_oversized_line(tmp_path):
     config = make_config(tmp_path)
     argv = ["/bin/sh", "-c", "printf '%100s\\n' x"]
 
-    with SandboxSession(FAKE, argv, config, max_line_bytes=8) as session:
+    with session_for(argv, config, max_line_bytes=8) as session:
         with pytest.raises(SessionError, match="too long"):
             session.read_line(time.monotonic() + 2)

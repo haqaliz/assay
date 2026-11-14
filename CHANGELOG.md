@@ -8,6 +8,9 @@ All notable changes to Assay.
 
 ### Added
 
+- **Linux MCP sessions:** `assay mcp` and `assay mcp-report` run local stdio servers under
+  `bubblewrap`. `SandboxSession` now takes a backend-built command instead of a hardcoded
+  `sandbox-exec`; Linux still has no sandbox network and remote MCP over HTTP remains out of scope.
 - **Experimental MCP spike:** a long-lived `SandboxSession` and a stdlib stdio MCP client
   (`initialize`, `tools/list`, `tools/call`), plus a fixture server. MCP tool calls are captured as
   `EventKind.TOOL` evidence. This is **not** an MCP verifier: there is no `Server` record, driver

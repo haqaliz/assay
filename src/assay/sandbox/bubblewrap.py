@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from .config import JailConfig
 from .process import run_process
 from .records import RunRecord, SandboxUnavailable
+
+if TYPE_CHECKING:
+    from .session import SandboxSession
 
 DEFAULT_BWRAP = Path("/usr/bin/bwrap")
 DEFAULT_PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
@@ -88,7 +91,6 @@ def _setup_error(returncode: int, stderr: str) -> str | None:
 class BubblewrapSandbox:
     backend = "bubblewrap"
     child_path = DEFAULT_PATH
-    supports_session = False
 
     def __init__(self, bwrap: Path = DEFAULT_BWRAP) -> None:
         self.bwrap = Path(bwrap)
@@ -96,11 +98,22 @@ class BubblewrapSandbox:
     def run(self, argv: Sequence[str], config: JailConfig) -> RunRecord:
         if not argv:
             raise ValueError("argv must not be empty")
-        command = build_command(self.bwrap, argv, config)
         return run_process(
-            command,
+            build_command(self.bwrap, argv, config),
             config,
             path=self.child_path,
             start_error="bwrap",
             setup_error=_setup_error,
+        )
+
+    def start_session(
+        self, argv: Sequence[str], config: JailConfig
+    ) -> "SandboxSession":
+        from .session import SandboxSession
+
+        return SandboxSession(
+            build_command(self.bwrap, argv, config),
+            config,
+            path=self.child_path,
+            setup_error_prefix="bwrap:",
         )
