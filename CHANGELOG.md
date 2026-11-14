@@ -4,6 +4,8 @@ All notable changes to Assay.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-14
+
 ### Added
 
 - **Sandbox backend identity (trace/bundle schema 3):** `RunRecord` and `SessionRecord` carry

@@ -277,5 +277,4 @@ Python/Node child; solve the DNS path; decide the trace schema question.
 
 Linux v1 is built: `assay check`, local stdio MCP sessions and `http_get` (Landlock/seccomp
 allowlist) run under `bubblewrap`. Backend identity is in run/session records and config hashes, and
-readable in trace/bundle schema 3; schema 2 still verifies. Release the schema change after the
-Nov 17 Product Hunt launch.
+readable in trace/bundle schema 3; schema 2 still verifies. Released as `0.1.3` on 2026-11-14.

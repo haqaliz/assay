@@ -1,3 +1,3 @@
 """Assay: execution-grounded security verifier for AI agent skills."""
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"

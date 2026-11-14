@@ -138,7 +138,10 @@ trace/verdict schema are unchanged.
 `network_mode`; `JailConfig` includes the backend in its hash, so traces/bundles distinguish
 Seatbelt from bubblewrap, and MCP reports show it. Trace schema 3 carries a readable
 `backend`/`network_mode`; bundle schema 3 mirrors it. Schema-2 traces and bundles still load and
-verify. On master; release pending.
+verify. Released as `0.1.3` on 2026-11-14.
+
+**v0.1.3 release (2026-11-14).** `assayhq` 0.1.3 is on PyPI and as a GitHub Release. It adds
+trace/bundle schema 3 for readable backend identity; schema 2 still verifies.
 
 **MCP spike (2026-11-07).** A long-lived `SandboxSession` and a stdlib stdio MCP client
 (`initialize`, `tools/list`, `tools/call`) run against a local fixture inside Seatbelt. Tool calls
