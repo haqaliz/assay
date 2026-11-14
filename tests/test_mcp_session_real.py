@@ -75,6 +75,8 @@ def test_stdio_server_runs_inside_the_jail(tmp_path):
     assert record is not None
     assert record.exit_code == 0
     assert record.timed_out is False
+    assert record.backend == "seatbelt"
+    assert record.network_mode == "none"
     assert "assay-denial: file-read" in record.stderr
     assert any(denial.kind is DenialClass.FILE_READ for denial in record.denials)
     assert not config.run_root.exists()

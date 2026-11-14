@@ -106,6 +106,8 @@ def run_process(
         run_root=str(config.run_root),
         started_at=started_at,
         teardown_error=teardown_error,
+        backend=config.backend,
+        network_mode="port" if config.allow_network else "none",
     )
 
 

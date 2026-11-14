@@ -4,6 +4,13 @@ All notable changes to Assay.
 
 ## [Unreleased]
 
+### Added
+
+- **Sandbox backend identity:** `RunRecord` and `SessionRecord` carry `backend` and `network_mode`,
+  `JailConfig` includes the backend in its hash, and MCP reports show it. Traces/bundles now
+  distinguish Seatbelt from bubblewrap through the sandbox config hash. A readable field inside the
+  signed trace needs trace/bundle schema 3, which remains a separate slice.
+
 ## [0.1.2] - 2026-11-14
 
 ### Added

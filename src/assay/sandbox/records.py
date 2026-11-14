@@ -35,6 +35,8 @@ class RunRecord:
     run_root: str
     started_at: str
     teardown_error: str | None = None
+    backend: str = ""
+    network_mode: str = "none"
 
     @property
     def ok(self) -> bool:
