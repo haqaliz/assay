@@ -8,7 +8,7 @@
 real agent, captures what it actually did, and checks that against what it claims to do.
 
 [![Release](https://img.shields.io/github/v/release/haqaliz/assay?color=3fb950&label=release)](https://github.com/haqaliz/assay/releases/latest)
-[![Status](https://img.shields.io/badge/status-v0.1.2-3fb950)](docs/ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-v0.1.3-3fb950)](docs/ROADMAP.md)
 [![CI](https://github.com/haqaliz/assay/actions/workflows/ci.yml/badge.svg)](https://github.com/haqaliz/assay/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/assayhq.svg)](https://pypi.org/project/assayhq/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
@@ -20,7 +20,7 @@ real agent, captures what it actually did, and checks that against what it claim
 
 <br/>
 
-<img src="assets/assay-demo.png" alt="Assay CLI: assay 0.1.2 and the 20-case corpus report" width="900" />
+<img src="assets/assay-demo.png" alt="Assay CLI: assay 0.1.3 and the 20-case corpus report" width="900" />
 
 <sub>Real CLI output: <code>assay --version</code>, then the 20-case corpus report. No model or network call.</sub>
 
@@ -94,7 +94,7 @@ only on `CLEAN`, and `CLEAN` means the run matched the declared scope, not that 
 
 ## Status
 
-**v0.1.2 is shipped.** A1–A7 exist, plus two A8 file adapters (OpenClaw/ClawHub and Cursor rules),
+**v0.1.3 is shipped.** A1–A7 exist, plus two A8 file adapters (OpenClaw/ClawHub and Cursor rules),
 the A10 static pre-filter, and the separate MCP capability (spike + inspector + report); the engine
 has a verdict, a portable record and a measured benchmark. What is built and tested, all offline (the
 bundle tests run a local `ssh-keygen`; the benchmark makes no model or network call):
