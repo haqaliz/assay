@@ -4,7 +4,7 @@ All notable changes to Assay.
 
 ## [Unreleased]
 
-## [0.1.1] - 2026-11-14
+## [0.1.2] - 2026-11-14
 
 ### Added
 
@@ -15,6 +15,16 @@ All notable changes to Assay.
   TCP connect/bind allowlist and a seccomp UDP/raw deny. The parent resolves the URL host and passes
   `--resolve`, so the jail never needs DNS. Requires Linux 6.7+ and libseccomp; otherwise the
   launcher fails closed with `SandboxFailed`.
+
+### Limits
+
+- Linux network access requires Linux 6.7+ (Landlock ABI 4) and libseccomp; without them the
+  launcher fails closed. MCP is stdio-only; native Windows is not supported.
+
+## [0.1.1] - 2026-11-14
+
+### Added
+
 - **Experimental MCP spike:** a long-lived `SandboxSession` and a stdlib stdio MCP client
   (`initialize`, `tools/list`, `tools/call`), plus a fixture server. MCP tool calls are captured as
   `EventKind.TOOL` evidence. This is **not** an MCP verifier: there is no `Server` record, driver
@@ -62,8 +72,8 @@ All notable changes to Assay.
 - `mcp-report` is not a pass gate: it only sees tool calls/results/denials, not the server's own
   syscalls; it requires an explicit `--task`, gives the model no built-in tools, and produces no
   bundle.
-- Linux network access requires Linux 6.7+ (Landlock ABI 4) and libseccomp; without them the
-  launcher fails closed. MCP is stdio-only; native Windows is not supported.
+- Linux uses `bubblewrap`; there is no sandbox network, so `http_get` fails closed, and MCP sessions
+  are not supported yet. Native Windows is not supported.
 
 ## [0.1.0] - 2026-11-07
 
