@@ -119,6 +119,8 @@ class Trace:
     cost_usd: float
     events: tuple[Event, ...]
     sandbox_config_hashes: tuple[str, ...]
+    backend: str = "unobserved"
+    network_mode: str = "none"
     schema: int = 2
 
     def __post_init__(self) -> None:
@@ -131,8 +133,22 @@ class Trace:
         _non_negative_int(self.input_tokens, "input_tokens")
         _non_negative_int(self.output_tokens, "output_tokens")
         _non_negative_float(self.cost_usd, "cost_usd")
-        if isinstance(self.schema, bool) or not isinstance(self.schema, int) or self.schema != 2:
-            raise ValueError(f"schema must be the int 2, got {self.schema!r}")
+        if (
+            isinstance(self.schema, bool)
+            or not isinstance(self.schema, int)
+            or self.schema not in (2, 3)
+        ):
+            raise ValueError(f"schema must be the int 2 or 3, got {self.schema!r}")
+        if self.schema == 3:
+            if self.backend not in ("seatbelt", "bubblewrap", "mixed", "unobserved"):
+                raise ValueError(
+                    "backend must be 'seatbelt', 'bubblewrap', 'mixed' or 'unobserved', "
+                    f"got {self.backend!r}"
+                )
+            if self.network_mode not in ("none", "port"):
+                raise ValueError(
+                    f"network_mode must be 'none' or 'port', got {self.network_mode!r}"
+                )
         events = tuple(self.events)
         if not all(isinstance(event, Event) for event in events):
             raise ValueError("events must be Event records")
@@ -143,7 +159,7 @@ class Trace:
         object.__setattr__(self, "cost_usd", float(self.cost_usd))
 
     def to_payload(self) -> dict[str, object]:
-        return {
+        payload = {
             "schema": self.schema,
             "skill_name": self.skill_name,
             "skill_content_hash": self.skill_content_hash,
@@ -169,6 +185,10 @@ class Trace:
                 for event in self.events
             ],
         }
+        if self.schema == 3:
+            payload["backend"] = self.backend
+            payload["network_mode"] = self.network_mode
+        return payload
 
     def to_json(self) -> str:
         return json.dumps(
@@ -209,8 +229,22 @@ class Trace:
                         truncated=item.get("truncated", False),
                     )
                 )
+            schema = payload["schema"]
+            if schema == 3:
+                try:
+                    backend = payload["backend"]
+                    network_mode = payload["network_mode"]
+                except KeyError as exc:
+                    raise CaptureError(
+                        f"schema 3 trace is missing {exc.args[0]}"
+                    ) from None
+            else:
+                backend = "unobserved"
+                network_mode = "none"
             return cls(
-                schema=payload["schema"],
+                schema=schema,
+                backend=backend,
+                network_mode=network_mode,
                 skill_name=payload["skill_name"],
                 skill_content_hash=payload["skill_content_hash"],
                 task_sha256=payload["task_sha256"],

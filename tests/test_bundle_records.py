@@ -157,7 +157,8 @@ def test_valid_bundle_has_the_exact_canonical_payload():
         "assessment",
         "signature",
     }
-    assert payload["schema"] == BUNDLE_SCHEMA == 2
+    assert payload["schema"] == 2
+    assert BUNDLE_SCHEMA == 3
     assert payload["hash_list"] == {
         "skill": "sha256:" + trace_.skill_content_hash,
         "trace": trace_.hash,
@@ -302,15 +303,31 @@ def test_bundle_skill_source_errors_are_bundle_invalid():
         Bundle.from_json(canonical(changed_hash))
 
 
-@pytest.mark.parametrize("schema", [1, True, "2", 2.0, 3])
-def test_bundle_schema_must_be_the_int_two(schema):
+@pytest.mark.parametrize("schema", [1, True, "2", 2.0, 4])
+def test_bundle_schema_must_be_two_or_three(schema):
     with pytest.raises(BundleError, match="schema"):
         make_bundle(schema=schema)
 
     payload = json.loads(make_bundle().to_json())
     payload["schema"] = schema
-    with pytest.raises(BundleError, match="bundle-invalid"):
+    with pytest.raises(BundleError, match="schema"):
         Bundle.from_json(canonical(payload))
+
+
+def test_schema_three_trace_and_bundle_round_trip():
+    trace_ = trace(backend="bubblewrap", network_mode="port", schema=3)
+    bundle = make_bundle(trace_)
+
+    assert bundle.schema == 3
+    payload = json.loads(bundle.to_json())
+    assert payload["schema"] == 3
+    assert payload["trace"]["backend"] == "bubblewrap"
+    assert payload["trace"]["network_mode"] == "port"
+
+    loaded = Bundle.from_json(bundle.to_json())
+    assert loaded.schema == 3
+    assert loaded.trace.backend == "bubblewrap"
+    assert loaded.trace.network_mode == "port"
 
 
 def test_schema_one_bundle_is_refused_as_not_replayable():

@@ -29,6 +29,20 @@ def capture(skill: Skill, task: str, outcome: RunOutcome) -> Trace:
         events = tuple(_event(action) for action in outcome.actions)
         if outcome.steps > 0:
             events += (_instruction("system", skill.body), _instruction("user", task))
+        records = tuple(
+            action.result.record
+            for action in outcome.actions
+            if action.result.record is not None
+        )
+        backends = sorted(
+            {record.backend for record in records if record.backend in ("seatbelt", "bubblewrap")}
+        )
+        backend = (
+            backends[0] if len(backends) == 1 else ("mixed" if backends else "unobserved")
+        )
+        network_mode = (
+            "port" if any(record.network_mode == "port" for record in records) else "none"
+        )
         return Trace(
             skill_name=skill.name,
             skill_content_hash=skill.content_hash,
@@ -39,12 +53,11 @@ def capture(skill: Skill, task: str, outcome: RunOutcome) -> Trace:
             cost_usd=outcome.cost_usd,
             events=events,
             sandbox_config_hashes=tuple(
-                {
-                    action.result.record.config_hash
-                    for action in outcome.actions
-                    if action.result.record is not None
-                }
+                {record.config_hash for record in records}
             ),
+            backend=backend,
+            network_mode=network_mode,
+            schema=3,
         )
     except UnicodeError as exc:
         raise CaptureError(f"trace text is not valid unicode: {exc}") from None

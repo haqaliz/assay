@@ -5,7 +5,7 @@
 | **Capability** | A2 follow-on — Linux sandbox backend |
 | **Phase / milestone** | Post-v0.1; next platform slice |
 | **Slug** | `linux-backend` |
-| **Status** | Linux v1 (one-shot + MCP + network allowlist) built; backend identity is in records/config hashes; a readable field inside the signed trace is a schema-3 follow-up |
+| **Status** | Linux v1 (one-shot + MCP + network allowlist) built; backend identity is in records/config hashes and readable in trace/bundle schema 3; schema 2 still verifies |
 | **Owner** | aliz |
 | **Tracking issue** | [#36](https://github.com/haqaliz/assay/issues/36) |
 | **Guardrails touched** | R4 (escape), R2 (false verdict), `CLAUDE.md` constraint 2 (nothing real is reachable) |
@@ -276,6 +276,6 @@ confirm the Landlock ABI/network behavior on the CI kernel; confirm seccomp UDP 
 Python/Node child; solve the DNS path; decide the trace schema question.
 
 Linux v1 is built: `assay check`, local stdio MCP sessions and `http_get` (Landlock/seccomp
-allowlist) run under `bubblewrap`. Backend identity is in run/session records and config hashes; a
-readable field inside the signed trace remains a schema-3 follow-up. Do not start it before the
+allowlist) run under `bubblewrap`. Backend identity is in run/session records and config hashes, and
+readable in trace/bundle schema 3; schema 2 still verifies. Release the schema change after the
 Nov 17 Product Hunt launch.
