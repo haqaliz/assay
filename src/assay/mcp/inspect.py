@@ -34,6 +34,8 @@ class ServerReport:
                 "signal": self.session.signal,
                 "timed_out": self.session.timed_out,
                 "config_hash": self.session.config_hash,
+                "backend": self.session.backend,
+                "network_mode": self.session.network_mode,
                 "run_root": self.session.run_root,
                 "teardown_error": self.session.teardown_error,
                 "denials": [

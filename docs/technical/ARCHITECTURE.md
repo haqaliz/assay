@@ -208,8 +208,9 @@ benchmark signs nothing; any case can be bundled and replayed with the shipped A
 - ~~Sandbox technology on macOS and Linux (Seatbelt, containers, or both)~~ **Decided:** Seatbelt
   on macOS and `bubblewrap` on Linux, behind a `Sandbox` seam (A2). Docker was rejected as a daemon
   dependency with no A2 benefit; the probe evidence is in `docs/planning/sandbox-jail/prd.md`. The
-  Linux network access is a Landlock/seccomp launcher with parent-side DNS resolution; readable
-  backend identity in the trace is a follow-up (`docs/planning/linux-backend/prd.md`).
+  Linux network access is a Landlock/seccomp launcher with parent-side DNS resolution. Run/session
+  records and config hashes carry backend identity; a readable field inside the signed trace needs
+  schema 3 (`docs/planning/linux-backend/prd.md`).
 - ~~Verdict replay~~ **Decided (bundle schema 2):** the bundle carries the exact `SKILL.md` source and
   `verify` re-derives the verdict with the shipped `assess`; a signed assessment that does not follow
   is refused. A bare trace still cannot replay because it carries no scope or body; trace schema 3 is

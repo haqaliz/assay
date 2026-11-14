@@ -295,6 +295,10 @@ def render_mcp(report: ServerReport, as_json: bool) -> str:
         lines.append(f"protocol: {_one_line(report.protocol_version)}")
     lines.append(f"tools: {_one_line(', '.join(tool.name for tool in report.tools) or 'none')}")
     if report.session is not None:
+        lines.append(
+            f"sandbox: {report.session.backend or 'unknown'} "
+            f"({report.session.network_mode} network)"
+        )
         denials = ", ".join(
             f"{denial.kind.value} {denial.detail}" for denial in report.session.denials
         )
@@ -314,6 +318,8 @@ def _session_payload(session) -> dict[str, object] | None:
         "signal": session.signal,
         "timed_out": session.timed_out,
         "config_hash": session.config_hash,
+        "backend": session.backend,
+        "network_mode": session.network_mode,
         "run_root": session.run_root,
         "teardown_error": session.teardown_error,
         "denials": [
@@ -380,6 +386,10 @@ def render_mcp_report(
         f"denied {counts['denied']})",
     ]
     if run.session is not None:
+        lines.append(
+            f"sandbox: {run.session.backend or 'unknown'} "
+            f"({run.session.network_mode} network)"
+        )
         denials = ", ".join(
             f"{denial.kind.value} {denial.detail}" for denial in run.session.denials
         )

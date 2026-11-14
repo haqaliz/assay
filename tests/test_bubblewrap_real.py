@@ -93,6 +93,8 @@ def test_network_is_denied(tmp_path, sandbox):
     record = sandbox.run([bash, "-c", "exec 3<>/dev/tcp/1.1.1.1/80"], config)
 
     assert record.exit_code != 0
+    assert record.backend == "bubblewrap"
+    assert record.network_mode == "none"
 
 
 def test_wall_limit_is_recorded(tmp_path, sandbox):
@@ -227,6 +229,8 @@ def test_network_port_allowlist(tmp_path, sandbox):
             config,
         )
         assert ok.exit_code == 0, ok.stderr
+        assert ok.backend == "bubblewrap"
+        assert ok.network_mode == "port"
 
         config = config_for(
             tmp_path, allow_network=(NetRule("*", allowed_port),)
@@ -260,6 +264,8 @@ def test_network_udp_is_denied(tmp_path, sandbox):
     )
 
     assert record.exit_code != 0
+    assert record.backend == "bubblewrap"
+    assert record.network_mode == "port"
 
 
 def test_mcp_fixture_starts_under_bwrap(tmp_path, sandbox):
@@ -299,4 +305,6 @@ def test_mcp_fixture_starts_under_bwrap(tmp_path, sandbox):
     assert record is not None
     assert record.exit_code == 0
     assert record.timed_out is False
+    assert record.backend == "bubblewrap"
+    assert record.network_mode == "none"
     assert any(denial.kind is DenialClass.FILE_READ for denial in record.denials)

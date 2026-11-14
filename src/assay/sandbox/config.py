@@ -64,6 +64,7 @@ class JailConfig:
     env: Mapping[str, str] = field(default_factory=dict)
     limits: Limits = field(default_factory=Limits)
     keep: bool = False
+    backend: str = "auto"
 
     def __post_init__(self) -> None:
         root = _check_path(self.run_root, "run_root")
@@ -93,11 +94,16 @@ class JailConfig:
             if not isinstance(key, str) or not isinstance(value, str):
                 raise ValueError(f"env must map str to str, got {key!r}={value!r}")
         object.__setattr__(self, "env", env)
+        if self.backend not in ("auto", "seatbelt", "bubblewrap"):
+            raise ValueError(
+                f"backend must be 'auto', 'seatbelt' or 'bubblewrap', got {self.backend!r}"
+            )
 
     @property
     def config_hash(self) -> str:
         """Operational settings only: run_root and keep are per-machine/per-run, not identity."""
         payload = {
+            "backend": self.backend,
             "allow_network": sorted([r.host, r.port] for r in self.allow_network),
             "allow_read_extra": sorted(str(p) for p in self.allow_read_extra),
             "env": dict(sorted(self.env.items())),

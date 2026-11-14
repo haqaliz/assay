@@ -32,6 +32,8 @@ def test_exit_code_and_stdout(sandbox, tmp_path):
     assert record.stdout == "hi\n"
     assert record.signal is None
     assert record.ok
+    assert record.backend == "seatbelt"
+    assert record.network_mode == "none"
     assert record.config_hash.startswith("sha256:")
 
 

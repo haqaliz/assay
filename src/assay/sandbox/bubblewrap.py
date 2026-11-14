@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Sequence
 
@@ -110,6 +111,7 @@ class BubblewrapSandbox:
     def run(self, argv: Sequence[str], config: JailConfig) -> RunRecord:
         if not argv:
             raise ValueError("argv must not be empty")
+        config = replace(config, backend="bubblewrap")
         return run_process(
             build_command(self.bwrap, argv, config),
             config,
@@ -123,6 +125,7 @@ class BubblewrapSandbox:
     ) -> "SandboxSession":
         from .session import SandboxSession
 
+        config = replace(config, backend="bubblewrap")
         return SandboxSession(
             build_command(self.bwrap, argv, config),
             config,

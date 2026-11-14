@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Sequence
 
@@ -72,6 +73,7 @@ class SeatbeltSandbox:
     def run(self, argv: Sequence[str], config: JailConfig) -> RunRecord:
         if not argv:
             raise ValueError("argv must not be empty")
+        config = replace(config, backend="seatbelt")
         return run_process(
             self._command(argv, config),
             config,
@@ -85,6 +87,7 @@ class SeatbeltSandbox:
     ) -> "SandboxSession":
         from .session import SandboxSession
 
+        config = replace(config, backend="seatbelt")
         return SandboxSession(
             self._command(argv, config),
             config,

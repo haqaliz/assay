@@ -40,6 +40,8 @@ class SessionRecord:
     run_root: str
     timed_out: bool
     teardown_error: str | None = None
+    backend: str = ""
+    network_mode: str = "none"
 
 
 class SandboxSession:
@@ -196,6 +198,8 @@ class SandboxSession:
             run_root=str(self._config.run_root),
             timed_out=self._timed_out,
             teardown_error=teardown_error,
+            backend=self._config.backend,
+            network_mode="port" if self._config.allow_network else "none",
         )
         return self._record
 
