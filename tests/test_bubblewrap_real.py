@@ -1,6 +1,8 @@
+import http.server
 import os
 import shutil
 import sys
+import threading
 from pathlib import Path
 
 import pytest
@@ -8,7 +10,7 @@ import pytest
 from assay.agent import ToolCall
 from assay.agent.tools import Toolbox
 from assay.mcp.client import MCPClient, PROTOCOL_VERSION
-from assay.sandbox import DenialClass, JailConfig, Limits
+from assay.sandbox import DenialClass, JailConfig, Limits, NetRule
 from assay.sandbox.bubblewrap import BubblewrapSandbox
 
 pytestmark = pytest.mark.skipif(
@@ -160,6 +162,104 @@ def test_toolbox_write_and_read(tmp_path, sandbox):
         )
         assert read.ok, read.output
         assert read.output == "hello from linux"
+
+
+class _QuietHandler(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, *args):
+        pass
+
+
+def _serve():
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _QuietHandler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server
+
+
+def _network_supported() -> bool:
+    if not Path("/usr/bin/python3").exists():
+        return False
+    try:
+        major, minor = (int(part) for part in os.uname().release.split(".")[:2])
+    except (AttributeError, ValueError):
+        return False
+    if (major, minor) < (6, 7):
+        return False
+    return any(
+        Path(path).exists()
+        for path in (
+            "/lib/x86_64-linux-gnu/libseccomp.so.2",
+            "/usr/lib/x86_64-linux-gnu/libseccomp.so.2",
+            "/lib/aarch64-linux-gnu/libseccomp.so.2",
+            "/usr/lib/aarch64-linux-gnu/libseccomp.so.2",
+            "/lib64/libseccomp.so.2",
+            "/usr/lib64/libseccomp.so.2",
+        )
+    )
+
+
+requires_network = pytest.mark.skipif(
+    not _network_supported(), reason="Landlock ABI 4 + libseccomp are required"
+)
+
+
+@requires_network
+def test_network_port_allowlist(tmp_path, sandbox):
+    curl = "/usr/bin/curl" if Path("/usr/bin/curl").exists() else shutil.which("curl")
+    if curl is None:
+        pytest.skip("curl is not installed")
+    allowed = _serve()
+    denied = _serve()
+    try:
+        allowed_port = allowed.server_address[1]
+        denied_port = denied.server_address[1]
+
+        config = config_for(
+            tmp_path, allow_network=(NetRule("*", allowed_port),)
+        )
+        ok = sandbox.run(
+            [
+                curl,
+                "-sS",
+                "--max-time",
+                "2",
+                f"http://127.0.0.1:{allowed_port}/",
+            ],
+            config,
+        )
+        assert ok.exit_code == 0, ok.stderr
+
+        config = config_for(
+            tmp_path, allow_network=(NetRule("*", allowed_port),)
+        )
+        blocked = sandbox.run(
+            [
+                curl,
+                "-sS",
+                "--max-time",
+                "2",
+                f"http://127.0.0.1:{denied_port}/",
+            ],
+            config,
+        )
+        assert blocked.exit_code != 0
+    finally:
+        allowed.shutdown()
+        denied.shutdown()
+
+
+@requires_network
+def test_network_udp_is_denied(tmp_path, sandbox):
+    config = config_for(tmp_path, allow_network=(NetRule("*", 443),))
+    record = sandbox.run(
+        [
+            "/usr/bin/python3",
+            "-c",
+            "import socket; socket.socket(socket.AF_INET, socket.SOCK_DGRAM)",
+        ],
+        config,
+    )
+
+    assert record.exit_code != 0
 
 
 def test_mcp_fixture_starts_under_bwrap(tmp_path, sandbox):

@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from assay.sandbox import JailConfig, NetRule
-from assay.sandbox.bubblewrap import BubblewrapSandbox, build_command
+from assay.sandbox.bubblewrap import NET_PYTHON, BubblewrapSandbox, build_command
 from assay.sandbox.records import SandboxFailed, SandboxUnavailable
 
 
@@ -55,10 +55,20 @@ def test_command_binds_extra_reads_and_env(tmp_path):
     assert str(extra) in command
 
 
-def test_network_allowlist_is_refused(tmp_path):
+def test_network_allowlist_uses_share_net_and_launcher(tmp_path):
     config = config_for(tmp_path, allow_network=(NetRule("*", 443),))
+    command = build_command(Path("/usr/bin/bwrap"), ["/bin/true"], config)
 
-    with pytest.raises(SandboxUnavailable, match="network"):
+    assert "--share-net" in command
+    assert "--unshare-net" not in command
+    assert str(NET_PYTHON) in command
+    assert any("PORTS = (443,)" in part for part in command)
+
+
+def test_localhost_network_is_refused(tmp_path):
+    config = config_for(tmp_path, allow_network=(NetRule("localhost", 443),))
+
+    with pytest.raises(SandboxUnavailable, match="localhost"):
         build_command(Path("/usr/bin/bwrap"), ["/bin/true"], config)
 
 

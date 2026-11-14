@@ -52,7 +52,7 @@ spike reclassifies it as a separate, deferred capability.
 ```
 src/assay/
   ingest/     A1: parsers per format, Skill record   ← built (Claude Code, OpenClaw, Cursor)
-  sandbox/    A2: jail setup, limits, teardown   ← built (macOS Seatbelt + Linux bubblewrap one-shot/MCP, no sandbox network)
+  sandbox/    A2: jail setup, limits, teardown   ← built (macOS Seatbelt + Linux bubblewrap one-shot/MCP, Landlock/seccomp network)
   agent/      A3: driver, task generation, cost caps   ← built (Anthropic + OpenAI-compatible)
   capture/    A4: event recorder, trace store, diff   ← built (canonical traces, scope diff)
   verdict/    A5: findings, strictness, floor   ← built (assessment, pattern lists)
@@ -208,8 +208,8 @@ benchmark signs nothing; any case can be bundled and replayed with the shipped A
 - ~~Sandbox technology on macOS and Linux (Seatbelt, containers, or both)~~ **Decided:** Seatbelt
   on macOS and `bubblewrap` on Linux, behind a `Sandbox` seam (A2). Docker was rejected as a daemon
   dependency with no A2 benefit; the probe evidence is in `docs/planning/sandbox-jail/prd.md`. The
-  Linux backend has no sandbox network; `http_get` and a network allowlist are follow-ups, while
-  MCP sessions are built (`docs/planning/linux-backend/prd.md`).
+  Linux network access is a Landlock/seccomp launcher with parent-side DNS resolution; readable
+  backend identity in the trace is a follow-up (`docs/planning/linux-backend/prd.md`).
 - ~~Verdict replay~~ **Decided (bundle schema 2):** the bundle carries the exact `SKILL.md` source and
   `verify` re-derives the verdict with the shipped `assess`; a signed assessment that does not follow
   is refused. A bare trace still cannot replay because it carries no scope or body; trace schema 3 is

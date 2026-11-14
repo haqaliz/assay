@@ -122,8 +122,13 @@ backend via WSL2. The full suite runs on macOS and Ubuntu 24.04. Released as `0.
 the trace/verdict schema and the macOS Seatbelt path are unchanged.
 
 **Linux MCP sessions (2026-11-14).** `SandboxSession` now takes a backend-built command;
-`assay mcp` and `assay mcp-report` run local stdio servers under `bubblewrap`. Linux still has no
-sandbox network, and remote MCP over HTTP remains out of scope. On master; release pending.
+`assay mcp` and `assay mcp-report` run local stdio servers under `bubblewrap`. Remote MCP over HTTP
+remains out of scope. On master; release pending.
+
+**Linux network allowlist (2026-11-14).** `http_get` runs under `bubblewrap` with `--share-net`, a
+Landlock TCP connect/bind allowlist and a seccomp UDP/raw deny. The parent resolves the URL host and
+passes `--resolve`, so the jail never needs DNS. Requires Linux 6.7+ and libseccomp; otherwise the
+launcher fails closed with `SandboxFailed`. On master; release pending.
 
 **MCP spike (2026-11-07).** A long-lived `SandboxSession` and a stdlib stdio MCP client
 (`initialize`, `tools/list`, `tools/call`) run against a local fixture inside Seatbelt. Tool calls
@@ -194,11 +199,12 @@ Not scheduled; depends on Phase 2 results.
 
 ## Platform support (Linux v1)
 
-`assay check` runs on Linux under `bubblewrap` (mount/PID/net namespaces, no daemon) with no
-sandbox network; `http_get` fails closed with `UNVERIFIED/SANDBOX_UNAVAILABLE`. `assay mcp` and
-`assay mcp-report` also run local stdio servers under `bubblewrap`. Windows uses the same backend
-via WSL2. A network allowlist remains a follow-up. CI runs macOS and Ubuntu 24.04; the plan and
-remaining risks are in [`planning/linux-backend/prd.md`](planning/linux-backend/prd.md).
+`assay check` runs on Linux under `bubblewrap` (mount/PID/net namespaces, no daemon). `http_get`
+uses a Landlock TCP allowlist plus a seccomp UDP/raw deny; the parent resolves DNS and passes
+`--resolve`. `assay mcp` and `assay mcp-report` run local stdio servers under `bubblewrap`. Windows
+uses the same backend via WSL2. Readable backend identity in the trace remains a follow-up. CI runs
+macOS and Ubuntu 24.04; the plan and remaining risks are in
+[`planning/linux-backend/prd.md`](planning/linux-backend/prd.md).
 
 ---
 
