@@ -1,6 +1,6 @@
 ---
 name: assay-report
-description: Use when an Assay unit of work (bug, task, feature) is done and you want a brief, friendly, non-technical completion note saved on Desktop to share with the team.
+description: Use when an Assay unit of work (bug, task, feature) is done and you want a brief, friendly, non-technical completion note saved in the Projects Brain vault to share with the team.
 allowed-tools: Read, Grep, Glob, Bash, Write
 arguments: "type id"
 ---
@@ -18,7 +18,9 @@ Usage: `/assay-report bug 12` or `/assay-report feature skill-ingest`.
 
 ## Output
 
-Markdown file saved to `/Users/aliz/Desktop/{type}-{id}-completion.md`.
+Markdown file saved to `/Users/aliz/Documents/Projects Brain/at/assay/Cards/{type}-{id}/{type}-{id}-completion.md`.
+
+Vault rule: `mkdir -p` the card folder, add frontmatter (`project: assay`, `kind: completion`, `type`, `id`, `date`, `tags`) and `Part of [[assay]]`. Quote the path (it has a space).
 
 ## The template
 

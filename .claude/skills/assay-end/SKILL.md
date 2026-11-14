@@ -1,6 +1,6 @@
 ---
 name: assay-end
-description: Use when finishing local work on an Assay unit of work after the PR is merged and you also need a completion report on Desktop. Triggers on "assay-end", "ae", "ae bug 12", "ae feat skill-ingest", "end full".
+description: Use when finishing local work on an Assay unit of work after the PR is merged and you also need a completion report in Projects Brain. Triggers on "assay-end", "ae", "ae bug 12", "ae feat skill-ingest", "end full".
 arguments: "type id"
 ---
 
