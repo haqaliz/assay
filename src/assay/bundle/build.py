@@ -18,7 +18,6 @@ from assay.verdict import (
 )
 
 from .records import (
-    BUNDLE_SCHEMA,
     Bundle,
     BundleError,
     HashList,
@@ -47,7 +46,7 @@ def bundle_payload(
     assessment: Assessment,
 ) -> dict[str, object]:
     return {
-        "schema": BUNDLE_SCHEMA,
+        "schema": trace.schema,
         "hash_list": hash_list.to_payload(),
         "skill": skill_source.to_payload(),
         "trace": trace.to_payload(),

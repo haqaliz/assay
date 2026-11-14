@@ -2,6 +2,7 @@ import importlib
 import json
 import shutil
 import subprocess
+from pathlib import Path
 
 import pytest
 
@@ -149,6 +150,31 @@ def test_verify_succeeds_on_a_fresh_bundle(tmp_path, monkeypatch, keypair, capsy
     assert "sandbox: sha256:" in report
     assert "signer: SHA256:" in report
     assert "signature: verified\n" in report
+    assert "signature: verified\nreplay: verified\n" in report
+    assert "exit: 0\n" in report
+
+
+@requires_ssh_keygen
+def test_a_schema_two_corpus_bundle_still_verifies(tmp_path, keypair, capsys):
+    private_key, public_key = keypair
+    source = sorted(Path("corpus/cases").glob("*/[0-9a-f]*.json"))[0]
+    case_dir = tmp_path / "case"
+    case_dir.mkdir()
+    shutil.copy2(source, case_dir / source.name)
+    shutil.copy2(source.parent / "SKILL.md", case_dir / "SKILL.md")
+    trace_path = case_dir / source.name
+
+    assert make_bundle(trace_path, case_dir / "SKILL.md", private_key) == 0
+    bundle_path = bundle_path_for(trace_path)
+    payload = json.loads(bundle_path.read_text(encoding="utf-8"))
+    assert payload["schema"] == 2
+    assert payload["trace"]["schema"] == 2
+    capsys.readouterr()
+
+    code = main(["verify", str(bundle_path), "--public-key", str(public_key)])
+
+    report = capsys.readouterr().out
+    assert code == 0
     assert "signature: verified\nreplay: verified\n" in report
     assert "exit: 0\n" in report
 

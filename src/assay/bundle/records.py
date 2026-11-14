@@ -16,7 +16,7 @@ from assay.capture import CaptureError, Trace
 from assay.ingest import MAX_SKILL_BYTES, Format
 from assay.verdict import Assessment, VerdictError
 
-BUNDLE_SCHEMA = 2
+BUNDLE_SCHEMA = 3
 NAMESPACE = "assay"
 
 _SKILL_HASH = re.compile(r"sha256:[0-9a-f]{64}")
@@ -160,7 +160,7 @@ class Bundle:
     trace: Trace
     assessment: Assessment
     signature: Signature
-    schema: int = BUNDLE_SCHEMA
+    schema: int | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.skill, SkillSource):
@@ -177,13 +177,17 @@ class Bundle:
             raise BundleError(
                 f"signature must be a Signature, got {self.signature!r}"
             )
+        if self.schema is None:
+            object.__setattr__(self, "schema", self.trace.schema)
         if (
             isinstance(self.schema, bool)
             or not isinstance(self.schema, int)
-            or self.schema != BUNDLE_SCHEMA
+            or self.schema not in (2, 3)
         ):
+            raise BundleError(f"schema must be the int 2 or 3, got {self.schema!r}")
+        if self.schema != self.trace.schema:
             raise BundleError(
-                f"schema must be the int {BUNDLE_SCHEMA}, got {self.schema!r}"
+                f"schema {self.schema} does not match trace schema {self.trace.schema}"
             )
         skills = {
             "skill": self.skill.content_hash,
@@ -245,9 +249,9 @@ class Bundle:
             raise BundleError(
                 "bundle-invalid: bundle schema 1 is not replayable; rebuild it"
             )
-        if schema != BUNDLE_SCHEMA:
+        if schema not in (2, 3):
             raise BundleError(
-                f"bundle-invalid: schema must be the int {BUNDLE_SCHEMA}, got {schema!r}"
+                f"bundle-invalid: schema must be the int 2 or 3, got {schema!r}"
             )
         if set(payload) != _TOP_LEVEL:
             raise BundleError(

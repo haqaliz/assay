@@ -90,7 +90,8 @@ tests/        offline; recorded traces; no network, no model calls
   at build time. `assay verify` checks the hashes and signature, re-parses the source, and re-runs
   `assess`; a signed assessment that does not follow is refused. The bundle replays; a bare trace
   still does not carry the declared scope or body, so it does not. The bundle schema is the replay
-  contract: bump it when the replay semantics change.
+  contract: bump it when the replay semantics change. Bundle schema 3 mirrors trace schema 3 and
+  carries the backend identity; schema-2 bundles still verify.
 - **Tests run offline.** The agent driver sits behind an injectable seam; CI uses recorded traces.
   No model call and no network in any test.
 - **BYOK.** Keys live in the environment of the user, are never committed, and are never defaults.
@@ -174,9 +175,10 @@ One canonical JSON line:
   recorded strictness, and requires exact equality with the stored assessment. A valid signature over
   a verdict that does not follow is refused with `replay-mismatch`; a good bundle prints
   `signature: verified` and `replay: verified`. Schema-1 bundles are refused as not replayable.
-- `Trace` schema 2 records `sandbox_config_hashes`: the sorted, de-duplicated
-  `JailConfig.config_hash` values of the actions that entered a jail. They identify this run's
-  configs (including its private staging path) and are not a portable policy version.
+- `Trace` schema 3 records `sandbox_config_hashes` plus a readable `backend` and `network_mode`;
+  schema 2 traces still load. The hashes are the sorted, de-duplicated `JailConfig.config_hash`
+  values of the actions that entered a jail. They identify this run's configs (including its private
+  staging path) and are not a portable policy version.
 - What is attested: the exact `SKILL.md` bytes, the captured trace, the sandbox config hashes, the A5
   assessment, and that the verdict follows from those inputs. Not attested: that the run happened or
   was captured honestly (the signature attests the capture), that the skill is safe, that the rest of
@@ -209,13 +211,13 @@ benchmark signs nothing; any case can be bundled and replayed with the shipped A
   on macOS and `bubblewrap` on Linux, behind a `Sandbox` seam (A2). Docker was rejected as a daemon
   dependency with no A2 benefit; the probe evidence is in `docs/planning/sandbox-jail/prd.md`. The
   Linux network access is a Landlock/seccomp launcher with parent-side DNS resolution. Run/session
-  records and config hashes carry backend identity; a readable field inside the signed trace needs
-  schema 3 (`docs/planning/linux-backend/prd.md`).
-- ~~Verdict replay~~ **Decided (bundle schema 2):** the bundle carries the exact `SKILL.md` source and
-  `verify` re-derives the verdict with the shipped `assess`; a signed assessment that does not follow
-  is refused. A bare trace still cannot replay because it carries no scope or body; trace schema 3 is
-  deferred unless traces are published without bundles. A readable sandbox policy record is a smaller
-  follow-on.
+  records and config hashes carry backend identity; trace/bundle schema 3 carries the readable
+  backend/network label and schema 2 still verifies (`docs/planning/linux-backend/prd.md`).
+- ~~Verdict replay~~ **Decided (bundle schema 3, schema 2 accepted):** the bundle carries the exact
+  `SKILL.md` source and `verify` re-derives the verdict with the shipped `assess`; a signed
+  assessment that does not follow is refused. A bare trace still cannot replay because it carries
+  no scope or body; trace schema 3 adds backend identity, not the scope/body. A readable sandbox
+  policy record is a smaller follow-on.
 - **Real-world corpus.** The A7 corpus is synthetic-dominated and single-labeled. Public third-party
   cases need the M2.3 disclosure process (R3) before they can be added, and a second labeler before
   any independent precision claim.

@@ -135,7 +135,7 @@ def test_bundle_writes_the_canonical_file_next_to_the_trace(
     assert text.count("\n") == 1
     payload = json.loads(text)
     trace = TraceStore(trace_path.parent).load(trace_path)
-    assert payload["schema"] == 2
+    assert payload["schema"] == 3
     assert payload["hash_list"]["trace"] == trace_path.stem
     assert set(payload["hash_list"]) == {"skill", "trace", "sandbox"}
     assert set(payload["skill"]) == {"content_hash", "source"}

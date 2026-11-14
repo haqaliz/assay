@@ -136,8 +136,9 @@ trace/verdict schema are unchanged.
 
 **Sandbox backend identity (2026-11-14).** `RunRecord` and `SessionRecord` carry `backend` and
 `network_mode`; `JailConfig` includes the backend in its hash, so traces/bundles distinguish
-Seatbelt from bubblewrap, and MCP reports show it. A readable field inside the signed trace needs
-trace/bundle schema 3. On master; release pending.
+Seatbelt from bubblewrap, and MCP reports show it. Trace schema 3 carries a readable
+`backend`/`network_mode`; bundle schema 3 mirrors it. Schema-2 traces and bundles still load and
+verify. On master; release pending.
 
 **MCP spike (2026-11-07).** A long-lived `SandboxSession` and a stdlib stdio MCP client
 (`initialize`, `tools/list`, `tools/call`) run against a local fixture inside Seatbelt. Tool calls
@@ -211,9 +212,9 @@ Not scheduled; depends on Phase 2 results.
 `assay check` runs on Linux under `bubblewrap` (mount/PID/net namespaces, no daemon). `http_get`
 uses a Landlock TCP allowlist plus a seccomp UDP/raw deny; the parent resolves DNS and passes
 `--resolve`. `assay mcp` and `assay mcp-report` run local stdio servers under `bubblewrap`. Windows
-uses the same backend via WSL2. Run/session records and config hashes carry backend identity; a
-readable field inside the signed trace remains a schema-3 follow-up. CI runs macOS and Ubuntu 24.04;
-the plan and remaining risks are in
+uses the same backend via WSL2. Run/session records and config hashes carry backend identity; trace/bundle schema 3 carries the
+readable backend/network label, and schema 2 still verifies. CI runs macOS and Ubuntu 24.04; the
+plan and remaining risks are in
 [`planning/linux-backend/prd.md`](planning/linux-backend/prd.md).
 
 ---

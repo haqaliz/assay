@@ -145,7 +145,7 @@ def test_a_cursor_rule_bundles_and_verifies(tmp_path, monkeypatch, keypair, caps
     assert code == 0
     bundle_path = bundle_path_for(trace_path)
     payload = json.loads(bundle_path.read_text(encoding="utf-8"))
-    assert payload["schema"] == 2
+    assert payload["schema"] == 3
     assert payload["skill"]["format"] == "cursor"
     capsys.readouterr()
 

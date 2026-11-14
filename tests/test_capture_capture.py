@@ -149,12 +149,34 @@ def test_trace_carries_skill_task_and_run_metadata():
         ),
     )
 
-    assert trace.schema == 2
+    assert trace.schema == 3
+    assert trace.backend == "unobserved"
+    assert trace.network_mode == "none"
     assert trace.skill_name == "demo"
     assert trace.skill_content_hash == "a" * 64
     assert trace.task_sha256 == hashlib.sha256(b"do it").hexdigest()
     assert trace.cause == "step-limit"
     assert (trace.input_tokens, trace.output_tokens, trace.cost_usd) == (10, 2, 0.001)
+
+
+def test_trace_records_backend_identity():
+    trace = capture(
+        skill(),
+        "task",
+        outcome(
+            [
+                action(
+                    "http_get",
+                    url="https://example.com",
+                    record_=record(backend="bubblewrap", network_mode="port"),
+                )
+            ]
+        ),
+    )
+
+    assert trace.schema == 3
+    assert trace.backend == "bubblewrap"
+    assert trace.network_mode == "port"
 
 
 def test_two_captures_of_identical_inputs_have_the_same_hash():
