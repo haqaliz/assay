@@ -1,4 +1,4 @@
-"""Linux bubblewrap backend: namespaces and a minimal root, no daemon and no network."""
+"""Linux bubblewrap backend: namespaces, a minimal root, and an optional TCP port allowlist."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Sequence
 
 from .config import JailConfig
+from .net import launcher_code
 from .process import run_process
 from .records import RunRecord, SandboxUnavailable
 
@@ -14,6 +15,7 @@ if TYPE_CHECKING:
 
 DEFAULT_BWRAP = Path("/usr/bin/bwrap")
 DEFAULT_PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+NET_PYTHON = Path("/usr/bin/python3")
 
 # Read-only host trees needed by ordinary runtimes. /home, /root, /var and /opt stay hidden;
 # /etc is a private tmpfs with only the selected files below.
@@ -31,11 +33,16 @@ _ETC_FILES = (
 
 
 def build_command(bwrap: Path, argv: Sequence[str], config: JailConfig) -> list[str]:
+    target = [str(a) for a in argv]
+    network = ["--unshare-net"]
     if config.allow_network:
-        raise SandboxUnavailable(
-            "the Linux backend does not support network allowlists yet; "
-            "run on macOS for a skill that needs http_get"
-        )
+        if any(rule.host != "*" for rule in config.allow_network):
+            raise SandboxUnavailable(
+                "the Linux backend cannot pin network rules to localhost; use host '*'"
+            )
+        ports = sorted({rule.port for rule in config.allow_network})
+        network = ["--share-net"]
+        target = [str(NET_PYTHON), "-c", launcher_code(ports), *target]
     root = str(config.run_root)
     command = [
         str(bwrap),
@@ -45,7 +52,7 @@ def build_command(bwrap: Path, argv: Sequence[str], config: JailConfig) -> list[
         "--unshare-pid",
         "--unshare-ipc",
         "--unshare-uts",
-        "--unshare-net",
+        *network,
         "--cap-drop",
         "ALL",
     ]
@@ -75,7 +82,7 @@ def build_command(bwrap: Path, argv: Sequence[str], config: JailConfig) -> list[
     ]
     for key, value in config.env.items():
         command += ["--setenv", key, value]
-    command += ["--", *(str(a) for a in argv)]
+    command += ["--", *target]
     return command
 
 
@@ -83,6 +90,11 @@ def _setup_error(returncode: int, stderr: str) -> str | None:
     if stderr.startswith("bwrap:"):
         return (
             f"bwrap could not establish the jail (exit {returncode}): "
+            f"{stderr.strip()[:200]}"
+        )
+    if stderr.startswith("assay-launcher:"):
+        return (
+            f"sandbox network launcher failed (exit {returncode}): "
             f"{stderr.strip()[:200]}"
         )
     return None

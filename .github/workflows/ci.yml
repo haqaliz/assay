@@ -30,7 +30,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-      - run: sudo apt-get update && sudo apt-get install -y bubblewrap curl openssh-client
+      - run: sudo apt-get update && sudo apt-get install -y bubblewrap curl openssh-client libseccomp2
       # CI-only: Ubuntu 24.04 restricts unprivileged user namespaces. Users should load the
       # documented bwrap AppArmor profile instead of disabling the sysctl globally.
       - name: Allow bwrap user namespaces

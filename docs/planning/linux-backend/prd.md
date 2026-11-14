@@ -5,7 +5,7 @@
 | **Capability** | A2 follow-on — Linux sandbox backend |
 | **Phase / milestone** | Post-v0.1; next platform slice |
 | **Slug** | `linux-backend` |
-| **Status** | Linux v1 (one-shot + MCP, no network) built; a network allowlist and readable backend identity are follow-ups |
+| **Status** | Linux v1 (one-shot + MCP + network allowlist) built; readable backend identity is a follow-up |
 | **Owner** | aliz |
 | **Tracking issue** | [#36](https://github.com/haqaliz/assay/issues/36) |
 | **Guardrails touched** | R4 (escape), R2 (false verdict), `CLAUDE.md` constraint 2 (nothing real is reachable) |
@@ -139,9 +139,9 @@ bwrap
 - For `*:port`, `--share-net` plus a Landlock launcher that allows `connect` only on the configured
   TCP ports and denies `bind`/`listen` unless explicitly required. Landlock alone does not cover
   UDP; a seccomp filter denies UDP/raw socket creation.
-- **DNS is the unresolved part.** Denying all UDP breaks `getaddrinfo`. Pick one: pre-resolve the
-  provider hostnames into `/etc/hosts` and deny DNS; allow TCP/53 to one configured resolver and
-  record the weakening; or refuse network runs. Do not allow all UDP to make DNS work.
+- **DNS is parent-resolved.** `Toolbox._http_argv` resolves the URL host and passes `--resolve` to
+  curl, so the jail never needs UDP/53. A direct `BubblewrapSandbox` caller that passes a hostname
+  without `--resolve` will fail DNS; that is the correct fail-closed behavior.
 - `localhost:port` is refused in v1. A host-side proxy or a Unix-socket bridge is a follow-up; do
   not silently widen it to `*:port`.
 - The launcher applies `RLIMIT_CPU` / `RLIMIT_FSIZE`, Landlock, seccomp, then `execvp`. Keep it
@@ -226,7 +226,7 @@ Total: **2–3 focused weeks**, not a weekend. The security tests are the work.
 | — | Ubuntu 24.04 blocks unprivileged user namespaces | High/Med | Probe first; AppArmor profile/docs; Docker fallback if unavoidable |
 | — | Kernel <6.7 has no Landlock network | Med/High | Fail closed for `*:port`; no-network still works; docs |
 | — | UDP/raw egress when TCP is allowed | High/High | seccomp deny; test explicitly |
-| — | DNS needs UDP/53, which a naive UDP deny breaks | High/Med | Pre-resolve into `/etc/hosts`, allow TCP/53 to one resolver, or refuse; never allow all UDP |
+| — | Direct callers need DNS inside the jail | Med/Med | `http_get` resolves in the parent and passes `--resolve`; other callers must pre-resolve or fail closed |
 | — | `bubblewrap` missing / not installed | Med/Med | Named `SandboxUnavailable`; install docs; no auto-install |
 | — | `localhost` semantics weaker | Med/Med | Refuse in v1; proxy later; record capability |
 | — | Divergent verdicts vs macOS | Med/High | Corpus comparison; backend identity; no silent equivalence |
@@ -275,6 +275,6 @@ Open questions (recommendations):
 confirm the Landlock ABI/network behavior on the CI kernel; confirm seccomp UDP denial from a
 Python/Node child; solve the DNS path; decide the trace schema question.
 
-Linux v1 is built: `assay check` and local stdio MCP sessions run under `bubblewrap` with no sandbox
-network. A network allowlist and readable backend identity in the trace remain follow-ups; do not
-start them before the Nov 17 Product Hunt launch.
+Linux v1 is built: `assay check`, local stdio MCP sessions and `http_get` (Landlock/seccomp
+allowlist) run under `bubblewrap`. Readable backend identity in the trace remains a follow-up; do
+not start it before the Nov 17 Product Hunt launch.
