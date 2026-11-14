@@ -34,7 +34,7 @@ from assay.mcp.server import ServerError, parse_server
 from assay.mcp.toolbox import MCPToolbox, MCPToolboxError
 from assay.sandbox import JailConfig, Limits, SandboxFailed, SandboxUnavailable
 from assay.sandbox.base import Sandbox, select_sandbox
-from assay.sandbox.session import SandboxSession, SessionError
+from assay.sandbox.session import SessionError
 from assay.triage import triage
 from assay.verdict import Strictness, StrictnessPolicy, Verdict, assess
 
@@ -435,24 +435,14 @@ def _mcp(args: argparse.Namespace, sandbox: Sandbox | None) -> int:
         except SandboxUnavailable as exc:
             _emit(f"error: sandbox-unavailable: {exc}\n", sys.stderr)
             return 1
-    if not getattr(sandbox, "supports_session", False):
-        _emit(
-            "error: sandbox-unavailable: MCP sessions are not supported by the Linux "
-            "backend yet\n",
-            sys.stderr,
-        )
-        return 1
     run_root = _make_run_root()
-    sandbox_exec = Path(
-        getattr(sandbox, "sandbox_exec", Path("/usr/bin/sandbox-exec"))
-    )
     if args.keep_run_root:
         _emit(f"run root: {run_root}\n", sys.stderr)
     try:
         report = inspect_server(
             server,
             run_root=run_root,
-            sandbox_exec=sandbox_exec,
+            sandbox=sandbox,
             timeout=timeout,
             keep=args.keep_run_root,
         )
@@ -490,14 +480,6 @@ def _mcp_report(
         except SandboxUnavailable as exc:
             _emit(f"error: sandbox-unavailable: {exc}\n", sys.stderr)
             return 1
-    if not getattr(sandbox, "supports_session", False):
-        _emit(
-            "error: sandbox-unavailable: MCP sessions are not supported by the Linux "
-            "backend yet\n",
-            sys.stderr,
-        )
-        return 1
-
     budget = Budget(
         max_usd=args.max_cost,
         max_steps=args.max_steps,
@@ -505,9 +487,6 @@ def _mcp_report(
         max_wall_seconds=args.max_wall_seconds,
     )
     run_root = _make_run_root()
-    sandbox_exec = Path(
-        getattr(sandbox, "sandbox_exec", Path("/usr/bin/sandbox-exec"))
-    )
     if args.keep_run_root:
         _emit(f"run root: {run_root}\n", sys.stderr)
     config = JailConfig(
@@ -520,9 +499,7 @@ def _mcp_report(
     )
     try:
         try:
-            session = SandboxSession(
-                sandbox_exec, [server.command, *server.args], config
-            )
+            session = sandbox.start_session([server.command, *server.args], config)
             session.__enter__()
         except (SandboxFailed, SessionError, OSError) as exc:
             _emit(f"error: server did not start: {exc}\n", sys.stderr)

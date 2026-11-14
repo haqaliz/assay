@@ -11,7 +11,7 @@ from assay.mcp.client import MCPClient, MCPTimeout, PROTOCOL_VERSION
 from assay.mcp.events import event_for_call
 from assay.sandbox import JailConfig, Limits
 from assay.sandbox.records import DenialClass
-from assay.sandbox.session import SandboxSession
+from assay.sandbox.seatbelt import SeatbeltSandbox
 
 pytestmark = pytest.mark.skipif(
     sys.platform != "darwin" or shutil.which("sandbox-exec") is None,
@@ -36,8 +36,8 @@ def make_config(tmp_path, *, keep=False):
 
 
 def start(config):
-    return SandboxSession(
-        Path(SANDBOX), [PY, "-u", str(config.run_root / "mcp_server.py")], config
+    return SeatbeltSandbox(Path(SANDBOX)).start_session(
+        [PY, "-u", str(config.run_root / "mcp_server.py")], config
     )
 
 

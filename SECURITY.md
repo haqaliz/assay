@@ -32,8 +32,8 @@ window to release a fix before public disclosure.
   audit protocol, not a public issue.
 - `UNVERIFIED` or `FLAGGED` results, or a `CLEAN` that means "matched declared scope in this run".
   Assay does not claim a skill is safe forever.
-- The absence of a native Windows sandbox backend, MCP sessions or a network allowlist on Linux, or
-  the absence of a hosted/registry service.
+- The absence of a native Windows sandbox backend, a network allowlist on Linux, or the absence of a
+  hosted/registry service.
 - Model/provider behavior outside the jail, unless it crosses a documented Assay boundary.
 
 ## Third-party audit findings

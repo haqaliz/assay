@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Callable
 
 from assay.sandbox import JailConfig, Limits
+from assay.sandbox.base import Sandbox
 from assay.sandbox.records import SandboxFailed
 from assay.sandbox.session import SandboxSession, SessionError, SessionRecord
 
@@ -68,10 +69,10 @@ def inspect_server(
     server: Server,
     *,
     run_root: Path,
-    sandbox_exec: Path = Path("/usr/bin/sandbox-exec"),
+    sandbox: Sandbox,
     timeout: float = 10.0,
     keep: bool = False,
-    session_factory: SessionFactory = SandboxSession,
+    session_factory: SessionFactory | None = None,
 ) -> ServerReport:
     config = JailConfig(
         run_root=run_root,
@@ -87,7 +88,10 @@ def inspect_server(
     error: str | None = None
 
     try:
-        session = session_factory(sandbox_exec, argv, config)
+        if session_factory is None:
+            session = sandbox.start_session(argv, config)
+        else:
+            session = session_factory(argv, config, path=sandbox.child_path)
         with session:
             client = MCPClient(session, timeout=timeout)
             init = client.initialize()

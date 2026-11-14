@@ -9,6 +9,7 @@ import pytest
 from assay.mcp.inspect import ServerReport, inspect_server
 from assay.mcp.server import Server
 from assay.sandbox.records import SandboxFailed
+from assay.sandbox.seatbelt import SeatbeltSandbox
 from assay.sandbox.session import SessionRecord
 
 requires_seatbelt = pytest.mark.skipif(
@@ -85,11 +86,17 @@ class FakeSession:
             self.record = RECORD
 
 
-def factory_for(session):
-    def make(*args, **kwargs):
-        return session
+class FakeSandbox:
+    child_path = "/usr/bin:/bin"
 
-    return make
+    def __init__(self, session=None, error=None):
+        self.session = session
+        self.error = error
+
+    def start_session(self, argv, config):
+        if self.error is not None:
+            raise self.error
+        return self.session
 
 
 def test_a_successful_inspection_reports_the_tools(tmp_path):
@@ -101,7 +108,7 @@ def test_a_successful_inspection_reports_the_tools(tmp_path):
     run_root.mkdir()
 
     report = inspect_server(
-        server(), run_root=run_root, session_factory=factory_for(session)
+        server(), run_root=run_root, sandbox=FakeSandbox(session)
     )
 
     assert isinstance(report, ServerReport)
@@ -117,11 +124,10 @@ def test_a_startup_failure_becomes_a_report_error(tmp_path):
     run_root = tmp_path / "run"
     run_root.mkdir()
 
-    def fail(*args, **kwargs):
-        raise SandboxFailed("could not start sandbox-exec: nope")
-
     report = inspect_server(
-        server(), run_root=run_root, session_factory=fail
+        server(),
+        run_root=run_root,
+        sandbox=FakeSandbox(error=SandboxFailed("could not start sandbox-exec: nope")),
     )
 
     assert report.started is False
@@ -136,7 +142,7 @@ def test_a_timeout_becomes_a_report_error(tmp_path):
     run_root.mkdir()
 
     report = inspect_server(
-        server(), run_root=run_root, session_factory=factory_for(session)
+        server(), run_root=run_root, sandbox=FakeSandbox(session)
     )
 
     assert report.started is False
@@ -151,7 +157,7 @@ def test_a_tools_list_failure_keeps_the_handshake_result(tmp_path):
     run_root.mkdir()
 
     report = inspect_server(
-        server(), run_root=run_root, session_factory=factory_for(session)
+        server(), run_root=run_root, sandbox=FakeSandbox(session)
     )
 
     assert report.started is True
@@ -169,7 +175,12 @@ def test_the_fixture_server_starts_in_the_jail(tmp_path):
     run_root.mkdir()
     real = server(command="/usr/bin/python3", args=("-u", str(fixture)))
 
-    report = inspect_server(real, run_root=run_root, timeout=5.0)
+    report = inspect_server(
+        real,
+        run_root=run_root,
+        sandbox=SeatbeltSandbox(Path("/usr/bin/sandbox-exec")),
+        timeout=5.0,
+    )
 
     assert report.started is True
     assert report.protocol_version == "2026-07-28"
@@ -190,7 +201,12 @@ def test_a_missing_command_is_reported_not_raised(tmp_path):
     run_root.mkdir()
     real = server(command="/no/such/mcp-command", args=())
 
-    report = inspect_server(real, run_root=run_root, timeout=2.0)
+    report = inspect_server(
+        real,
+        run_root=run_root,
+        sandbox=SeatbeltSandbox(Path("/usr/bin/sandbox-exec")),
+        timeout=2.0,
+    )
 
     assert report.started is False
     assert report.error is not None

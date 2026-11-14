@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from .config import DEFAULT_PATH, JailConfig
 from .process import run_process
 from .records import RunRecord
+
+if TYPE_CHECKING:
+    from .session import SandboxSession
 
 # Host data that must never be readable from inside the jail, even though reads are otherwise
 # broad (a narrow allow-list kills the child with a silent SIGABRT — see the planning dig note).
@@ -54,24 +57,37 @@ def _setup_error(returncode: int, stderr: str) -> str | None:
 class SeatbeltSandbox:
     backend = "seatbelt"
     child_path = DEFAULT_PATH
-    supports_session = True
 
     def __init__(self, sandbox_exec: Path) -> None:
         self.sandbox_exec = Path(sandbox_exec)
 
-    def run(self, argv: Sequence[str], config: JailConfig) -> RunRecord:
-        if not argv:
-            raise ValueError("argv must not be empty")
-        command = [
+    def _command(self, argv: Sequence[str], config: JailConfig) -> list[str]:
+        return [
             str(self.sandbox_exec),
             "-p",
             build_profile(config),
             *(str(a) for a in argv),
         ]
+
+    def run(self, argv: Sequence[str], config: JailConfig) -> RunRecord:
+        if not argv:
+            raise ValueError("argv must not be empty")
         return run_process(
-            command,
+            self._command(argv, config),
             config,
             path=self.child_path,
             start_error="sandbox-exec",
             setup_error=_setup_error,
+        )
+
+    def start_session(
+        self, argv: Sequence[str], config: JailConfig
+    ) -> "SandboxSession":
+        from .session import SandboxSession
+
+        return SandboxSession(
+            self._command(argv, config),
+            config,
+            path=self.child_path,
+            setup_error_prefix="sandbox-exec:",
         )
