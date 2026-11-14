@@ -123,12 +123,16 @@ the trace/verdict schema and the macOS Seatbelt path are unchanged.
 
 **Linux MCP sessions (2026-11-14).** `SandboxSession` now takes a backend-built command;
 `assay mcp` and `assay mcp-report` run local stdio servers under `bubblewrap`. Remote MCP over HTTP
-remains out of scope. On master; release pending.
+remains out of scope. Released as `0.1.2` on 2026-11-14.
 
 **Linux network allowlist (2026-11-14).** `http_get` runs under `bubblewrap` with `--share-net`, a
 Landlock TCP connect/bind allowlist and a seccomp UDP/raw deny. The parent resolves the URL host and
 passes `--resolve`, so the jail never needs DNS. Requires Linux 6.7+ and libseccomp; otherwise the
-launcher fails closed with `SandboxFailed`. On master; release pending.
+launcher fails closed with `SandboxFailed`. Released as `0.1.2` on 2026-11-14.
+
+**v0.1.2 release (2026-11-14).** `assayhq` 0.1.2 is on PyPI and as a GitHub Release. It includes
+Linux MCP sessions and the Landlock/seccomp network allowlist; the macOS Seatbelt path and the
+trace/verdict schema are unchanged.
 
 **MCP spike (2026-11-07).** A long-lived `SandboxSession` and a stdlib stdio MCP client
 (`initialize`, `tools/list`, `tools/call`) run against a local fixture inside Seatbelt. Tool calls

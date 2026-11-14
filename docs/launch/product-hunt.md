@@ -1,4 +1,4 @@
-# Product Hunt launch package — Assay v0.1.1
+# Product Hunt launch package — Assay v0.1.2
 
 Status: **draft package ready; the Product Hunt listing is not created.** The repo, PyPI release and
 GitHub Pages site are live. This file gives you the copy, gallery, thumbnail, first comment, FAQ and
@@ -10,7 +10,7 @@ checklist. You create the PH draft and publish from your account.
 |---|---|
 | **Name** | Assay |
 | **Tagline** (56/60) | Execution-grounded security verifier for AI agent skills |
-| **Description** (230/500) | Assay runs an AI agent skill in a sandbox on macOS or Linux against a real agent, captures what it actually did, and checks it against what it claims to do. Signed evidence, honest verdicts, and an audit gate. Open source, v0.1.1. |
+| **Description** (230/500) | Assay runs an AI agent skill in a sandbox on macOS or Linux against a real agent, captures what it actually did, and checks it against what it claims to do. Signed evidence, honest verdicts, and an audit gate. Open source, v0.1.2. |
 | **Website** | https://haqaliz.github.io/assay/ |
 | **GitHub** | https://github.com/haqaliz/assay |
 | **PyPI** | https://pypi.org/project/assayhq/ |
@@ -44,13 +44,13 @@ model's opinion. Assay runs the skill in a sandbox on macOS or Linux against a r
 what it actually did, and checks that against what the skill declares. The verdict is backed by a
 signed record a third party can verify offline.
 
-v0.1.1 is open source on PyPI. It covers Claude Code/OpenClaw skills and Cursor rules; MCP has an
+v0.1.2 is open source on PyPI. It covers Claude Code/OpenClaw skills and Cursor rules; MCP has an
 inspector and a conservative report. It does not claim a skill is safe: CLEAN means the run matched
 the declared scope, and UNVERIFIED is never a pass.
 
-macOS and Linux today (Linux has no sandbox network yet); Windows via WSL2. No web app; MCP runs
-are macOS-only for now. I'd especially value feedback on the verdict model and the audit workflow.
-Ask me anything.
+macOS and Linux today; Windows via WSL2. Linux network access uses Landlock/seccomp and needs Linux
+6.7+ and libseccomp. No web app. MCP runs on macOS and Linux. I'd especially value feedback on the
+verdict model and the audit workflow. Ask me anything.
 ```
 
 ## FAQ (use in replies or the listing)
@@ -69,8 +69,8 @@ No. `CLEAN` means the run matched the declared scope. It is per-run, not a guara
 never a pass.
 
 **What platforms are supported?**
-macOS and Linux for `assay check`; Linux uses `bubblewrap` with no sandbox network, so `http_get`
-fails closed. Windows via WSL2. MCP runs are macOS-only for now; native Windows is not supported.
+macOS and Linux for `assay check` and local stdio MCP runs; Linux `http_get` uses a Landlock/seccomp
+allowlist and needs Linux 6.7+ and libseccomp. Windows via WSL2; native Windows is not supported.
 Python 3.12+.
 
 **Do I need an API key?**
@@ -101,7 +101,7 @@ reviewer and the disclosure window. Do not call the product "audited" in the lis
       late-December holidays.
 - [ ] Re-read the listing against the "do not say" list below.
 - [ ] Ask 5–10 people for honest feedback on the draft; do **not** ask for upvotes.
-- [ ] Prepare replies for the first 12 hours; know the limits and the Linux/MCP answer.
+- [ ] Prepare replies for the first 12 hours; know the limits and the platform answer.
 - [ ] Optional: set the GitHub social preview to `assets/assay-demo.png` (manual, repo settings).
 - [ ] Optional: a custom domain; `haqaliz.github.io/assay` works.
 
@@ -125,8 +125,8 @@ reviewer and the disclosure window. Do not call the product "audited" in the lis
 - "Assay makes AI agent skills safe." It does not.
 - "Audited" or "security certified." The public audit is not complete.
 - "Malware detector" or "antivirus." It is a per-run behavior verifier.
-- "Linux is fully supported." `assay check` works on Linux, but there is no sandbox network
-  (`http_get` fails closed) and MCP runs are macOS-only.
+- "Native Windows is supported." Linux is supported, including local stdio MCP and the network
+  allowlist; native Windows is not.
 - "MCP is verified." The report is `UNVERIFIED`/`FLAGGED`; there is no `CLEAN`/`MALICIOUS` server
   claim.
 - "Replaces code review." It is a complement.
@@ -167,8 +167,8 @@ magick /tmp/assay-logo.png -gravity center -crop 771x771+0+0 +repage \
 
 - **CLI, not a web app.** Product Hunt traffic may not install a Python CLI. The gallery and first
   comment must make that clear; the site is the demo.
-- **Linux is partial.** `assay check` runs under `bubblewrap`, but the sandbox has no network
-  (`http_get` fails closed) and MCP runs are macOS-only. Say that plainly.
+- **Linux network needs Linux 6.7+.** `http_get` uses Landlock/seccomp and requires Linux 6.7+ and
+  libseccomp; older kernels fail closed. MCP is stdio-only. Say that plainly.
 - **No public audit yet.** The private dry run is signed; a public finding still needs a reviewer and
   disclosure. Do not imply certification.
 - **No video.** The gallery is real output; a terminal video would be a plus, not a requirement.

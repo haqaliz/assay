@@ -8,7 +8,7 @@
 real agent, captures what it actually did, and checks that against what it claims to do.
 
 [![Release](https://img.shields.io/github/v/release/haqaliz/assay?color=3fb950&label=release)](https://github.com/haqaliz/assay/releases/latest)
-[![Status](https://img.shields.io/badge/status-v0.1.1-3fb950)](docs/ROADMAP.md)
+[![Status](https://img.shields.io/badge/status-v0.1.2-3fb950)](docs/ROADMAP.md)
 [![CI](https://github.com/haqaliz/assay/actions/workflows/ci.yml/badge.svg)](https://github.com/haqaliz/assay/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/assayhq.svg)](https://pypi.org/project/assayhq/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
@@ -56,9 +56,11 @@ pip install assayhq
 
 From a checkout, `uv sync --dev` then `uv run assay ...` works too.
 
-On Linux, install `bubblewrap` and `curl` (for example `sudo apt install bubblewrap curl`). The
-sandbox has no network; `http_get` fails closed with `UNVERIFIED/SANDBOX_UNAVAILABLE`, while the
-model itself runs outside the jail. MCP runs are macOS-only for now.
+On Linux, install `bubblewrap`, `curl` and `libseccomp2` (for example
+`sudo apt install bubblewrap curl libseccomp2`). `http_get` requires Linux 6.7+ for the Landlock
+network allowlist; on older kernels it fails closed with `UNVERIFIED/SANDBOX_UNAVAILABLE`. The model
+itself runs outside the jail. `assay mcp` and `assay mcp-report` also run local stdio servers on
+Linux.
 
 Ubuntu 23.10+ restricts unprivileged user namespaces with AppArmor. Add a `bwrap` profile with
 `userns,` (the exact profile is in the [Linux plan](docs/planning/linux-backend/prd.md#54-ci-and-wsl2))
@@ -70,12 +72,13 @@ with `SANDBOX_UNAVAILABLE`.
 | Platform | Sandboxed execution (`assay check`, MCP runs) | Non-sandbox commands (`triage`, `verify`, `corpus`) |
 |---|---|---|
 | macOS | **Supported** (Seatbelt) | Supported and tested |
-| Linux | **Supported for `assay check`** (`bubblewrap`; no sandbox network; `http_get` fails closed). MCP runs not yet. | Supported and tested (Linux CI) |
+| Linux | **Supported** (`bubblewrap`; `http_get` via Landlock/seccomp, Linux 6.7+ and `libseccomp2`) | Supported and tested (Linux CI) |
 | Windows (WSL2) | Same as Linux | Same as Linux |
 | Native Windows | Not supported | Not yet CI-tested |
 
-There is no unconfined mode. The Linux backend is `bubblewrap`; MCP sessions and a network allowlist
-are follow-ups. Plan: [`docs/planning/linux-backend/prd.md`](docs/planning/linux-backend/prd.md).
+There is no unconfined mode. The Linux backend is `bubblewrap`; network access is a Landlock TCP
+allowlist plus a seccomp UDP/raw deny. Plan:
+[`docs/planning/linux-backend/prd.md`](docs/planning/linux-backend/prd.md).
 
 ## Quickstart
 
@@ -91,7 +94,7 @@ only on `CLEAN`, and `CLEAN` means the run matched the declared scope, not that 
 
 ## Status
 
-**v0.1.1 is shipped.** A1–A7 exist, plus two A8 file adapters (OpenClaw/ClawHub and Cursor rules),
+**v0.1.2 is shipped.** A1–A7 exist, plus two A8 file adapters (OpenClaw/ClawHub and Cursor rules),
 the A10 static pre-filter, and the separate MCP capability (spike + inspector + report); the engine
 has a verdict, a portable record and a measured benchmark. What is built and tested, all offline (the
 bundle tests run a local `ssh-keygen`; the benchmark makes no model or network call):
@@ -103,9 +106,9 @@ bundle tests run a local `ssh-keygen`; the benchmark makes no model or network c
   `env`/`config`/`os` requirement the jail cannot satisfy, or a missing required binary, is refused
   before a run with `UNVERIFIED/REQUIREMENTS_UNMET`.
 - **Sandbox** (`src/assay/sandbox/`) — runs a command under a macOS Seatbelt or Linux bubblewrap
-  jail: writes confined to a run root, network deny-by-default (port-scoped allowlist on macOS; no
-  network on Linux v1), a scrubbed environment, CPU/wall limits, and a capture channel the child
-  cannot rewrite.
+  jail: writes confined to a run root, network deny-by-default with a port-scoped allowlist on
+  macOS and a Landlock/seccomp TCP allowlist on Linux, a scrubbed environment, CPU/wall limits, and
+  a capture channel the child cannot rewrite.
 - **Agent driver** (`src/assay/agent/`) — a bounded BYOK loop: the model runs outside the jail, every
   tool call runs inside it, with cost, step, action and wall caps and a named stop cause.
 - **Capture and diff** (`src/assay/capture/`) — turns a run into a canonical, content-addressed
@@ -328,7 +331,8 @@ A static scan or model may flag a candidate; the sandboxed, observed run assigns
 ## Development
 
 The real-confinement suite runs on macOS (Seatbelt) and Linux (bubblewrap). CI runs both; Linux
-needs `bubblewrap`, `curl` and `ssh-keygen`. The suite is offline (no model or network call).
+needs `bubblewrap`, `curl`, `libseccomp2` and `ssh-keygen`. The suite is offline (no model or network
+call).
 
 ```sh
 uv sync --dev
